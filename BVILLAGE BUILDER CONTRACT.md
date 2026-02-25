@@ -71,3 +71,38 @@ Builders should create a domain subtree under the house root:
 
 Clearing:
 - Clearing behavior is controlled by runner; builders must not force-clear by default.
+
+# FramePlan Interface (Authoritative)
+
+The BlenderBuilder must build from explicit structural members.
+
+FramePlan MUST contain:
+
+FramePlan = {
+  "axes_u": { ... },
+  "axes_z": [...],
+  "openings": [...],
+
+  "members": {
+     "posts": [
+        { "wall": "...", "u": ..., "z0": ..., "z1": ..., "role": "stud|corner|..." }
+     ],
+     "rails": [
+        { "wall": "...", "z": ..., "u0": ..., "u1": ..., "role": "sill|mid|lintel|..." }
+     ],
+     "braces": [
+        { "wall": "...", "u0": ..., "z0": ..., "u1": ..., "z1": ..., "role": "knee_brace|..." }
+     ],
+     "infill_cells": [
+        { "wall": "...", "u0": ..., "u1": ..., "z0": ..., "z1": ..., "shape": "rect|triA|triB" }
+     ]
+  }
+}
+
+IMPORTANT:
+
+Blender must build MEMBERS.
+Blender must NOT derive members from axes.
+
+Axes are helper geometry only.
+Members are authoritative construction artifacts.

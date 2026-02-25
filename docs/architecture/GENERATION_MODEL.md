@@ -255,3 +255,143 @@ This ensures:
 - Reproducibility
 - Debuggability
 - Stable world generation
+
+# 10. Canonical Role Model (Decision Boundaries)
+
+This section defines strict responsibility separation.
+
+No role may cross its boundary.
+
+---
+
+## 10.1 SettlementBuilder (Town / City Layer)
+
+Responsibility:
+- Decide which house type is built where.
+- Select archetype or allow weighted selection.
+- Provide HouseRequest.
+
+Input:
+- Plot geometry
+- Budget / Wealth
+- Region
+- Epoch
+- Climate
+- Seed
+
+Output:
+HouseRequest {
+  archetype_id,
+  constraints,
+  seed,
+  context
+}
+
+May NOT:
+- Define construction details (no bracing, no timber sizes)
+- Define openings manually
+- Override Domain logic
+
+---
+
+## 10.2 TypePlanner (Archetype Planner)
+
+Example:
+types/fachwerkhaus/hallenhaus/planner.py
+
+Responsibility:
+- Define spatial and semantic structure.
+
+Plans:
+- axis_x / axis_y grid
+- axes_z (storey heights)
+- walls (N/S/E/W)
+- rooms / zones
+- semantic tags (front, service, hearth zone)
+- opening demands (type, wall, u-range, z-range)
+
+Output:
+Structure (semantic plan only)
+
+May NOT:
+- Define timber sections
+- Define braces
+- Define structural members
+- Build Blender meshes
+
+---
+
+## 10.3 DomainConstructor (Construction Engine)
+
+Example:
+domains/fachwerk/core/frameplan.py
+
+Responsibility:
+- Translate Structure into structural truth.
+
+Produces:
+FramePlan {
+  axes_u
+  axes_z
+  openings
+  members {
+    posts[]
+    rails[]
+    braces[]
+    optional infill_cells[]
+  }
+}
+
+Members are explicit structural elements.
+Blender must build from members — not derive from axes.
+
+May NOT:
+- Generate Blender objects
+- Modify semantic Structure
+
+---
+
+## 10.4 BlenderBuilder (Emitter Only)
+
+Responsibility:
+- Build exact geometry from FramePlan + Structure.
+
+May NOT:
+- Infer missing structural elements
+- Modify FramePlan
+- Invent bracing or posts
+- Derive structure from grid
+
+Builder is deterministic emitter only.
+
+---
+
+## 10.5 InteriorPlanner
+
+Example:
+types/fachwerkhaus/hallenhaus/interior.py
+
+Responsibility:
+- Plan interior objects.
+- Place hearth, partitions, furniture.
+- Request additional openings via Planner.
+
+May NOT:
+- Modify exterior structure
+- Modify FramePlan
+- Directly create exterior wall openings
+
+---
+
+## 10.6 Evaluator / Orchestrator
+
+Responsibility:
+- Score candidate variants.
+- Enforce diversity.
+- Balance cost vs plausibility.
+- Decide acceptance or rejection.
+
+May NOT:
+- Change geometry.
+- Repair structure.
+

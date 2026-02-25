@@ -166,3 +166,43 @@ Example:
      - blender: no constructive inference terms
 
 Naming is part of architectural stability.
+
+# Structural Interface Separation
+
+BVILLAGE enforces strict separation between:
+
+A) Structure (semantic)
+B) FramePlan (constructive)
+C) Blender geometry (visual)
+
+Structure:
+- rooms
+- walls
+- openings as demands
+- semantic zones
+
+FramePlan:
+- constructive truth
+- structural members
+- bracing rules
+- support logic
+
+Blender:
+- builds exact members
+- applies materials
+- no structural decisions
+
+---
+
+# Known Failure Modes (Architecture Pitfalls)
+
+1. Builder derives posts from grid instead of FramePlan
+→ causes posts through openings
+
+2. FramePlan only stores axes, not members
+→ duplication of construction logic in Blender
+
+3. Interior modifies exterior walls directly
+→ role boundary violation
+
+These are considered architectural violations.
