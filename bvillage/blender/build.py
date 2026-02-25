@@ -17,7 +17,7 @@ Contracts
 ---------
 build_house(ctx, structure, interior, openings, clear_previous=True) -> bpy.types.Collection
 
-- Reads `structure.notes["frameplan"]` (compat key) produced by the Fachwerk domain.
+- Reads Fachwerk planning artifacts via bvillage.core.notes.get_domain_artifact()
 - Does not mutate planning objects.
 
 Units
@@ -36,11 +36,45 @@ import bpy
 
 from bvillage.core.model import Context, StructurePlan, InteriorPlan, OpeningsPlan
 from bvillage.blender.utils import ensure_collection, clear_collection
+from bvillage.core.notes import get_domain_artifact
 
-# Domain builder: consumes structure.notes["frameplan"] dict
-from bvillage.domains.fachwerk.blender.build_frame import build_fachwerk_frame_from_structure_notes
+# Domain builder: consumes explicit frameplan dict
+from bvillage.domains.fachwerk.blender.build_frame import build_fachwerk_frame
 
 logger = logging.getLogger(__name__)
+
+
+def _require_fachwerk_frameplan(structure: StructurePlan) -> dict:
+    """
+    Load fachwerk.frameplan artifact via canonical schema.
+
+    Transitional legacy aliases allowed (read-only):
+      - legacy frameplan alias (flat key)
+      - legacy qualified alias (fachwerk.frameplan)
+
+    Raises
+    ------
+    RuntimeError if artifact is missing or invalid.
+    """
+    notes = getattr(structure, "notes", None)
+    if not isinstance(notes, dict):
+        raise RuntimeError("StructurePlan.notes missing or invalid.")
+
+    frameplan = get_domain_artifact(
+        notes,
+        domain="fachwerk",
+        artifact="frameplan",
+        legacy_aliases=("frameplan", "fachwerk.frameplan"),
+    )
+
+    if frameplan is None:
+        raise RuntimeError(
+            "Missing required artifact: fachwerk.frameplan (canonical or legacy alias)."
+        )
+    if not isinstance(frameplan, dict):
+        raise RuntimeError("fachwerk.frameplan must be a dict payload.")
+
+    return frameplan
 
 
 def build_house(
@@ -59,7 +93,7 @@ def build_house(
     ctx:
         Execution context (used mainly for naming / seeding).
     structure:
-        Structural plan; must contain `notes["frameplan"]` if Fachwerk frame is desired.
+        Structural plan; must contain fachwerk.frameplan artifact for Fachwerk frame build.
     interior:
         Interior plan (currently not built into geometry here; placeholder).
     openings:
@@ -76,7 +110,7 @@ def build_house(
     -------------------
     1) Create (or reuse) House_<seed> root collection.
     2) Create sub-collections: Structure / Interior / Openings.
-    3) Build Fachwerk timber frame into Structure/FachwerkFrame.
+    3) Build Fachwerk timber frame into Structure (artifact-driven).
     4) Interior & opening-props are intentionally deferred until frame correctness is locked.
 
     Raises
@@ -98,8 +132,13 @@ def build_house(
 
     # ---- Structure: Fachwerk frame ----
     logger.info("Blender build: Fachwerk frame (House=%s)", house_root_name)
-    build_fachwerk_frame_from_structure_notes(
+
+    frameplan = _require_fachwerk_frameplan(structure)
+
+    build_fachwerk_frame(
+        ctx=ctx,
         structure=structure,
+        frameplan=frameplan,
         root_collection=col_structure,
         clear_previous=False,
     )

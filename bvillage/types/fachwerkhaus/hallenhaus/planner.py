@@ -123,7 +123,7 @@ def attach_frameplan(ctx: Context, structure: StructurePlan, openings: Any) -> N
     set_domain_artifact(
         structure.notes,
         domain="fachwerk",
-        name="frameplan",
+        artifact="frameplan",
         payload=payload,
         legacy_aliases=("frameplan", "fachwerk.frameplan"),
     )

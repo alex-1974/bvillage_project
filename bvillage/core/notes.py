@@ -42,6 +42,43 @@ from typing import Any, Dict, Optional, Tuple
 DOMAINS_KEY = "domains"
 
 
+# ------------------------------------------------------------
+# Internal helper
+# ------------------------------------------------------------
+
+def _normalize_artifact_param(
+    *,
+    artifact: Optional[str],
+    name: Optional[str],
+    func: str,
+) -> str:
+    """
+    Normalize parameter naming.
+
+    Preferred: artifact
+    Legacy: name
+    """
+    if artifact is None:
+        artifact = name
+    elif name is not None and name != artifact:
+        raise ValueError(
+            f"{func}: conflicting artifact identifiers "
+            f"(artifact={artifact!r}, name={name!r})"
+        )
+
+    if artifact is None:
+        raise TypeError(
+            f"{func}: missing required argument 'artifact' "
+            f"(or legacy 'name')"
+        )
+
+    return artifact
+
+
+# ------------------------------------------------------------
+# Public API
+# ------------------------------------------------------------
+
 def ensure_domains(notes: Dict[str, Any]) -> Dict[str, Any]:
     """
     Ensure notes contains notes["domains"] as a dict and return it.
@@ -57,35 +94,35 @@ def set_domain_artifact(
     notes: Dict[str, Any],
     *,
     domain: str,
-    name: str,
+    artifact: Optional[str] = None,
+    name: Optional[str] = None,
     payload: Any,
     legacy_aliases: Tuple[str, ...] = (),
 ) -> None:
     """
     Store payload under the structured domains schema, optionally with legacy aliases.
 
-    Parameters
-    ----------
-    notes:
-        Target notes dict (mutated).
-    domain:
-        Domain name, e.g. "fachwerk".
-    name:
-        Artifact name, e.g. "frameplan".
-    payload:
-        JSON-like dict payload (recommended).
-    legacy_aliases:
-        Additional top-level keys to set for back-compat.
+    Preferred parameter:
+        artifact="frameplan"
+
+    Legacy parameter (still supported):
+        name="frameplan"
     """
+    artifact = _normalize_artifact_param(
+        artifact=artifact,
+        name=name,
+        func="set_domain_artifact",
+    )
+
     domains = ensure_domains(notes)
     dom = domains.get(domain)
     if not isinstance(dom, dict):
         dom = {}
         domains[domain] = dom
 
-    dom[name] = payload
+    dom[artifact] = payload
 
-    # legacy aliases
+    # legacy aliases (flat keys)
     for k in legacy_aliases:
         notes[k] = payload
 
@@ -94,19 +131,32 @@ def get_domain_artifact(
     notes: Dict[str, Any],
     *,
     domain: str,
-    name: str,
+    artifact: Optional[str] = None,
+    name: Optional[str] = None,
     legacy_aliases: Tuple[str, ...] = (),
 ) -> Optional[Any]:
     """
     Retrieve payload from structured domains schema, with fallback to legacy aliases.
+
+    Preferred parameter:
+        artifact="frameplan"
+
+    Legacy parameter (still supported):
+        name="frameplan"
     """
+    artifact = _normalize_artifact_param(
+        artifact=artifact,
+        name=name,
+        func="get_domain_artifact",
+    )
+
     domains = notes.get(DOMAINS_KEY)
     if isinstance(domains, dict):
         dom = domains.get(domain)
-        if isinstance(dom, dict) and name in dom:
-            return dom.get(name)
+        if isinstance(dom, dict) and artifact in dom:
+            return dom.get(artifact)
 
-    # fallback
+    # fallback to legacy flat keys
     for k in legacy_aliases:
         if k in notes:
             return notes.get(k)

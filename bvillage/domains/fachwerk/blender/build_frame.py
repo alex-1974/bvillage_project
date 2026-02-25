@@ -1,6 +1,5 @@
 # bvillage/domains/fachwerk/blender/build_frame.py
 
-#
 # Fachwerk Hallenhaus — Frame builder (Phase 3/4)
 #
 # Phases:
@@ -417,7 +416,7 @@ def build_frame(house: Dict[str, Any], root_collection=None, clear_previous: boo
         col_infills = _ensure_collection("Infills", col_fachwerk)
         col_debug = _ensure_collection("Debug", col_fachwerk)
 
-    # FramePlan artifact attached by wrapper
+    # FramePlan artifact attached by wrapper / explicit API
     fp_dict = house.get("_frameplan")
 
     # --------------------------------------------------------
@@ -552,14 +551,48 @@ def build_frame(house: Dict[str, Any], root_collection=None, clear_previous: boo
 
 
 # ------------------------------------------------------------
-# BVILLAGE expected symbol (public API)
+# New explicit artifact-driven API
+# ------------------------------------------------------------
+
+def build_fachwerk_frame(
+    *,
+    ctx: Optional[Any],
+    structure: Any,
+    frameplan: Dict[str, Any],
+    root_collection=None,
+    clear_previous: bool = False,
+) -> Dict[str, Any]:
+    """
+    Explicit artifact-driven entrypoint.
+
+    This function MUST NOT read structure.notes.
+    All structural truth comes from `frameplan`.
+    """
+    rc = root_collection
+    house_instance_name = _best_root_house_name(rc)
+    house = _coerce_house(structure, fallback_name=house_instance_name)
+
+    house["_frameplan"] = frameplan
+
+    _log_build_header(house["name"], meta=house.get("_meta"))
+
+    return build_frame(
+        house,
+        root_collection=rc,
+        clear_previous=clear_previous,
+    )
+
+
+# ------------------------------------------------------------
+# Transitional wrapper (kept for runner compatibility)
 # ------------------------------------------------------------
 
 def build_fachwerk_frame_from_structure_notes(*args, **kwargs) -> Dict[str, Any]:
     """
-    BVILLAGE runner entrypoint.
-    Typically called with:
-      structure=..., root_collection=..., clear_previous=True/False
+    BVILLAGE runner entrypoint (legacy compatibility).
+
+    Reads fachwerk.frameplan artifact from structure.notes and forwards
+    to explicit build_fachwerk_frame().
     """
     LOG.info("wrapper ENTER keys=%s", list(kwargs.keys()))
 
@@ -568,31 +601,29 @@ def build_fachwerk_frame_from_structure_notes(*args, **kwargs) -> Dict[str, Any]
         raise TypeError("build_fachwerk_frame_from_structure_notes: missing structure")
 
     rc = kwargs.get("root_collection")
-    house_instance_name = _best_root_house_name(rc)
-    house = _coerce_house(structure, fallback_name=house_instance_name)
 
-    # Attach FramePlan artifact from notes (optional)
-    fp_dict = None
-    try:
-        notes = getattr(structure, "notes", None)
-        if isinstance(structure, dict):
-            notes = structure.get("notes") or notes
-        if isinstance(notes, dict):
-            fp_dict = get_domain_artifact(
-                notes,
-                domain="fachwerk",
-                name="frameplan",
-                legacy_aliases=("frameplan", "fachwerk.frameplan"),
-            )
-    except Exception:
-        fp_dict = None
+    # --- Canonical artifact access ---
+    notes = getattr(structure, "notes", None)
+    if isinstance(structure, dict):
+        notes = structure.get("notes") or notes
 
-    if isinstance(fp_dict, dict):
-        house["_frameplan"] = fp_dict
+    if not isinstance(notes, dict):
+        raise RuntimeError("Structure has no valid notes dict.")
 
-    # Clear behavior
+    frameplan = get_domain_artifact(
+        notes,
+        domain="fachwerk",
+        artifact="frameplan",
+        legacy_aliases=("frameplan", "fachwerk.frameplan"),
+    )
+
+    if not isinstance(frameplan, dict):
+        raise RuntimeError("Missing required artifact: fachwerk.frameplan")
+
+    # --- Clear behaviour ---
     runner_clear = bool(kwargs.get("clear_previous", False))
     clear_effective = True if FORCE_CLEAR_PREVIOUS else runner_clear
+
     LOG.info(
         "clear_previous runner=%s effective=%s (FORCE_CLEAR_PREVIOUS=%s)",
         runner_clear,
@@ -600,10 +631,10 @@ def build_fachwerk_frame_from_structure_notes(*args, **kwargs) -> Dict[str, Any]
         FORCE_CLEAR_PREVIOUS,
     )
 
-    _log_build_header(house["name"], meta=house.get("_meta"))
-
-    return build_frame(
-        house,
+    return build_fachwerk_frame(
+        ctx=None,
+        structure=structure,
+        frameplan=frameplan,
         root_collection=rc,
         clear_previous=clear_effective,
     )
