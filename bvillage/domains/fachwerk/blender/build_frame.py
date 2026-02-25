@@ -1,4 +1,5 @@
 # bvillage/domains/fachwerk/blender/build_frame.py
+
 #
 # Fachwerk Hallenhaus — Frame builder (Phase 3/4)
 #

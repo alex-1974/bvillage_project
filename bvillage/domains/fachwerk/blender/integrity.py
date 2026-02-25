@@ -1,4 +1,5 @@
 # bvillage/domains/fachwerk/blender/integrity.py
+
 #
 # Post-flight integrity checks for Fachwerk builds (scene vs plan).
 #

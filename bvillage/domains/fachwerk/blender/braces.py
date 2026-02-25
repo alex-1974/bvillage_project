@@ -1,4 +1,5 @@
 # bvillage/domains/fachwerk/blender/braces.py
+
 #
 # Phase 4C: Kopfband (knee brace) – corner-only
 # - Deterministisch
