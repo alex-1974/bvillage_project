@@ -1,53 +1,46 @@
 # bvillage/domains/fachwerk/blender/build_frame.py
 
-# Fachwerk Hallenhaus — Frame builder (Phase 3/4)
-#
-# Phases:
-# - Phase1/2: posts + plates (basic wall scaffold)
-# - Phase3  : roof per field (ridge/rafters/collars)
-# - Phase3.5: hall posts through to ridge
-# - Phase4B : opening frames (module opening_frames.py)
-# - Phase4C : knee braces (corner-only) (module braces.py)
-# - Phase4A : infills (Gefache) (module infills.py)
-#
-# Quality:
-# - Pre-flight: FramePlan contract audit (data-only) before building.
-# - Post-flight: Build integrity check (scene vs plan) after building.
-#
-# Logging:
-# - No prints. All through logger.
-# - End-of-build summary logs per collection counts.
-#
-# Clearing:
-# - Robust clear_previous: deletes whole fachwerk subtree under House_* collection.
-# - FORCE_CLEAR_PREVIOUS overrides runner argument.
-
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple, List
+
+import inspect
 
 import bpy
 from mathutils import Vector
 
 from bvillage.core.notes import get_domain_artifact
-from .roof import build_roof_per_field
-from .timber import make_beam_rect
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.build_frame")
 
-# If you ALWAYS want clean rebuilds, keep this True.
-# If you want to respect the runner's clear_previous argument, set to False.
+# Global override: always rebuild cleanly
 FORCE_CLEAR_PREVIOUS = True
 
 
+def _call_compat(func, /, **kwargs):
+    """Call `func` with only the kwargs it actually accepts.
+
+    This is a small compatibility shim to reduce churn when domain modules
+    evolve their call signatures (e.g. debug flags, renamed collection params).
+    """
+    sig = inspect.signature(func)
+    # If function accepts **kwargs, pass through unchanged.
+    for p in sig.parameters.values():
+        if p.kind == inspect.Parameter.VAR_KEYWORD:
+            return func(**kwargs)
+    allowed = set(sig.parameters.keys())
+    filtered = {k: v for k, v in kwargs.items() if k in allowed}
+    return func(**filtered)
+
+
 # ------------------------------------------------------------
-# Small helpers (module level, no scope surprises)
+# Collections & clearing
 # ------------------------------------------------------------
 
 def _count_objects(col: bpy.types.Collection) -> int:
-    """Count objects in a collection (including children)."""
+    """Count objects in a collection including children (best-effort)."""
     try:
-        return sum(1 for _ in col.all_objects)
+        return len(list(col.all_objects))
     except Exception:
         try:
             return len(col.objects)
@@ -55,246 +48,307 @@ def _count_objects(col: bpy.types.Collection) -> int:
             return 0
 
 
-def _log_build_header(house_name: str, meta: Optional[dict] = None) -> None:
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    lines = []
-    lines.append("=" * 70)
-    lines.append("BVILLAGE FACHWERK BUILD START")
-    lines.append(f"House      : {house_name}")
-
-    if meta:
-        order = ["type", "region", "epoch", "wealth", "seed", "dims"]
-        for k in order:
-            v = meta.get(k)
-            if v is None:
-                continue
-            label = (k.capitalize() if k != "dims" else "Dims").ljust(10)
-            lines.append(f"{label}: {v}")
-
-    lines.append(f"Timestamp  : {ts}")
-    lines.append("=" * 70)
-
-    LOG.info("\n" + "\n".join(lines))
-
-
-def _resolve_root_collection(root_collection):
-    """
-    root_collection may be:
-      - None -> scene root collection
-      - str  -> collection name
-      - bpy.types.Collection
-    """
-    if root_collection is None:
-        return bpy.context.scene.collection
-    if isinstance(root_collection, str):
-        return bpy.data.collections.get(root_collection) or bpy.context.scene.collection
-    return root_collection
-
-
-def _ensure_collection(name: str, parent: bpy.types.Collection) -> bpy.types.Collection:
-    """Ensure collection exists and is linked under parent."""
+def _ensure_collection(name: str, parent: Optional[bpy.types.Collection] = None) -> bpy.types.Collection:
     col = bpy.data.collections.get(name)
     if col is None:
         col = bpy.data.collections.new(name)
 
-    # Ensure linked under parent
-    if col.name not in [c.name for c in parent.children]:
-        parent.children.link(col)
+    if parent is None:
+        root = bpy.context.scene.collection
+        if col.name not in root.children:
+            root.children.link(col)
+    else:
+        if col.name not in parent.children:
+            parent.children.link(col)
 
     return col
 
 
-def _clear_collection_tree(col: bpy.types.Collection) -> int:
+def _unlink_and_remove_collection(col: bpy.types.Collection) -> None:
     """
-    Recursively delete all objects in the subtree of collection `col`
-    and remove child collections. Returns number of removed objects.
+    Robustly unlink and delete a collection subtree in Blender 4.x/5.x.
+
+    Blender 5: Collection has no `users_scene`. Use `users_collection`.
+    """
+    # 1) Recursively remove children first
+    for child in list(col.children):
+        _unlink_and_remove_collection(child)
+
+    # 2) Remove objects directly in this collection
+    try:
+        for obj in list(col.objects):
+            try:
+                bpy.data.objects.remove(obj, do_unlink=True)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # 3) Unlink from parent collections (best-effort)
+    try:
+        parents = list(getattr(col, "users_collection", []))
+        for p in parents:
+            try:
+                p.children.unlink(col)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # 4) Unlink from scene root if linked there
+    try:
+        root = bpy.context.scene.collection
+        if col.name in root.children:
+            root.children.unlink(col)
+    except Exception:
+        pass
+
+    # 5) Remove collection datablock
+    try:
+        bpy.data.collections.remove(col)
+    except Exception:
+        pass
+
+
+def _clear_fachwerk_subtree(col_fachwerk: bpy.types.Collection) -> int:
+    """
+    Clear everything under the Fachwerk collection:
+    - remove all objects directly inside
+    - remove all child collections recursively
+    Returns estimated removed object count.
     """
     removed = 0
 
-    # Collect objects recursively
-    objs = set(col.objects)
-    for child in col.children_recursive:
-        objs.update(child.objects)
+    # remove direct objects
+    try:
+        for obj in list(col_fachwerk.objects):
+            try:
+                bpy.data.objects.remove(obj, do_unlink=True)
+                removed += 1
+            except Exception:
+                pass
+    except Exception:
+        pass
 
-    # Remove objects
-    for obj in list(objs):
+    # remove child collections (and their objects)
+    for child in list(col_fachwerk.children):
         try:
-            for c in list(obj.users_collection):
-                c.objects.unlink(obj)
-            bpy.data.objects.remove(obj, do_unlink=True)
-            removed += 1
+            removed += _count_objects(child)
         except Exception:
-            LOG.exception("Failed to remove object: %s", getattr(obj, "name", "?"))
-
-    # Remove child collections (bottom-up)
-    for child in list(col.children_recursive):
-        try:
-            bpy.data.collections.remove(child)
-        except Exception:
-            LOG.exception("Failed to remove collection: %s", child.name)
+            pass
+        _unlink_and_remove_collection(child)
 
     return removed
 
 
-def _best_root_house_name(root_collection) -> str:
-    """
-    Try to determine intended instance name from root_collection.
-    Prefer names like "House_42".
-    """
-    if root_collection is None:
-        return "House"
-    if isinstance(root_collection, str):
-        return root_collection
-    if hasattr(root_collection, "name"):
-        return str(root_collection.name)
-    return "House"
-
-
-# ------------------------------------------------------------
-# House adapter (structure notes -> internal house dict)
-# ------------------------------------------------------------
-
-def _coerce_house(structure, fallback_name: Optional[str] = None) -> Dict[str, Any]:
-    """
-    Adapter from BVILLAGE structure object/dict -> internal dict used by build_frame().
-
-    - axis_x/axis_y directly, else structure.grid.axis_x/axis_y
-    - if axis_y missing but width W exists: axis_y = [-W/2, 0, +W/2]
-    - name: structure.name -> overridden if placeholder -> fallback_name -> "House"
-    - adds "_meta" dict for header display (best effort)
-    """
-
-    def _ctx_get(ctx, key, default=None):
-        if ctx is None:
-            return default
-        if isinstance(ctx, dict):
-            return ctx.get(key, default)
-        return getattr(ctx, key, default)
-
-    # -------- extract ----------
-    if isinstance(structure, dict):
-        axis_x = structure.get("axis_x")
-        axis_y = structure.get("axis_y")
-
-        grid = structure.get("grid")
-        if axis_x is None and isinstance(grid, dict):
-            axis_x = grid.get("axis_x")
-        if axis_y is None and isinstance(grid, dict):
-            axis_y = grid.get("axis_y")
-
-        dims = structure.get("dims")
-        W = None
-        if isinstance(dims, dict):
-            W = dims.get("W") or dims.get("width")
-        if W is None:
-            W = structure.get("W") or structure.get("width")
-
-        z0 = structure.get("z0", 0.0)
-        z_plate = structure.get("z_plate") or structure.get("plate_z") or 2.2
-
-        roof_pitch_deg = structure.get("roof_pitch_deg") or structure.get("roof_pitch") or 50.0
-        kehl_frac = structure.get("kehl_frac") or structure.get("collar_frac") or 0.58
-
-        name = structure.get("name") or structure.get("house_name") or None
-        meta = structure.get("_meta") or structure.get("meta") or {}
-    else:
-        axis_x = _ctx_get(structure, "axis_x", None)
-        axis_y = _ctx_get(structure, "axis_y", None)
-
-        grid = _ctx_get(structure, "grid", None)
-        if axis_x is None and grid is not None:
-            axis_x = _ctx_get(grid, "axis_x", None)
-        if axis_y is None and grid is not None:
-            axis_y = _ctx_get(grid, "axis_y", None)
-
-        footprint = _ctx_get(structure, "footprint", None)
-        W = None
-        if footprint is not None:
-            W = _ctx_get(footprint, "width", None) or _ctx_get(footprint, "W", None)
-        if W is None:
-            W = _ctx_get(structure, "W", None) or _ctx_get(structure, "width", None)
-
-        z0 = float(_ctx_get(structure, "z0", 0.0))
-        z_plate = float(_ctx_get(structure, "z_plate", _ctx_get(structure, "plate_z", 2.2)))
-
-        roof_pitch_deg = float(_ctx_get(structure, "roof_pitch_deg", _ctx_get(structure, "roof_pitch", 50.0)))
-        kehl_frac = float(_ctx_get(structure, "kehl_frac", _ctx_get(structure, "collar_frac", 0.58)))
-
-        name = _ctx_get(structure, "name", None) or _ctx_get(structure, "house_name", None)
-        meta = _ctx_get(structure, "_meta", None) or _ctx_get(structure, "meta", None) or {}
-
-    if axis_x is None:
-        raise ValueError("structure must provide axis_x (or structure.grid.axis_x)")
-    if axis_y is None:
-        if W is None:
-            raise ValueError("structure must provide axis_y (or width W to derive axis_y)")
-        W = float(W)
-        axis_y = [-W / 2.0, 0.0, +W / 2.0]
-
-    axis_x = [float(x) for x in axis_x]
-    axis_y = [float(y) for y in axis_y]
-
-    # name selection (avoid placeholder "Structure")
-    placeholder_names = {"structure", "struct", "house", "bldg", "building", "object", "data"}
-    name_norm = str(name).strip().lower() if name is not None else ""
-    fb_norm = str(fallback_name).strip() if fallback_name else ""
-
-    if (not name_norm) or (name_norm in placeholder_names):
-        name = fallback_name or "House"
-    else:
-        # prefer House_XX if provided by runner
-        if fallback_name and fb_norm.lower().startswith("house_") and not name_norm.startswith("house_"):
-            name = fallback_name
-
-    # Meta best effort
-    meta_out: Dict[str, Any] = {}
-    if isinstance(meta, dict):
-        meta_out.update(meta)
-    if "dims" not in meta_out:
-        try:
-            meta_out["dims"] = f"fields={len(axis_x)-1} | W={abs(axis_y[0])*2:.3f}m | plate={z_plate:.3f}m"
-        except Exception:
-            pass
-
-    # Profiles (meters) — phase3 defaults
-    profile_post = (0.18, 0.18)         # w,d
-    profile_plate = (0.16, 0.20)        # w,d
-    profile_post_hall = (0.20, 0.20)    # for posts reaching ridge
-    profile_rafter = (0.12, 0.18)
+def _ensure_subcollections(root_collection: bpy.types.Collection) -> Dict[str, bpy.types.Collection]:
+    col_fachwerk = _ensure_collection("Fachwerk", parent=root_collection)
+    col_frame = _ensure_collection("Frame", parent=col_fachwerk)
+    col_roof = _ensure_collection("Roof", parent=col_fachwerk)
+    col_openings = _ensure_collection("Openings", parent=col_fachwerk)
+    col_braces = _ensure_collection("Braces", parent=col_fachwerk)
+    col_infills = _ensure_collection("Infills", parent=col_fachwerk)
+    col_debug = _ensure_collection("Debug", parent=col_fachwerk)
 
     return {
-        "name": str(name),
-        "axis_x": axis_x,
-        "axis_y": axis_y,
-        "z0": float(z0),
-        "z_plate": float(z_plate),
-        "roof_pitch_deg": float(roof_pitch_deg),
-        "kehl_frac": float(kehl_frac),
-        "profile_post": profile_post,
-        "profile_plate": profile_plate,
-        "profile_post_hall": profile_post_hall,
-        "profile_rafter": profile_rafter,
-        "_meta": meta_out,
+        "fachwerk": col_fachwerk,
+        "frame": col_frame,
+        "roof": col_roof,
+        "openings": col_openings,
+        "braces": col_braces,
+        "infills": col_infills,
+        "debug": col_debug,
     }
+
+
+# ------------------------------------------------------------
+# House coercion (must provide axis_x/axis_y)
+# ------------------------------------------------------------
+
+def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
+    """
+    Retrieve canonical house dict from any available source.
+
+    Sources (first hit wins):
+      1) structure.notes["house"]
+      2) ctx.notes["house"]
+      3) dict style: obj["notes"]["house"] or obj["house"]
+      4) attribute style: obj.house
+      5) DERIVE from StructurePlan-like object (structure.grid + structure.footprint + walls)
+    """
+
+    def _is_house(d: Any) -> bool:
+        return isinstance(d, dict) and bool(d.get("axis_x")) and bool(d.get("axis_y"))
+
+    def _get_notes(obj: Any) -> Optional[dict]:
+        n = getattr(obj, "notes", None)
+        return n if isinstance(n, dict) else None
+
+    # 1) structure.notes["house"]
+    n = _get_notes(structure)
+    if n and _is_house(n.get("house")):
+        return n["house"]
+
+    # 2) ctx.notes["house"]
+    n = _get_notes(ctx)
+    if n and _is_house(n.get("house")):
+        return n["house"]
+
+    # 3) dict style
+    if isinstance(structure, dict):
+        nn = structure.get("notes")
+        if isinstance(nn, dict) and _is_house(nn.get("house")):
+            return nn["house"]
+        if _is_house(structure.get("house")):
+            return structure["house"]
+        if _is_house(structure):
+            return structure
+
+    if isinstance(ctx, dict):
+        nn = ctx.get("notes")
+        if isinstance(nn, dict) and _is_house(nn.get("house")):
+            return nn["house"]
+        if _is_house(ctx.get("house")):
+            return ctx["house"]
+        if _is_house(ctx):
+            return ctx
+
+    # 4) attribute style
+    h = getattr(structure, "house", None)
+    if _is_house(h):
+        return h
+    h = getattr(ctx, "house", None)
+    if _is_house(h):
+        return h
+
+    # 5) Derive from StructurePlan-like object
+    grid = getattr(structure, "grid", None)
+    footprint = getattr(structure, "footprint", None)
+    if grid is not None and hasattr(grid, "axis_x") and hasattr(grid, "axis_y") and footprint is not None:
+        axis_x = list(getattr(grid, "axis_x"))
+        axis_y = list(getattr(grid, "axis_y"))
+        if axis_x and axis_y:
+            # infer z0 / H_e from walls if present
+            z0 = 0.0
+            H_e = 2.6
+            walls = getattr(structure, "walls", None)
+            if walls:
+                try:
+                    z0 = min(float(w.z[0]) for w in walls)   # type: ignore[attr-defined]
+                    H_e = max(float(w.z[1]) for w in walls)  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+
+            # basic counts
+            fields = getattr(grid, "fields", None)
+            fields_n = len(fields) if isinstance(fields, (list, tuple)) else getattr(grid, "n_fields", None)
+
+            return {
+                "axis_x": axis_x,
+                "axis_y": axis_y,
+                "fields": fields_n if fields_n is not None else "?",
+                "L": float(getattr(footprint, "length", max(axis_x) - min(axis_x))),
+                "W": float(getattr(footprint, "width", max(axis_y) - min(axis_y))),
+                "z0": z0,
+                "H_e": H_e,
+
+                # conservative defaults (can be overridden upstream later)
+                "z_plate": 2.2,
+                "roof_pitch_deg": 45.0,
+                "roof_overhang": 0.35,
+                "profile_post": (0.20, 0.20),
+                "profile_plate": (0.18, 0.18),
+            }
+
+    raise RuntimeError(
+        "House metadata missing: need house with axis_x/axis_y (from ctx/structure notes OR derivable from structure.grid)."
+    )
+
+
+def _require_house_keys(house: Dict[str, Any]) -> None:
+    if not house.get("axis_x") or not house.get("axis_y"):
+        raise RuntimeError("Invalid house: axis_x/axis_y missing or empty")
+
+    # conservative defaults
+    house.setdefault("z0", 0.0)
+    house.setdefault("z_plate", 2.2)
+    house.setdefault("roof_pitch_deg", 45.0)
+    house.setdefault("roof_overhang", 0.35)
+    house.setdefault("profile_post", (0.20, 0.20))
+    house.setdefault("profile_plate", (0.18, 0.18))
+
+
+# ------------------------------------------------------------
+# Geometry helpers
+# ------------------------------------------------------------
+
+def _log_build_header(house_name: str, house: Dict[str, Any]) -> None:
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines = []
+    lines.append("=" * 70)
+    lines.append("BVILLAGE FACHWERK BUILD START")
+    lines.append(f"House      : {house_name}")
+    try:
+        W = float(house.get("W", 0.0))
+        z_plate = float(house.get("z_plate", 2.2))
+        fields = house.get("fields", "?")
+        lines.append(f"Dims      : fields={fields} | W={W:.3f}m | plate={z_plate:.3f}m")
+    except Exception:
+        pass
+    lines.append(f"Timestamp  : {ts}")
+    lines.append("=" * 70)
+    LOG.info("\n" + "\n".join(lines))
+
+
+def _house_basis(house: Dict[str, Any]) -> Tuple[float, float, float, float]:
+    axis_x = house["axis_x"]
+    axis_y = house["axis_y"]
+    x_min = min(axis_x)
+    x_max = max(axis_x)
+    center_x = 0.5 * (x_min + x_max)
+    y_min = min(axis_y)
+    y_max = max(axis_y)
+    halfW = 0.5 * (y_max - y_min)
+    return x_min, x_max, center_x, halfW
+
+
+def _map_post_member(member: Dict[str, Any], *, house: Dict[str, Any], z1_cap: Optional[float] = None) -> Tuple[Vector, Vector]:
+    x_min, x_max, center_x, halfW = _house_basis(house)
+    wall = member["wall"]
+    u = float(member["u"])
+    z0 = float(member.get("z0", house.get("z0", 0.0)))
+    z1 = float(member.get("z1", house.get("z_plate", 2.2)))
+    if z1_cap is not None:
+        z1 = min(z1, float(z1_cap))
+
+    if wall == "N":
+        return Vector((center_x + u, -halfW, z0)), Vector((center_x + u, -halfW, z1))
+    if wall == "S":
+        return Vector((center_x + u, +halfW, z0)), Vector((center_x + u, +halfW, z1))
+    if wall == "E":
+        return Vector((x_max, u, z0)), Vector((x_max, u, z1))
+    if wall == "W":
+        return Vector((x_min, u, z0)), Vector((x_min, u, z1))
+    raise ValueError(f"Unknown wall '{wall}'")
 
 
 # ------------------------------------------------------------
 # Phase 1/2: posts + plates
 # ------------------------------------------------------------
 
-def _build_posts_and_plates(house: Dict[str, Any], col_frame: bpy.types.Collection) -> None:
+def _build_posts_and_plates_legacy(house: Dict[str, Any], col_frame: bpy.types.Collection) -> None:
+    from .timber import make_beam_rect
+
     axis_x = house["axis_x"]
     axis_y = house["axis_y"]
-    z0 = house["z0"]
-    z_plate = house["z_plate"]
+    z0 = float(house["z0"])
+    z_plate = float(house["z_plate"])
 
     w_p, d_p = house["profile_post"]
     w_pl, d_pl = house["profile_plate"]
 
     # perimeter posts at each axis_x for both walls (S/N)
     for i, x in enumerate(axis_x):
-        # South wall (axis_y[0])
         make_beam_rect(
             f"Post_S_{i:02d}",
             Vector((x, axis_y[0], z0)),
@@ -303,7 +357,6 @@ def _build_posts_and_plates(house: Dict[str, Any], col_frame: bpy.types.Collecti
             depth=d_p,
             collection=col_frame,
         )
-        # North wall (axis_y[-1])
         make_beam_rect(
             f"Post_N_{i:02d}",
             Vector((x, axis_y[-1], z0)),
@@ -313,7 +366,93 @@ def _build_posts_and_plates(house: Dict[str, Any], col_frame: bpy.types.Collecti
             collection=col_frame,
         )
 
-    # Plates (Rähm) along S/N
+    # Plates along S/N
+    make_beam_rect(
+        "Plate_S",
+        Vector((axis_x[0], axis_y[0], z_plate)),
+        Vector((axis_x[-1], axis_y[0], z_plate)),
+        width=w_pl,
+        depth=d_pl,
+        collection=col_frame,
+    )
+    make_beam_rect(
+        "Plate_N",
+        Vector((axis_x[0], axis_y[-1], z_plate)),
+        Vector((axis_x[-1], axis_y[-1], z_plate)),
+        width=w_pl,
+        depth=d_pl,
+        collection=col_frame,
+    )
+
+
+def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection) -> int:
+    from .timber import make_beam_rect
+
+    members = fp.get("members")
+    if not isinstance(members, dict):
+        return 0
+
+    posts = members.get("posts") or []
+    if not isinstance(posts, list):
+        return 0
+
+    primary = [m for m in posts if m.get("role") == "PRIMARY_POST"]
+    if not primary:
+        return 0
+
+    z_plate = float(house["z_plate"])
+
+    by_wall: Dict[str, List[Dict[str, Any]]] = {"N": [], "S": [], "E": [], "W": []}
+    for m in primary:
+        w = m.get("wall")
+        if w in by_wall:
+            by_wall[w].append(m)
+
+    built = 0
+    for wall, arr in by_wall.items():
+        if not arr:
+            continue
+        arr_sorted = sorted(arr, key=lambda mm: float(mm.get("u", 0.0)))
+        for i, mm in enumerate(arr_sorted):
+            try:
+                p0, p1 = _map_post_member(mm, house=house, z1_cap=z_plate)
+            except Exception:
+                LOG.exception("Phase1/2: invalid PRIMARY_POST member: %s", mm)
+                continue
+
+            prof = mm.get("profile") or {}
+            w = float(prof.get("w", house["profile_post"][0]))
+            d = float(prof.get("d", house["profile_post"][1]))
+
+            make_beam_rect(
+                f"Post_{wall}_{i:02d}",
+                p0,
+                p1,
+                width=w,
+                depth=d,
+                collection=col_frame,
+            )
+            built += 1
+
+    return built
+
+
+def _build_posts_and_plates(house: Dict[str, Any], fp: Dict[str, Any], col_frame: bpy.types.Collection) -> None:
+    built_primary = _build_primary_posts_from_members(fp, house, col_frame)
+    if built_primary <= 0:
+        _build_posts_and_plates_legacy(house, col_frame)
+        return
+
+    LOG.info("Phase1/2: PRIMARY_POST from members built=%d", built_primary)
+
+    # Plates still from grid endpoints (for now)
+    from .timber import make_beam_rect
+
+    axis_x = house["axis_x"]
+    axis_y = house["axis_y"]
+    z_plate = float(house["z_plate"])
+    w_pl, d_pl = house["profile_plate"]
+
     make_beam_rect(
         "Plate_S",
         Vector((axis_x[0], axis_y[0], z_plate)),
@@ -333,308 +472,180 @@ def _build_posts_and_plates(house: Dict[str, Any], col_frame: bpy.types.Collecti
 
 
 # ------------------------------------------------------------
-# Phase 3: roof
+# Phase 3: roof, Phase 3.5 hall posts
 # ------------------------------------------------------------
 
 def _build_roof(house: Dict[str, Any], col_roof: bpy.types.Collection) -> Dict[str, Any]:
+    from .roof import build_roof_per_field
+
     axis_x = house["axis_x"]
     axis_y = house["axis_y"]
-    z_plate = house["z_plate"]
-    roof_pitch_deg = house["roof_pitch_deg"]
-    kehl_frac = house["kehl_frac"]
+    half_width = 0.5 * (max(axis_y) - min(axis_y))
 
-    # roof expects half_width (W/2)
-    half_width = abs(float(axis_y[0]))
-
-    profiles = {
-        "ridge": (0.18, 0.22),
-        "rafter": tuple(house.get("profile_rafter", (0.10, 0.16))),
-        "collar": (0.12, 0.16),
-    }
-
-    roof_res = build_roof_per_field(
+    return build_roof_per_field(
         axis_x=axis_x,
         half_width=half_width,
-        z_plate=z_plate,
-        roof_pitch_deg=roof_pitch_deg,
-        kehl_frac=kehl_frac,
+        z_plate=float(house["z_plate"]),
+        roof_pitch_deg=float(house["roof_pitch_deg"]),
         col_roof=col_roof,
-        profiles=profiles,
     )
-    return roof_res
 
-
-# ------------------------------------------------------------
-# Phase 3.5: Hall posts up to ridge
-# ------------------------------------------------------------
 
 def _build_hall_posts_to_ridge(house: Dict[str, Any], col_frame: bpy.types.Collection, z_ridge: float) -> None:
-    axis_x = house["axis_x"]
-    z0 = house["z0"]
-    w_h, d_h = house["profile_post_hall"]
+    from .timber import make_beam_rect
 
-    for i, x in enumerate(axis_x):
+    axis_y = house["axis_y"]
+    if 0.0 not in axis_y:
+        return
+
+    y = 0.0
+    z0 = float(house["z0"])
+    w_p, d_p = house["profile_post"]
+
+    for i, x in enumerate(house["axis_x"]):
         make_beam_rect(
-            f"Post_HALL_{i:02d}",
-            Vector((x, 0.0, z0)),
-            Vector((x, 0.0, z_ridge)),
-            width=w_h,
-            depth=d_h,
+            f"HallPost_{i:02d}",
+            Vector((x, y, z0)),
+            Vector((x, y, z_ridge)),
+            width=w_p,
+            depth=d_p,
             collection=col_frame,
         )
 
 
 # ------------------------------------------------------------
-# Main internal entry
+# Main builder
 # ------------------------------------------------------------
 
-def build_frame(house: Dict[str, Any], root_collection=None, clear_previous: bool = False) -> Dict[str, Any]:
+def build_frame(
+    *,
+    ctx: Any,
+    structure: Any,
+    frameplan: Dict[str, Any],
+    root_collection: bpy.types.Collection,
+    clear_previous: bool,
+) -> bpy.types.Collection:
+    clear_effective = True if FORCE_CLEAR_PREVIOUS else clear_previous
+
+    cols = _ensure_subcollections(root_collection)
+
+    if clear_effective:
+        removed = _clear_fachwerk_subtree(cols["fachwerk"])
+        LOG.info("clear_previous=%s -> cleared fachwerk subtree, removed_objects=%d", clear_previous, removed)
+        cols = _ensure_subcollections(root_collection)
+
+    house = _coerce_house(ctx, structure)
+    _require_house_keys(house)
+
+    _log_build_header(root_collection.name, house)
     LOG.info("build_frame() ENTER")
 
-    root = _resolve_root_collection(root_collection)
-    house_name = house.get("name", "House")
+    # Pre-flight contract audit (best-effort)
+    try:
+        from bvillage.domains.fachwerk.core.frameplan_contract import audit_frameplan_contract
+        audit_frameplan_contract(frameplan, house, strict=False)
+    except Exception:
+        LOG.exception("FramePlan contract audit failed unexpectedly")
 
-    col_fachwerk = _ensure_collection(f"{house_name}_Fachwerk", root)
-
-    # Phase collections
-    col_frame = _ensure_collection("Frame", col_fachwerk)
-    col_roof = _ensure_collection("Roof", col_fachwerk)
-    col_openings = _ensure_collection("Openings", col_fachwerk)
-    col_braces = _ensure_collection("Braces", col_fachwerk)
-    col_infills = _ensure_collection("Infills", col_fachwerk)
-    col_debug = _ensure_collection("Debug", col_fachwerk)
-
-    if clear_previous:
-        removed = _clear_collection_tree(col_fachwerk)
-        LOG.info("clear_previous=True -> cleared fachwerk subtree, removed_objects=%d", removed)
-
-        # recreate children after wipe
-        col_frame = _ensure_collection("Frame", col_fachwerk)
-        col_roof = _ensure_collection("Roof", col_fachwerk)
-        col_openings = _ensure_collection("Openings", col_fachwerk)
-        col_braces = _ensure_collection("Braces", col_fachwerk)
-        col_infills = _ensure_collection("Infills", col_fachwerk)
-        col_debug = _ensure_collection("Debug", col_fachwerk)
-
-    # FramePlan artifact attached by wrapper / explicit API
-    fp_dict = house.get("_frameplan")
-
-    # --------------------------------------------------------
-    # Pre-flight: FramePlan contract audit (data-only)
-    # --------------------------------------------------------
-    if isinstance(fp_dict, dict):
-        try:
-            from bvillage.domains.fachwerk.core.frameplan_contract import audit_frameplan_contract
-            audit_frameplan_contract(fp_dict, house, strict=False)
-        except Exception:
-            # keep building, but make it extremely visible
-            LOG.exception("FramePlan contract audit failed unexpectedly")
-    else:
-        LOG.info("FramePlan contract audit skipped (no frameplan artifact found)")
-
-    _build_posts_and_plates(house, col_frame)
+    # Phase1/2
+    _build_posts_and_plates(house, frameplan, cols["frame"])
     LOG.info("Phase1/2 posts+plates done")
 
-    roof_res = _build_roof(house, col_roof)
+    # Phase3
+    roof_res = _build_roof(house, cols["roof"])
     LOG.info("Phase3 roof done")
 
-    _build_hall_posts_to_ridge(house, col_frame, roof_res["z_ridge"])
+    # Phase3.5
+    try:
+        z_ridge = float(roof_res.get("z_ridge"))
+    except Exception:
+        z_ridge = float(house["z_plate"]) + 1.0
+    _build_hall_posts_to_ridge(house, cols["frame"], z_ridge)
     LOG.info("Hall posts through to ridge done")
 
-    # --------------------------------------------------------
-    # Phase 4B: Opening frames
-    # --------------------------------------------------------
-    if isinstance(fp_dict, dict):
-        try:
-            from .opening_frames import build_opening_frames
-            build_opening_frames(
-                fp=fp_dict,
-                house=house,
-                collection=col_openings,
-            )
-            LOG.info("Phase4B opening frames done")
-        except ModuleNotFoundError:
-            LOG.info("Phase4B opening frames skipped (opening_frames.py not present)")
-        except Exception:
-            LOG.exception("Phase4B opening frames failed")
+    # Phase4 modules
+    from .opening_frames import build_opening_frames
+    from .braces import build_braces_corner_band
+    from .infills import build_infills
+    from .integrity import check_integrity
 
-    # --------------------------------------------------------
-    # Phase 4C: Knee braces (corner-only)
-    # --------------------------------------------------------
-    if isinstance(fp_dict, dict):
-        try:
-            from .braces import build_knee_braces_corner_only, BraceConfig
-            build_knee_braces_corner_only(
-                fp=fp_dict,
-                house=house,
-                collection=col_braces,
-                config=BraceConfig(debug=True),
-                debug_collection=col_debug,
-            )
-            LOG.info("Phase4C braces done")
-        except ModuleNotFoundError:
-            LOG.info("Phase4C braces skipped (braces.py not present)")
-        except Exception:
-            LOG.exception("Phase4C braces failed")
+    _call_compat(build_opening_frames, fp=frameplan, house=house, collection=cols["openings"], debug=False)
+    LOG.info("Phase4B opening frames done")
 
-    # --------------------------------------------------------
-    # Phase 4A: Infills (Gefache)
-    # --------------------------------------------------------
-    if isinstance(fp_dict, dict):
-        try:
-            from .infills import build_infills, InfillConfig
-            build_infills(
-                fp=fp_dict,
-                house=house,
-                collection=col_infills,
-                config=InfillConfig(debug=True),
-                debug_collection=col_debug,
-            )
-            LOG.info("Phase4A infills done")
-        except Exception:
-            LOG.exception("Phase4A infills failed")
-    else:
-        LOG.info("Phase4A infills skipped (no frameplan artifact found)")
+    _call_compat(build_braces_corner_band, fp=frameplan, house=house, collection=cols["braces"], debug=False)
+    LOG.info("Phase4C braces done")
 
-    # --------------------------------------------------------
-    # End summary (IMPORTANT: must be inside build_frame scope)
-    # --------------------------------------------------------
+    _call_compat(build_infills, fp=frameplan, house=house, collection=cols["infills"], debug=False)
+    LOG.info("Phase4A infills done")
+
     LOG.info(
         "BUILD SUMMARY | cols: frame=%d roof=%d openings=%d braces=%d infills=%d debug=%d",
-        _count_objects(col_frame),
-        _count_objects(col_roof),
-        _count_objects(col_openings),
-        _count_objects(col_braces),
-        _count_objects(col_infills),
-        _count_objects(col_debug),
+        _count_objects(cols["frame"]),
+        _count_objects(cols["roof"]),
+        _count_objects(cols["openings"]),
+        _count_objects(cols["braces"]),
+        _count_objects(cols["infills"]),
+        _count_objects(cols["debug"]),
     )
+    LOG.info("scene objects total=%d", len(bpy.data.objects))
+    LOG.info("roof=%d", _count_objects(cols["roof"]))
 
-    # Optional: keep your old roof count (scene-wide) if you like
-    try:
-        names = [o.name for o in bpy.context.scene.objects]
-        roof_count = sum(n.startswith(("Rafter_", "Kehlbalken_", "Firstpfette")) for n in names)
-        LOG.info("scene objects total=%d", len(names))
-        LOG.info("roof=%d", roof_count)
-    except Exception:
-        LOG.exception("Failed to compute scene stats")
+    ok = check_integrity(fp=frameplan, house=house, collections=cols)
+    if not ok:
+        LOG.error("Integrity check failed (see previous errors)")
 
-    # --------------------------------------------------------
-    # Post-flight: Build integrity audit (scene vs plan)
-    # --------------------------------------------------------
-    if isinstance(fp_dict, dict):
-        try:
-            # Current module name: integrity.py (we can rename later to build_contract.py)
-            from .integrity import run_integrity_checks, IntegrityConfig
-            run_integrity_checks(
-                fp=fp_dict,
-                house=house,
-                col_frame=col_frame,
-                col_roof=col_roof,
-                col_openings=col_openings,
-                col_braces=col_braces,
-                col_infills=col_infills,
-                col_debug=col_debug,
-                config=IntegrityConfig(strict=False, tol_plane=0.03),
-            )
-        except ModuleNotFoundError:
-            LOG.info("Post-flight integrity skipped (integrity.py not present)")
-        except Exception:
-            LOG.exception("Post-flight integrity failed unexpectedly")
-    else:
-        LOG.info("Post-flight integrity skipped (no frameplan artifact)")
-
-    return {
-        "z_ridge": roof_res.get("z_ridge"),
-        "z_kehl": roof_res.get("z_kehl"),
-        "y_kehl": roof_res.get("y_kehl"),
-    }
+    return cols["fachwerk"]
 
 
 # ------------------------------------------------------------
-# New explicit artifact-driven API
+# Public API (explicit)
 # ------------------------------------------------------------
 
 def build_fachwerk_frame(
     *,
-    ctx: Optional[Any],
+    ctx: Any,
     structure: Any,
     frameplan: Dict[str, Any],
-    root_collection=None,
-    clear_previous: bool = False,
-) -> Dict[str, Any]:
-    """
-    Explicit artifact-driven entrypoint.
-
-    This function MUST NOT read structure.notes.
-    All structural truth comes from `frameplan`.
-    """
-    rc = root_collection
-    house_instance_name = _best_root_house_name(rc)
-    house = _coerce_house(structure, fallback_name=house_instance_name)
-
-    house["_frameplan"] = frameplan
-
-    _log_build_header(house["name"], meta=house.get("_meta"))
-
+    root_collection: bpy.types.Collection,
+    clear_previous: bool = True,
+) -> bpy.types.Collection:
     return build_frame(
-        house,
-        root_collection=rc,
+        ctx=ctx,
+        structure=structure,
+        frameplan=frameplan,
+        root_collection=root_collection,
         clear_previous=clear_previous,
     )
 
 
 # ------------------------------------------------------------
-# Transitional wrapper (kept for runner compatibility)
+# Legacy wrapper (compat)
 # ------------------------------------------------------------
 
-def build_fachwerk_frame_from_structure_notes(*args, **kwargs) -> Dict[str, Any]:
-    """
-    BVILLAGE runner entrypoint (legacy compatibility).
-
-    Reads fachwerk.frameplan artifact from structure.notes and forwards
-    to explicit build_fachwerk_frame().
-    """
-    LOG.info("wrapper ENTER keys=%s", list(kwargs.keys()))
-
-    structure = kwargs.get("structure") or kwargs.get("structure_notes") or (args[0] if args else None)
-    if structure is None:
-        raise TypeError("build_fachwerk_frame_from_structure_notes: missing structure")
-
-    rc = kwargs.get("root_collection")
-
-    # --- Canonical artifact access ---
+def build_fachwerk_frame_from_structure_notes(
+    *,
+    ctx: Any,
+    structure: Any,
+    root_collection: bpy.types.Collection,
+    clear_previous: bool = True,
+) -> bpy.types.Collection:
     notes = getattr(structure, "notes", None)
-    if isinstance(structure, dict):
-        notes = structure.get("notes") or notes
-
     if not isinstance(notes, dict):
-        raise RuntimeError("Structure has no valid notes dict.")
+        raise RuntimeError("StructurePlan.notes missing/invalid; cannot read fachwerk.frameplan")
 
-    frameplan = get_domain_artifact(
+    fp_dict = get_domain_artifact(
         notes,
         domain="fachwerk",
         artifact="frameplan",
         legacy_aliases=("frameplan", "fachwerk.frameplan"),
     )
-
-    if not isinstance(frameplan, dict):
+    if fp_dict is None:
         raise RuntimeError("Missing required artifact: fachwerk.frameplan")
 
-    # --- Clear behaviour ---
-    runner_clear = bool(kwargs.get("clear_previous", False))
-    clear_effective = True if FORCE_CLEAR_PREVIOUS else runner_clear
-
-    LOG.info(
-        "clear_previous runner=%s effective=%s (FORCE_CLEAR_PREVIOUS=%s)",
-        runner_clear,
-        clear_effective,
-        FORCE_CLEAR_PREVIOUS,
-    )
-
     return build_fachwerk_frame(
-        ctx=None,
+        ctx=ctx,
         structure=structure,
-        frameplan=frameplan,
-        root_collection=rc,
-        clear_previous=clear_effective,
+        frameplan=fp_dict,
+        root_collection=root_collection,
+        clear_previous=clear_previous,
     )

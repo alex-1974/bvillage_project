@@ -344,3 +344,28 @@ def build_knee_braces_corner_only(
         stats["built"], stats["skipped_opening"], stats["skipped_small"]
     )
     return stats
+    
+# ---------------------------------------------------------------------
+# Public API compatibility (stable symbol expected by build_frame.py)
+# ---------------------------------------------------------------------
+
+def build_braces_corner_band(
+    *,
+    fp: Dict[str, Any],
+    house: Dict[str, Any],
+    collection: Optional[bpy.types.Collection],
+    debug: bool = False,
+) -> Dict[str, Any]:
+    """
+    Compatibility wrapper.
+    Historically build_frame.py imports build_braces_corner_band().
+    Internally we use build_knee_braces_corner_only().
+    """
+    cfg = BraceConfig(debug=bool(debug))
+    return build_knee_braces_corner_only(
+        fp=fp,
+        house=house,
+        collection=collection,
+        config=cfg,
+        debug_collection=collection,
+    )

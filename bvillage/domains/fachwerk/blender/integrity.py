@@ -301,3 +301,25 @@ def run_integrity_checks(
         raise RuntimeError(f"Integrity check failed: hard={len(hard_failures)} soft={len(soft_warnings)}")
 
     return result
+    
+# ---------------------------------------------------------------------
+# Public API compatibility (stable symbol expected by build_frame.py)
+# ---------------------------------------------------------------------
+
+def check_integrity(*, fp, house, collections):
+    """
+    Compatibility wrapper for build_frame.py.
+
+    Expects collections dict with keys:
+        frame, roof, openings, braces, infills, debug
+    """
+    return run_integrity_checks(
+        fp=fp,
+        house=house,
+        col_frame=collections["frame"],
+        col_roof=collections["roof"],
+        col_openings=collections["openings"],
+        col_braces=collections["braces"],
+        col_infills=collections["infills"],
+        col_debug=collections["debug"],
+    )
