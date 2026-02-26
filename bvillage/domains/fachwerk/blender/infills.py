@@ -1,10 +1,12 @@
 # bvillage/domains/fachwerk/blender/infills.py
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import bpy
 from mathutils import Vector
+
+from bvillage.core.materials.material_registry import resolve_for_builder
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.infills")
 
@@ -138,13 +140,15 @@ def _get_openings(fp: Dict[str, Any]) -> List[Dict[str, Any]]:
         if wall is None:
             continue
 
-        u0 = op.get("u0"); u1 = op.get("u1")
+        u0 = op.get("u0")
+        u1 = op.get("u1")
         if u0 is None or u1 is None:
             ur = op.get("u")
             if isinstance(ur, (list, tuple)) and len(ur) == 2:
                 u0, u1 = ur[0], ur[1]
 
-        z0 = op.get("z0"); z1 = op.get("z1")
+        z0 = op.get("z0")
+        z1 = op.get("z1")
         if z0 is None or z1 is None:
             zr = op.get("z")
             if isinstance(zr, (list, tuple)) and len(zr) == 2:
@@ -167,8 +171,10 @@ def _cell_hits_opening(wall: str, u0: float, u1: float, z0: float, z1: float, op
     for op in openings:
         if op.get("wall") != wall:
             continue
-        ou0 = float(op["u0"]); ou1 = float(op["u1"])
-        oz0 = float(op["z0"]); oz1 = float(op["z1"])
+        ou0 = float(op["u0"])
+        ou1 = float(op["u1"])
+        oz0 = float(op["z0"])
+        oz1 = float(op["z1"])
 
         if not (u1 <= ou0 or u0 >= ou1):
             if not (z1 <= oz0 or z0 >= oz1):
@@ -176,7 +182,56 @@ def _cell_hits_opening(wall: str, u0: float, u1: float, z0: float, z1: float, op
     return False
 
 
-def _make_infill_quad(collection: bpy.types.Collection, name: str, v00: Vector, v10: Vector, v11: Vector, v01: Vector) -> None:
+# ---------------------------------------------------------------------
+# Materials (local, deterministic)
+# ---------------------------------------------------------------------
+
+def _ensure_bv_material(mat_name: str, sample):
+    mat = bpy.data.materials.get(mat_name)
+    if mat is None:
+        mat = bpy.data.materials.new(mat_name)
+        mat.use_nodes = True
+
+    nt = mat.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    if bsdf is None:
+        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+
+    h = str(sample.base_color_hex).lstrip("#")
+    try:
+        r = int(h[0:2], 16) / 255.0
+        g = int(h[2:4], 16) / 255.0
+        b = int(h[4:6], 16) / 255.0
+    except Exception:
+        r, g, b = 0.8, 0.8, 0.8
+
+    bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+    bsdf.inputs["Roughness"].default_value = float(sample.roughness)
+    bsdf.inputs["Metallic"].default_value = float(sample.metallic)
+    return mat
+
+
+def _assign_material(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
+    if obj is None or obj.data is None:
+        return
+    mats = obj.data.materials
+    if len(mats) == 0:
+        mats.append(mat)
+    else:
+        mats[0] = mat
+
+
+def _make_infill_quad(
+    collection: bpy.types.Collection,
+    name: str,
+    v00: Vector,
+    v10: Vector,
+    v11: Vector,
+    v01: Vector,
+    *,
+    member_for_material: Optional[Dict[str, Any]] = None,
+    ctx_view: Any = None,
+) -> bpy.types.Object:
     mesh = bpy.data.meshes.new(name)
     obj = bpy.data.objects.new(mesh.name, mesh)
     collection.objects.link(obj)
@@ -190,6 +245,17 @@ def _make_infill_quad(collection: bpy.types.Collection, name: str, v00: Vector, 
     mesh.from_pydata(verts, [], [(0, 1, 2, 3)])
     mesh.update()
 
+    if member_for_material is not None and ctx_view is not None:
+        resolved, surface, sample = resolve_for_builder(
+            member_for_material,
+            ctx_view,
+            default_material_id="brick.historic_mid",
+        )
+        mat = _ensure_bv_material(f"BV_{resolved.id}", sample)
+        _assign_material(obj, mat)
+
+    return obj
+
 
 # ---------------------------------------------------------------------
 # Public API
@@ -200,6 +266,7 @@ def build_infills(
     fp: Dict[str, Any],
     house: Dict[str, Any],  # kept for signature compatibility
     collection: bpy.types.Collection,
+    ctx_view: Any = None,   # optional (dict view, preferred; ctx may be frozen)
 ):
     basis = _get_basis(fp)
     x_min = basis["x_min"]
@@ -223,8 +290,13 @@ def build_infills(
             continue
 
         wall = c.get("wall")
-        u0 = float(c["u0"]); u1 = float(c["u1"])
-        z0 = float(c["z0"]); z1 = float(c["z1"])
+        if wall not in ("N", "S", "E", "W"):
+            continue
+
+        u0 = float(c["u0"])
+        u1 = float(c["u1"])
+        z0 = float(c["z0"])
+        z1 = float(c["z1"])
 
         if wall == "N":
             v00 = Vector((center_x + u0, -halfW, z0))
@@ -241,15 +313,33 @@ def build_infills(
             v10 = Vector((x_max, u1, z0))
             v11 = Vector((x_max, u1, z1))
             v01 = Vector((x_max, u0, z1))
-        elif wall == "W":
+        else:  # "W"
             v00 = Vector((x_min, u0, z0))
             v10 = Vector((x_min, u1, z0))
             v11 = Vector((x_min, u1, z1))
             v01 = Vector((x_min, u0, z1))
-        else:
-            continue
 
-        _make_infill_quad(collection, f"Infill_{wall}_{built:04d}", v00, v10, v11, v01)
+        name = f"Infill_{wall}_{built:04d}"
+
+        # For material resolution, we create a lightweight "material role" wrapper
+        # so ctx_view.role defaults can target infill materials.
+        mat_member = dict(c)
+        mat_member["id"] = mat_member.get("id", name)
+        # This role is what ctx_view.material_id_default_by_role should map.
+        # (If absent, it falls back to default_material_id above.)
+        mat_member["role"] = mat_member.get("material_role", "INFILL_BRICK")
+
+        _make_infill_quad(
+            collection,
+            name,
+            v00,
+            v10,
+            v11,
+            v01,
+            member_for_material=mat_member,
+            ctx_view=ctx_view,
+        )
+
         built += 1
 
     LOG.info("Phase4A infills: members-first done built=%d", built)

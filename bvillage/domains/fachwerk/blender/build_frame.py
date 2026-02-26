@@ -3,13 +3,14 @@
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
-
 import inspect
+import hashlib
 
 import bpy
 from mathutils import Vector
 
 from bvillage.core.notes import get_domain_artifact
+from bvillage.core.materials.material_registry import resolve_for_builder
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.build_frame")
 
@@ -23,6 +24,124 @@ def _call_compat(func, /, **kwargs):
     allowed = set(sig.parameters.keys())
     filtered = {k: v for k, v in kwargs.items() if k in allowed}
     return func(**filtered)
+
+
+# ------------------------------------------------------------
+# Materials (Builder-side, deterministic)
+# ------------------------------------------------------------
+
+def _ensure_bv_material(mat_name: str, sample):
+    """
+    Create/update a Blender material with deterministic Principled BSDF values.
+
+    sample: RenderSample(base_color_hex, roughness, metallic)
+    """
+    mat = bpy.data.materials.get(mat_name)
+    if mat is None:
+        mat = bpy.data.materials.new(mat_name)
+        mat.use_nodes = True
+
+    nt = mat.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    if bsdf is None:
+        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+
+    h = str(sample.base_color_hex).lstrip("#")
+    try:
+        r = int(h[0:2], 16) / 255.0
+        g = int(h[2:4], 16) / 255.0
+        b = int(h[4:6], 16) / 255.0
+    except Exception:
+        r, g, b = 0.8, 0.8, 0.8
+
+    bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+    bsdf.inputs["Roughness"].default_value = float(sample.roughness)
+    bsdf.inputs["Metallic"].default_value = float(sample.metallic)
+
+    return mat
+
+
+def _assign_material(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
+    if obj is None or obj.data is None:
+        return
+    mats = obj.data.materials
+    if len(mats) == 0:
+        mats.append(mat)
+    else:
+        mats[0] = mat
+
+
+def _assign_member_material(
+    obj: Optional[bpy.types.Object],
+    member: Dict[str, Any],
+    ctx_view: Any,
+    *,
+    default_material_id: str,
+) -> None:
+    if obj is None:
+        return
+    try:
+        resolved, surface, sample = resolve_for_builder(member, ctx_view, default_material_id=default_material_id)
+        mat = _ensure_bv_material(f"BV_{resolved.id}", sample)
+        _assign_material(obj, mat)
+    except Exception:
+        LOG.exception("Material assignment failed for obj=%s member=%s", getattr(obj, "name", "?"), member)
+
+
+def _material_ctx_view(ctx: Any, *, house_name: str) -> dict:
+    """
+    ctx may be a frozen dataclass -> never mutate it.
+    We provide a dict "view" for material resolution + seed-based variation.
+    """
+    seed = getattr(ctx, "seed", None)
+    if seed is None:
+        seed = int.from_bytes(
+            hashlib.blake2b(str(house_name).encode("utf-8"), digest_size=8).digest(),
+            "big",
+            signed=False,
+        ) & 0x7FFFFFFF
+
+    return {
+        "seed": int(seed),
+
+        # MVP role → material
+        "material_id_default_by_role": {
+            # frame
+            "PRIMARY_POST": "timber.oak",
+            "HALL_POST": "timber.oak",
+            "EAVES_PLATE_N": "timber.oak",
+            "EAVES_PLATE_S": "timber.oak",
+            "EAVES_PLATE_E": "timber.oak",
+            "EAVES_PLATE_W": "timber.oak",
+
+            # braces / diagonal timber
+            "BRACE": "timber.spruce",
+
+            # infill (future: these roles must exist in infills module)
+            "INFILL_BRICK": "brick.historic_mid",
+            "INFILL_MORTAR": "mortar.lime_weak",
+
+            # opening frames
+            "OPENING_FRAME": "timber.oak",
+
+            # if ever modeled as members
+            "GLASS": "glass.soda_lime",
+            "IRON": "metal.wrought_iron",
+        },
+
+        # MVP role → surface
+        "surface_default_by_role": {
+            "PRIMARY_POST": {"condition": "aged", "finish": "planed"},
+            "HALL_POST": {"condition": "aged", "finish": "planed"},
+            "EAVES_PLATE_N": {"condition": "aged", "finish": "planed"},
+            "EAVES_PLATE_S": {"condition": "aged", "finish": "planed"},
+            "EAVES_PLATE_E": {"condition": "aged", "finish": "planed"},
+            "EAVES_PLATE_W": {"condition": "aged", "finish": "planed"},
+            "BRACE": {"condition": "aged", "finish": "sawn"},
+            "INFILL_BRICK": {"condition": "weathered", "finish": "whitewashed"},
+            "INFILL_MORTAR": {"condition": "weathered", "finish": "whitewashed"},
+        },
+    }
 
 
 # ------------------------------------------------------------
@@ -311,7 +430,7 @@ def _map_rail_member(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[
 # Phase 1/2: members-only posts + plates (NO LEGACY)
 # ------------------------------------------------------------
 
-def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection) -> int:
+def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
     from .timber import make_beam_rect
 
     members = fp.get("members")
@@ -350,20 +469,23 @@ def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any],
             w = float(prof.get("w", house["profile_post"][0]))
             d = float(prof.get("d", house["profile_post"][1]))
 
+            name = f"Post_{wall}_{i:02d}"
             make_beam_rect(
-                f"Post_{wall}_{i:02d}",
+                name,
                 p0,
                 p1,
                 width=w,
                 depth=d,
                 collection=col_frame,
             )
+            obj = col_frame.objects.get(name)
+            _assign_member_material(obj, mm, ctx_view, default_material_id="timber.oak")
             built += 1
 
     return built
 
 
-def _build_plates_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection) -> int:
+def _build_plates_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
     from .timber import make_beam_rect
 
     members = fp.get("members")
@@ -392,25 +514,28 @@ def _build_plates_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_fr
         d = float(prof.get("d", house["profile_plate"][1]))
 
         wall = str(m.get("wall", "?"))
+        name = f"Plate_{wall}"
         make_beam_rect(
-            f"Plate_{wall}",
+            name,
             p0,
             p1,
             width=w,
             depth=d,
             collection=col_frame,
         )
+        obj = col_frame.objects.get(name)
+        _assign_member_material(obj, m, ctx_view, default_material_id="timber.oak")
         built += 1
 
     return built
 
 
-def _build_posts_and_plates(house: Dict[str, Any], fp: Dict[str, Any], col_frame: bpy.types.Collection) -> None:
-    built_primary = _build_primary_posts_from_members(fp, house, col_frame)
+def _build_posts_and_plates(house: Dict[str, Any], fp: Dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> None:
+    built_primary = _build_primary_posts_from_members(fp, house, col_frame, ctx_view)
     if built_primary <= 0:
         raise RuntimeError("members-first required: missing/empty members.posts PRIMARY_POST")
 
-    built_plates = _build_plates_from_members(fp, house, col_frame)
+    built_plates = _build_plates_from_members(fp, house, col_frame, ctx_view)
     if built_plates <= 0:
         raise RuntimeError("members-first required: missing/empty members.rails EAVES_PLATE_*")
 
@@ -437,7 +562,7 @@ def _build_roof(house: Dict[str, Any], col_roof: bpy.types.Collection) -> Dict[s
     )
 
 
-def _build_hall_posts_to_ridge(house: Dict[str, Any], col_frame: bpy.types.Collection, z_ridge: float) -> None:
+def _build_hall_posts_to_ridge(ctx_view: Any, house: Dict[str, Any], col_frame: bpy.types.Collection, z_ridge: float) -> None:
     from .timber import make_beam_rect
 
     axis_y = house["axis_y"]
@@ -449,14 +574,20 @@ def _build_hall_posts_to_ridge(house: Dict[str, Any], col_frame: bpy.types.Colle
     w_p, d_p = house["profile_post"]
 
     for i, x in enumerate(house["axis_x"]):
+        name = f"HallPost_{i:02d}"
         make_beam_rect(
-            f"HallPost_{i:02d}",
+            name,
             Vector((x, y, z0)),
             Vector((x, y, z_ridge)),
             width=w_p,
             depth=d_p,
             collection=col_frame,
         )
+
+        # synthetic member for deterministic material/surface
+        member = {"role": "HALL_POST", "id": name, "wall": "MID", "u": float(x)}
+        obj = col_frame.objects.get(name)
+        _assign_member_material(obj, member, ctx_view, default_material_id="timber.oak")
 
 
 # ------------------------------------------------------------
@@ -481,6 +612,9 @@ def build_frame(
     house = _coerce_house(ctx, structure)
     _require_house_keys(house)
 
+    # NEVER mutate ctx (ctx may be frozen dataclass)
+    ctx_view = _material_ctx_view(ctx, house_name=root_collection.name)
+
     _log_build_header(root_collection.name, house)
     LOG.info("build_frame() ENTER")
 
@@ -491,7 +625,7 @@ def build_frame(
         raise RuntimeError(f"FramePlan contract failed: hard={len(report.hard)}")
 
     # Phase1/2 (members-only)
-    _build_posts_and_plates(house, frameplan, cols["frame"])
+    _build_posts_and_plates(house, frameplan, cols["frame"], ctx_view)
     LOG.info("Phase1/2 posts+plates done")
 
     # Phase3
@@ -503,7 +637,7 @@ def build_frame(
         z_ridge = float(roof_res.get("z_ridge"))
     except Exception:
         z_ridge = float(house["z_plate"]) + 1.0
-    _build_hall_posts_to_ridge(house, cols["frame"], z_ridge)
+    _build_hall_posts_to_ridge(ctx_view, house, cols["frame"], z_ridge)
     LOG.info("Hall posts through to ridge done")
 
     from bvillage.domains.fachwerk.core.frameplan import normalize_frameplan_dict
@@ -515,13 +649,16 @@ def build_frame(
     from .infills import build_infills
     from .integrity import check_integrity
 
-    _call_compat(build_opening_frames, fp=frameplan, house=house, collection=cols["openings"], debug=False)
+    _call_compat(build_opening_frames, fp=frameplan, house=house,
+             collection=cols["openings"], ctx_view=ctx_view)
     LOG.info("Phase4B opening frames done")
 
-    _call_compat(build_braces_corner_band, fp=frameplan, house=house, collection=cols["braces"], debug=False)
+    _call_compat(build_braces_corner_band, fp=frameplan, house=house,
+             collection=cols["braces"], ctx_view=ctx_view)
     LOG.info("Phase4C braces done")
 
-    _call_compat(build_infills, fp=frameplan, house=house, collection=cols["infills"], debug=False)
+    _call_compat(build_infills, fp=frameplan, house=house,
+             collection=cols["infills"], ctx_view=ctx_view)
     LOG.info("Phase4A infills done")
 
     LOG.info(
