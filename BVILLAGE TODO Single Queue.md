@@ -24,6 +24,65 @@ Scalable to 50+ archetypes without duplication.
 
 ---
 
+## ARC-003  Plot & Envelope Foundation
+
+Status: planned  
+Priority: high  
+Target: pre v0.2.0 groundwork  
+
+Goal:
+
+Introduce polygon-based Plot and minimal 3D envelope model
+without breaking current Langhaus stability.
+
+Tasks:
+
+- [ ] Add Plot dataclass (polygon boundary + terrain plane MVP)
+- [ ] Add Footprint.polygon_local (retain rect helper for compatibility)
+- [ ] Add Placement abstraction (world transform)
+- [ ] Implement deterministic polygon containment validator
+- [ ] Implement buildable polygon inset (simple miter/bevel policy)
+- [ ] Implement terrain_z() for plane model
+- [ ] Implement Δz slope analysis utility
+- [ ] Keep Grid rectangular internally (masked by footprint)
+
+Rationale:
+
+Prepares support for:
+
+- hanglage
+- basements
+- corner logic
+- future bridge/tower expansion
+
+without touching Domain or Builder contracts.
+
+---
+
+## ARC-004  3D Envelope MVP
+
+Status: planned  
+Priority: medium  
+
+Goal:
+
+Allow multi-level and below-ground modeling using constraint logic,
+not procedural special cases.
+
+Tasks:
+
+- [ ] Add levels abstraction (positive + negative)
+- [ ] Add vertical_rules (max_height, max_depth)
+- [ ] Implement 3D fit validator (horizontal + vertical checks)
+- [ ] Define FFL heuristic (street-aligned)
+- [ ] Log envelope violations as Issue objects
+- [ ] Add simple support_zones + clearance_zones schema
+
+Rationale:
+
+Basements, partial underground, bridges, and height limits
+become constraint-based instead of special-case logic.
+
 ## ARC-002  Role-Based Generation Pipeline
 Status: active
 Priority: high
@@ -289,3 +348,93 @@ Tasks:
 - Variation must be deterministic.
 - No anachronistic optimization.
 - Scalability over duplication.
+
+# TODO – Naming Refactor Phase
+Status: PLANNED  
+Priority: HIGH  
+Target: Next structural stabilization window  
+
+---
+
+## 🎯 Goal
+
+Align all existing files and public functions with the  
+**BVILLAGE Naming Policy v0.1 (Nadine Policy)**.
+
+Ensure consistent usage of:
+
+- `derive_` → domain-core artifact computation  
+- `build_`  → Blender emission only  
+- `plan_`   → type-layer semantic planning  
+- `validate_` / `audit_` → checks  
+- `policy_` / `schema_` / `mesh_` where applicable  
+
+No mixed conventions allowed in new modules.
+
+---
+
+## 📦 Scope
+
+### 1️⃣ Domain-Core Renames
+
+- `axes_u.py` → `derive_axes_u.py`
+- `axes_z.py` → `derive_axes_z.py`
+- `frameplan.py` → `derive_frameplan.py`
+- `openings_norm.py` → `normalize_openings.py`
+- `wall_tags.py` → `derive_wall_tags.py`
+- `frameplan_contract.py` → `audit_frameplan_contract.py`
+
+---
+
+### 2️⃣ Domain-Blender Renames
+
+- `braces.py` → `build_braces.py`
+- `infills.py` → `build_infills.py`
+- `roof.py` → `build_roof.py`
+- `opening_frames.py` → `build_opening_frames.py`
+- `integrity.py` → `audit_integrity.py`
+- `timber.py` → `mesh_timber.py`
+
+---
+
+### 3️⃣ Optional Type-Layer Renames (Consistency Upgrade)
+
+- `planner.py` → `plan_structure.py`
+- `interior.py` → `plan_interior.py`
+- `openings.py` → `plan_openings.py`
+
+---
+
+## 🔁 Migration Steps
+
+1. Create dedicated branch: `refactor/naming-policy-v0.1`
+2. Rename files
+3. Update all imports
+4. Update test imports
+5. Run full test suite
+6. Confirm deterministic outputs unchanged
+7. Merge in one controlled commit
+
+---
+
+## ⚠️ Constraints
+
+- ❌ No functional changes during rename
+- ❌ No silent structural changes
+- ✅ Determinism must remain intact
+- ✅ All tests must pass
+- ✅ No leftover legacy names in new modules
+
+---
+
+## 📌 Definition of Done
+
+- No file violating `<role>_<aspect>.py` pattern
+- No ambiguous role names across layers
+- No generic file names (`utils.py`, `helpers.py`, `common.py`)
+- All public functions follow role verb convention
+- Repository grep for old names returns zero results
+
+---
+
+Naming clarity is part of architectural stability.
