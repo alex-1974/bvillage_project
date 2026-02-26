@@ -307,3 +307,32 @@ Priority: HIGH
 
 ---
 
+## MILESTONE v0.4.0 – Structural Intelligence
+
+Status: PLANNED
+Priority: HIGH
+
+Tasks:
+
+### STR-001
+- [ ] Implement span → section resolution
+- [ ] Add minimal section solver
+- [ ] Add utilization logging
+
+### MAT-001
+- [ ] Implement MaterialClass
+- [ ] Implement RenderProfile
+- [ ] Add resolve_material(member, ctx)
+
+### PHY-001
+- [ ] Implement PhysicalPlausibilityValidator (MVP)
+
+### FUTURE-PROOF SKELETONS
+- [ ] Add Plot dataclass (optional, unused)
+- [ ] Add InteriorPlan dataclass (empty allowed)
+- [ ] Standardize Issue object across validators
+
+### NR-0.4.0 Naming Window
+Activation condition:
+- All above tasks stable
+- Determinism confirmed

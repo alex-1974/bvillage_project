@@ -187,6 +187,15 @@ Example:
 
 Naming is part of architectural stability.
 
+### Naming Freeze Policy
+
+New files and functions must follow the defined naming policy immediately.
+
+Full repository rename is deferred to:
+NR-0.4.0 (post structural stabilization window).
+
+No mixed naming conventions allowed in new modules.
+
 # Structural Interface Separation
 
 BVILLAGE enforces strict separation between:
@@ -211,6 +220,18 @@ Blender:
 - builds exact members
 - applies materials
 - no structural decisions
+
+### Future-Proof Interface Requirement
+
+The following interfaces must exist even if not fully active:
+
+- Plot (external reality layer)
+- InteriorPlan (semantic interior layer)
+- Issue (standardized validation output)
+
+These interfaces must not alter domain logic until explicitly activated.
+
+This prevents architectural rewrites when expansion begins.
 
 ---
 
