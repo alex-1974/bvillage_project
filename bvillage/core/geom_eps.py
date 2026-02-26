@@ -56,3 +56,22 @@ def clamp(v: float, lo: float, hi: float) -> float:
     if hi < lo:
         lo, hi = hi, lo
     return lo if v < lo else hi if v > hi else v
+    
+def clamp01(v: float) -> float:
+    """Clamp value to [0, 1]."""
+    return clamp(v, 0.0, 1.0)
+
+
+def eps_eq(a: float, b: float, *, abs_tol: float = EPS_EQ) -> bool:
+    """EPS-aware equality."""
+    return approx_equal(a, b, abs_tol=abs_tol)
+
+
+def eps_le(a: float, b: float, *, abs_tol: float = EPS_EQ) -> bool:
+    """a <= b with EPS tolerance."""
+    return float(a) <= float(b) + abs_tol
+
+
+def eps_ge(a: float, b: float, *, abs_tol: float = EPS_EQ) -> bool:
+    """a >= b with EPS tolerance."""
+    return float(a) >= float(b) - abs_tol

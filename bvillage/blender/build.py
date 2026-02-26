@@ -140,7 +140,7 @@ def build_house(
         structure=structure,
         frameplan=frameplan,
         root_collection=col_structure,
-        clear_previous=False,
+        clear_previous=clear_previous,
     )
 
     # ---- Openings props placeholder ----

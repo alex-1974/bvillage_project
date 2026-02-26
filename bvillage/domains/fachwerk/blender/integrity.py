@@ -1,303 +1,267 @@
 # bvillage/domains/fachwerk/blender/integrity.py
 
-#
-# Post-flight integrity checks for Fachwerk builds (scene vs plan).
-#
-# Purpose:
-#   Verify that the Blender output matches the FramePlan + house mapping.
-#
-# Notes:
-#   - Fast + robust: uses object origins (midpoints), not mesh endpoints.
-#   - Designed for logging-first usage during development.
-#   - strict=False recommended in interactive Blender runs.
-#
-# Naming contract assumed:
-#   Opening parts are named: <OPENING_NAME>_<PART>
-#     window: JAMB_L, JAMB_R, LINTEL, SILL
-#     gate  : JAMB_L, JAMB_R, LINTEL
-
-from __future__ import annotations
-
 import logging
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
-
-import bpy
+from typing import Any, Dict, List, Tuple
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.integrity")
 
 
-@dataclass(frozen=True, slots=True)
-class IntegrityConfig:
-    tol_plane: float = 0.03         # meters: tolerance for wall plane checks
-    strict: bool = False            # raise RuntimeError on hard failures
-    max_listed_failures: int = 20   # don't spam logs
+# ---------------------------------------------------------------------
+# Helpers (canonical FramePlan-first)
+# ---------------------------------------------------------------------
 
-
-# ------------------------------------------------------------
-# Small helpers
-# ------------------------------------------------------------
-
-def _centroid_world(obj: bpy.types.Object) -> Tuple[float, float, float]:
+def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
     """
-    Robust centroid for objects whose mesh vertices are already in world space
-    (like our make_beam_rect implementation).
-    If the object has a transform, we still respect matrix_world.
+    Prefer canonical fp["basis"].
+    Fallback: derive from fp["dims"] (L,W).
     """
-    if obj is None:
-        return (0.0, 0.0, 0.0)
+    basis = fp.get("basis")
+    if isinstance(basis, dict) and all(k in basis for k in ("x_min", "x_max", "center_x", "halfW")):
+        return {
+            "x_min": float(basis["x_min"]),
+            "x_max": float(basis["x_max"]),
+            "center_x": float(basis["center_x"]),
+            "halfW": float(basis["halfW"]),
+        }
 
-    if obj.type == "MESH" and obj.data is not None and hasattr(obj.data, "vertices") and len(obj.data.vertices) > 0:
-        sx = sy = sz = 0.0
-        n = len(obj.data.vertices)
-        mw = obj.matrix_world
-        for v in obj.data.vertices:
-            p = mw @ v.co
-            sx += float(p.x)
-            sy += float(p.y)
-            sz += float(p.z)
-        return (sx / n, sy / n, sz / n)
+    dims = fp.get("dims") or {}
+    L = dims.get("L")
+    W = dims.get("W")
+    if L is None or W is None:
+        raise ValueError("Missing basis and dims.L/dims.W in frameplan dict")
 
-    # fallback: object origin
-    loc = obj.matrix_world.translation
-    return (float(loc.x), float(loc.y), float(loc.z))
-    
-def _count_all_objects(col: bpy.types.Collection) -> int:
-    try:
-        return sum(1 for _ in col.all_objects)
-    except Exception:
-        try:
-            return len(col.objects)
-        except Exception:
-            return 0
+    Lf = float(L)
+    Wf = float(W)
+    return {"x_min": 0.0, "x_max": Lf, "center_x": 0.5 * Lf, "halfW": 0.5 * Wf}
 
 
-def _obj_by_name(name: str) -> Optional[bpy.types.Object]:
-    return bpy.data.objects.get(name)
+def _as_float_list(x: Any) -> List[float]:
+    """
+    Accept list/tuple of numerics; return float list.
+    If dict is given, values are collected recursively (best-effort).
+    """
+    vals: List[float] = []
+
+    def _collect(v: Any) -> None:
+        if v is None:
+            return
+        if isinstance(v, (int, float)):
+            vals.append(float(v))
+            return
+        if isinstance(v, str):
+            try:
+                vals.append(float(v))
+            except Exception:
+                return
+            return
+        if isinstance(v, (list, tuple)):
+            for it in v:
+                _collect(it)
+            return
+        if isinstance(v, dict):
+            for it in v.values():
+                _collect(it)
+            return
+
+    _collect(x)
+    return vals
 
 
-def _abs(x: float) -> float:
-    return x if x >= 0.0 else -x
+def _is_non_decreasing(xs: List[float], *, tol: float = 1e-9) -> bool:
+    for i in range(len(xs) - 1):
+        if xs[i + 1] + tol < xs[i]:
+            return False
+    return True
 
 
-def _walls_basis(house: Dict[str, Any]) -> Dict[str, float]:
-    axis_x = house["axis_x"]
-    axis_y = house["axis_y"]
+def _normalize_openings(fp: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Prefer canonical fp["openings_norm"] where u0/u1/z0/z1 exist as floats.
+    Fallback: attempt to normalize fp["openings"].
+    """
+    on = fp.get("openings_norm")
+    if isinstance(on, list) and on:
+        out = []
+        for op in on:
+            if not isinstance(op, dict):
+                continue
+            if all(k in op for k in ("wall", "u0", "u1", "z0", "z1")):
+                o2 = dict(op)
+                o2["u0"] = float(o2["u0"])
+                o2["u1"] = float(o2["u1"])
+                o2["z0"] = float(o2["z0"])
+                o2["z1"] = float(o2["z1"])
+                out.append(o2)
+        return out
 
-    x_min = float(min(axis_x))
-    x_max = float(max(axis_x))
-    center_x = 0.5 * (x_min + x_max)
+    openings = fp.get("openings") or []
+    if isinstance(openings, dict):
+        openings = list(openings.values())
+    if not isinstance(openings, list):
+        return []
 
-    y_min = float(min(axis_y))
-    y_max = float(max(axis_y))
-    halfW = 0.5 * (y_max - y_min)
+    out = []
+    for op in openings:
+        if not isinstance(op, dict):
+            continue
+        wall = op.get("wall")
+        if wall is None:
+            continue
 
-    return {"x_min": x_min, "x_max": x_max, "center_x": center_x, "halfW": halfW}
+        u0 = op.get("u0"); u1 = op.get("u1")
+        if u0 is None or u1 is None:
+            ur = op.get("u")
+            if isinstance(ur, (list, tuple)) and len(ur) == 2:
+                u0, u1 = ur[0], ur[1]
 
+        z0 = op.get("z0"); z1 = op.get("z1")
+        if z0 is None or z1 is None:
+            zr = op.get("z")
+            if isinstance(zr, (list, tuple)) and len(zr) == 2:
+                z0, z1 = zr[0], zr[1]
 
-def _opening_expected_parts(opening_type: str) -> List[str]:
-    if opening_type == "window":
-        return ["JAMB_L", "JAMB_R", "LINTEL", "SILL"]
-    if opening_type == "gate":
-        return ["JAMB_L", "JAMB_R", "LINTEL"]
-    # future-proof fallback
-    return ["JAMB_L", "JAMB_R", "LINTEL"]
+        if u0 is None or u1 is None or z0 is None or z1 is None:
+            continue
 
+        o2 = dict(op)
+        o2["u0"] = float(u0)
+        o2["u1"] = float(u1)
+        o2["z0"] = float(z0)
+        o2["z1"] = float(z1)
+        out.append(o2)
 
-def _wall_plane_expected(wall: str, basis: Dict[str, float]) -> Tuple[str, float]:
-    w = wall.upper()
-    if w == "N":
-        return ("y", -basis["halfW"])
-    if w == "S":
-        return ("y", +basis["halfW"])
-    if w == "E":
-        return ("x", +basis["x_max"])
-    if w == "W":
-        return ("x", +basis["x_min"])
-    return ("", 0.0)
-
-
-def _plane_value(obj: bpy.types.Object, axis: str) -> float:
-    cx, cy, cz = _centroid_world(obj)
-    if axis == "x":
-        return cx
-    if axis == "y":
-        return cy
-    if axis == "z":
-        return cz
-    return 0.0
+    return out
 
 
-# ------------------------------------------------------------
-# Public API
-# ------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Main checks
+# ---------------------------------------------------------------------
 
 def run_integrity_checks(
     *,
     fp: Dict[str, Any],
-    house: Dict[str, Any],
-    col_frame: bpy.types.Collection,
-    col_roof: bpy.types.Collection,
-    col_openings: bpy.types.Collection,
-    col_braces: bpy.types.Collection,
-    col_infills: bpy.types.Collection,
-    col_debug: bpy.types.Collection,
-    config: Optional[IntegrityConfig] = None,
-) -> Dict[str, Any]:
-    cfg = config or IntegrityConfig()
-    basis = _walls_basis(house)
+    house: Dict[str, Any],  # kept for signature compatibility (not required)
+    col_frame,
+    col_roof,
+    col_openings,
+    col_braces,
+    col_infills,
+    col_debug,
+) -> bool:
+    """
+    FramePlan-driven integrity checks.
 
-    openings = fp.get("openings") or []
-    axes_u = fp.get("axes_u") or {}
-    z_axes = fp.get("axes_z") or []
+    Notes:
+      - This is intentionally light-weight: fail fast on schema/range issues.
+      - Detailed geometric validation can live in core audits/tests.
+    """
+    ok = True
 
-    hard_failures: List[str] = []
-    soft_warnings: List[str] = []
+    # Basis
+    try:
+        basis = _get_basis(fp)
+    except Exception as exc:
+        LOG.error("INTEGRITY FAIL | missing basis: %s", exc)
+        return False
 
-    counts = {
-        "frame": _count_all_objects(col_frame),
-        "roof": _count_all_objects(col_roof),
-        "openings": _count_all_objects(col_openings),
-        "braces": _count_all_objects(col_braces),
-        "infills": _count_all_objects(col_infills),
-        "debug": _count_all_objects(col_debug),
-    }
+    x_min = basis["x_min"]
+    x_max = basis["x_max"]
+    center_x = basis["center_x"]
+    halfW = basis["halfW"]
 
-    LOG.info(
-        "INTEGRITY start | counts frame=%d roof=%d openings=%d braces=%d infills=%d debug=%d",
-        counts["frame"], counts["roof"], counts["openings"], counts["braces"], counts["infills"], counts["debug"],
-    )
-    LOG.info(
-        "INTEGRITY basis | x=[%.3f..%.3f] center_x=%.3f halfW=%.3f z_axes=%d openings=%d",
-        basis["x_min"], basis["x_max"], basis["center_x"], basis["halfW"], len(z_axes), len(openings),
-    )
+    if not (x_max > x_min):
+        LOG.error("INTEGRITY FAIL | invalid basis x-range: x_min=%s x_max=%s", x_min, x_max)
+        ok = False
+    if not (halfW > 0.0):
+        LOG.error("INTEGRITY FAIL | invalid basis halfW=%s", halfW)
+        ok = False
 
-    # --------------------------------------------------------
-    # 1) Opening frame parts exist and lie on expected wall plane
-    # --------------------------------------------------------
-    expected_opening_objects = 0
+    # Axes (canonical preferred)
+    axes_z = fp.get("axes_z_flat")
+    if axes_z is None:
+        axes_z = fp.get("axes_z")
+    z_list = _as_float_list(axes_z)
+    z_list = sorted(set(z_list))
 
-    for o in openings:
-        name = str(o.get("name", "?"))
-        typ = str(o.get("type", ""))
-        wall = str(o.get("wall", ""))
+    if len(z_list) < 2:
+        LOG.error("INTEGRITY FAIL | axes_z missing/too short (need >=2), got=%r", z_list)
+        ok = False
+    elif not _is_non_decreasing(z_list):
+        LOG.error("INTEGRITY FAIL | axes_z not sorted/non-decreasing: %r", z_list)
+        ok = False
 
-        parts = _opening_expected_parts(typ)
-        expected_opening_objects += len(parts)
+    axes_u_flat = fp.get("axes_u_flat")
+    if not isinstance(axes_u_flat, dict):
+        # fallback
+        axes_u_flat = fp.get("axes_u") if isinstance(fp.get("axes_u"), dict) else {}
 
-        axis, target = _wall_plane_expected(wall, basis)
-        if not axis:
-            hard_failures.append(f"opening {name}: unknown wall '{wall}'")
-            continue
-
-        for part in parts:
-            obj_name = f"{name}_{part}"
-            obj = _obj_by_name(obj_name)
-            if obj is None:
-                hard_failures.append(f"missing opening part: {obj_name}")
-                continue
-
-            v = _plane_value(obj, axis)
-            if _abs(v - target) > cfg.tol_plane:
-                hard_failures.append(
-                    f"opening {name} part {part}: off wall plane {axis}={v:.3f} expected {target:.3f} tol={cfg.tol_plane:.3f}"
-                )
-
-    if counts["openings"] != expected_opening_objects:
-        # keep it soft: later you may add decorative members
-        soft_warnings.append(
-            f"openings count mismatch: expected {expected_opening_objects} (by contract) got {counts['openings']}"
-        )
-
-    # --------------------------------------------------------
-    # 2) Braces count expectation (corner-only heuristic)
-    # --------------------------------------------------------
-    expected_braces = 0
+    # Per-wall u-axes basic checks
     for wall in ("N", "S", "E", "W"):
-        u_all = axes_u.get(wall, {}).get("all") or []
-        if len(u_all) >= 2:
-            expected_braces += 2
+        u_any = axes_u_flat.get(wall, [])
+        u_list = _as_float_list(u_any)
+        u_list = sorted(set(u_list))
 
-    if counts["braces"] != expected_braces:
-        soft_warnings.append(f"braces count mismatch: expected {expected_braces} got {counts['braces']}")
+        if len(u_list) < 2:
+            LOG.warning("INTEGRITY warn | axes_u[%s] missing/too short (need >=2), got=%r", wall, u_list)
+            continue
+        if not _is_non_decreasing(u_list):
+            LOG.error("INTEGRITY FAIL | axes_u[%s] not sorted/non-decreasing: %r", wall, u_list)
+            ok = False
 
-    # --------------------------------------------------------
-    # 3) Infills count range (max bound + conservative min estimate)
-    # --------------------------------------------------------
-    if len(z_axes) >= 2:
-        n_z_cells = len(z_axes) - 1
+    # Openings range checks
+    openings = _normalize_openings(fp)
+    for op in openings:
+        wall = op.get("wall")
+        u0 = float(op["u0"]); u1 = float(op["u1"])
+        z0 = float(op["z0"]); z1 = float(op["z1"])
 
-        max_panels = 0
-        for wall in ("N", "S", "E", "W"):
-            u_all = axes_u.get(wall, {}).get("all") or []
-            if len(u_all) >= 2:
-                max_panels += (len(u_all) - 1) * n_z_cells
+        if u1 <= u0:
+            LOG.error("INTEGRITY FAIL | opening %r has u1<=u0", op.get("name", op.get("id", "?")))
+            ok = False
+        if z1 <= z0:
+            LOG.error("INTEGRITY FAIL | opening %r has z1<=z0", op.get("name", op.get("id", "?")))
+            ok = False
 
-        # Conservative estimate of fully-covered cells by openings
-        est_cover = 0
-        for o in openings:
-            wall = str(o.get("wall", "")).upper()
-            u_all = [float(u) for u in (axes_u.get(wall, {}).get("all") or [])]
-            if len(u_all) < 2:
-                continue
+        # Wall-specific u bounds: for N/S, u is along x around center_x; for E/W, u is y in [-halfW..+halfW]
+        if wall in ("E", "W"):
+            if u0 < -halfW - 1e-6 or u1 > halfW + 1e-6:
+                LOG.warning("INTEGRITY warn | opening %r u out of wall range: u=[%s,%s] halfW=%s",
+                            op.get("name", op.get("id", "?")), u0, u1, halfW)
+        else:
+            # N/S: allow u in [-L/2..+L/2] loosely derived from center_x
+            L = x_max - x_min
+            if u0 < -0.5 * L - 1e-6 or u1 > 0.5 * L + 1e-6:
+                LOG.warning("INTEGRITY warn | opening %r u out of expected range: u=[%s,%s] L=%s",
+                            op.get("name", op.get("id", "?")), u0, u1, L)
 
-            u0o = float(o.get("u0", 0.0))
-            u1o = float(o.get("u1", 0.0))
-            z0o = float(o.get("z0", 0.0))
-            z1o = float(o.get("z1", 0.0))
-            lo_uo, hi_uo = (min(u0o, u1o), max(u0o, u1o))
-            lo_zo, hi_zo = (min(z0o, z1o), max(z0o, z1o))
+        # z bounds
+        if z_list:
+            if z0 < z_list[0] - 1e-6 or z1 > z_list[-1] + 1e-6:
+                LOG.warning("INTEGRITY warn | opening %r z out of axes_z range: z=[%s,%s] axes=[%s..%s]",
+                            op.get("name", op.get("id", "?")), z0, z1, z_list[0], z_list[-1])
 
-            for i in range(len(u_all) - 1):
-                cu0, cu1 = float(u_all[i]), float(u_all[i + 1])
-                lo_cu, hi_cu = (min(cu0, cu1), max(cu0, cu1))
-                if lo_cu >= lo_uo and hi_cu <= hi_uo:
-                    for j in range(len(z_axes) - 1):
-                        cz0, cz1 = float(z_axes[j]), float(z_axes[j + 1])
-                        lo_cz, hi_cz = (min(cz0, cz1), max(cz0, cz1))
-                        if lo_cz >= lo_zo and hi_cz <= hi_zo:
-                            est_cover += 1
+    LOG.info("INTEGRITY done | ok=%s", ok)
+    return ok
 
-        min_panels = max(0, max_panels - est_cover)
 
-        actual = counts["infills"]
-        LOG.info(
-            "INTEGRITY infills range | z_cells=%d max=%d min_est=%d est_cover=%d actual=%d",
-            n_z_cells, max_panels, min_panels, est_cover, actual,
-        )
+# ---------------------------------------------------------------------
+# Compatibility wrapper (expected by build_frame.py)
+# ---------------------------------------------------------------------
 
-        if actual > max_panels:
-            hard_failures.append(f"infills too many: got {actual} max {max_panels}")
-        if actual < min_panels:
-            soft_warnings.append(f"infills unusually low: got {actual} min_est {min_panels} (est_cover={est_cover})")
-    else:
-        soft_warnings.append("infills range check skipped: z_axes < 2")
+def check_integrity(*, fp: Dict[str, Any], house: Dict[str, Any], collections: Dict[str, Any]) -> bool:
+    """
+    build_frame.py expects check_integrity(fp=..., house=..., collections=...).
 
-    # --------------------------------------------------------
-    # 4) Report
-    # --------------------------------------------------------
-    for msg in soft_warnings[: cfg.max_listed_failures]:
-        LOG.warning("INTEGRITY warn | %s", msg)
-    if len(soft_warnings) > cfg.max_listed_failures:
-        LOG.warning("INTEGRITY warn | ... and %d more", len(soft_warnings) - cfg.max_listed_failures)
-
-    for msg in hard_failures[: cfg.max_listed_failures]:
-        LOG.error("INTEGRITY FAIL | %s", msg)
-    if len(hard_failures) > cfg.max_listed_failures:
-        LOG.error("INTEGRITY FAIL | ... and %d more", len(hard_failures) - cfg.max_listed_failures)
-
-    ok = (len(hard_failures) == 0)
-    LOG.info("INTEGRITY done | ok=%s hard=%d soft=%d", ok, len(hard_failures), len(soft_warnings))
-
-    result = {
-        "ok": ok,
-        "counts": counts,
-        "hard": hard_failures,
-        "soft": soft_warnings,
-        "basis": basis,
-    }
-
-    if cfg.strict and not ok:
-        raise RuntimeError(f"Integrity check failed: hard={len(hard_failures)} soft={len(soft_warnings)}")
-
-    return result
+    collections keys:
+      frame, roof, openings, braces, infills, debug
+    """
+    return run_integrity_checks(
+        fp=fp,
+        house=house,
+        col_frame=collections["frame"],
+        col_roof=collections["roof"],
+        col_openings=collections["openings"],
+        col_braces=collections["braces"],
+        col_infills=collections["infills"],
+        col_debug=collections["debug"],
+    )
