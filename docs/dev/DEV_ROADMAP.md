@@ -48,6 +48,42 @@ Stabilize separation between:
 
 ---
 
+## ARC-001A Policy Axis Foundation (Rewrite Guard)
+
+Status: ACTIVE
+Priority: CRITICAL
+Target: v0.4.x (foundation only)
+
+Goal:
+Freeze the minimal structural foundation for the Policy Axis System
+without implementing full historical detail yet.
+
+This prevents later architectural rewrites.
+
+Scope (MVP only, no deep content yet):
+
+[ ] Introduce canonical PolicyStack structure
+[ ] Implement resolve_policy_stack(ctx) (empty-slot compatible)
+[ ] Define Canonical Parameter Tree (minimal skeleton only)
+[ ] Enforce patch-based merge discipline
+[ ] Add HARD error for unknown patch keys
+[ ] Add invariant validation hook (empty allowed)
+[ ] Ensure optional axes do not require changes in existing archetypes
+[ ] Add resolver-level reporting (for future diagnostics)
+
+Non-goals (for now):
+- No full StylePolicy library
+- No deep CulturePolicy content
+- No historical exhaustiveness
+- No combinatorial expansion
+
+Deliverable:
+Stable structural slots for future expansion.
+
+Rationale:
+Architectural axes must exist before large-scale variation begins.
+Otherwise future subtype or domain discoveries will require rewrites.
+
 ## ARC-002 Role-Based Generation Pipeline
 
 Status: ACTIVE
@@ -82,6 +118,13 @@ Target: v0.4.x
 
 **Goal:**
 Replace fixed beam dimensions with resolved sections.
+
+**Dependency:**
+- Must consume inputs from ResolvedPolicy (via resolve_policy_stack(ctx)).
+- No new hardcoded "magic section constants" outside policy/culture defaults.
+
+Non-goal (until ARC-001A is stable):
+- No region/epoch branching inside solver.
 
 **Pipeline:**
 
@@ -128,6 +171,13 @@ Single material definition for:
 
 * Physics
 * Rendering
+
+**Dependency:**
+- Material selection must be driven by ResolvedPolicy + domain CulturePolicy.
+- No region/epoch/wealth logic inside blender builders.
+
+Contract:
+- resolve_material(member, ctx, resolved_policy) is pure + deterministic.
 
 **Tasks:**
 

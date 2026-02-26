@@ -266,3 +266,208 @@ This prevents architectural rewrites when expansion begins.
 → contract breach
 
 These are considered architectural violations.
+
+------------------------------------------------------------
+14. POLICY AXIS SYSTEM
+------------------------------------------------------------
+
+14.1 Purpose
+
+The policy axis system defines how house variation is structured
+across time, region, construction domain, and topology.
+
+This system exists to prevent:
+    - policy explosion
+    - style creep into structural logic
+    - architectural rewrites after expansion
+    - hidden coupling between axes
+
+Balanced goals:
+    - historical accuracy
+    - combinatoric variety
+    - system stability
+
+
+------------------------------------------------------------
+14.2 AXIS HIERARCHY
+------------------------------------------------------------
+
+Policy axes are hierarchical and orthogonal.
+
+Primary Axes (identity-defining, structural impact):
+
+    A) ConstructionDomain
+        - defines structural grammar and load paths
+        - examples: timber_frame, blockbau, masonry, earth
+
+    B) Archetype
+        - defines plan topology family
+        - examples: langhaus, courtyard_house, townhouse, towerhouse
+
+Secondary Axes (strong modulation, planning layer):
+
+    C) TopologyModifier
+        - L-form, T-form, U-form, wing additions
+        - plot-reactive shape adaptations
+
+    D) VerticalModel
+        - stories count
+        - attic usage
+        - jetties / overhang floors
+
+    E) RoofSystem
+        - roof type
+        - pitch range
+        - overhang range
+        - eaves height
+
+    F) OpeningsStrategy
+        - semantic opening demand
+        - privacy/light bias
+        - defensive bias
+
+Tertiary Axes (contextual modulation only):
+
+    G) StyleContext
+        - region × epoch × wealth × settlement
+        - may modify ranges and biases
+        - must not redefine topology or construction domain
+
+    H) Noise
+        - deterministic micro-variation
+        - never structural
+
+
+Rule:
+Lower-tier axes may modulate parameters
+but must never replace or redefine higher-tier axes.
+
+
+------------------------------------------------------------
+14.3 POLICY STACK CONTRACT
+------------------------------------------------------------
+
+Planner must resolve policies via a stack.
+
+Mandatory resolution flow:
+
+    resolve_policy_stack(ctx) → ResolvedPolicy
+
+Stack order:
+
+    1) BaseTypePolicy
+    2) TopologyModifierPolicy (optional)
+    3) VerticalPolicy (optional)
+    4) RoofPolicy (optional)
+    5) OpeningsPolicy (optional)
+    6) StylePolicy (optional)
+    7) CulturePolicy (domain-specific, optional)
+    8) ConstraintsPolicy (optional)
+    9) NoisePolicy (optional)
+
+All policies are patches (deltas).
+None means “no modification”.
+
+Planner must operate exclusively on ResolvedPolicy.
+
+
+------------------------------------------------------------
+14.4 PATCH DISCIPLINE
+------------------------------------------------------------
+
+14.4.1 Policies must not duplicate full parameter trees.
+
+14.4.2 Policies may only override canonical parameters.
+
+14.4.3 Unknown patch keys are forbidden.
+        Attempting to patch an undefined canonical key
+        must produce a HARD Issue.
+
+14.4.4 Silent fallback behavior is forbidden.
+
+
+------------------------------------------------------------
+14.5 DOMAIN ISOLATION
+------------------------------------------------------------
+
+ConstructionDomain and CulturePolicy:
+
+    - define constructive grammar
+    - generate structural members
+    - never read region/epoch directly
+    - consume already resolved policy data only
+
+StylePolicy must not:
+    - switch construction domains
+    - replace archetypes
+    - inject structural members
+
+Violation is architectural drift.
+
+
+------------------------------------------------------------
+14.6 SUBTYPE DISCIPLINE
+------------------------------------------------------------
+
+Subtypes must be:
+
+    - local to a specific archetype
+    OR
+    - implemented as an optional patch axis
+
+Subtypes must never become a mandatory global field.
+
+If a requested subtype is unsupported:
+    - explicit HARD or SOFT Issue must be produced
+    - silent ignore is forbidden
+
+
+------------------------------------------------------------
+14.7 INVARIANTS
+------------------------------------------------------------
+
+ResolvedPolicy must pass invariant validation before planning.
+
+Examples:
+
+    - openings fit into wall segments
+    - roof pitch compatible with story height
+    - topology modifier produces valid footprint
+    - bay counts produce non-degenerate grid
+
+Invariant violations must be logged and deterministic.
+
+
+------------------------------------------------------------
+14.8 ANTI-PATTERNS (ARCHITECTURAL FAILURES)
+------------------------------------------------------------
+
+Forbidden patterns:
+
+1) Style modifies topology directly
+2) Style switches construction domain
+3) Domain interprets region/epoch directly
+4) Planner contains hidden structural defaults
+5) Axes silently ignored
+
+These patterns cause long-term architectural instability
+and are considered violations of the system contract.
+
+
+------------------------------------------------------------
+14.9 EXPANSION RULE
+------------------------------------------------------------
+
+New axes may be added only as optional patch slots.
+
+Default must be neutral (no effect).
+
+Adding a new axis must not require modification
+of existing archetypes or domains.
+
+Structural grammar changes require:
+    - new ConstructionDomain
+    OR
+    - new CulturePolicy branch
+    OR
+    - schema version increment
