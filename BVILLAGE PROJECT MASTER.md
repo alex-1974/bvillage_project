@@ -138,4 +138,150 @@ Future system must satisfy:
 
 ---
 
+---
+
+# Plot & 3D Build Envelope Foundation
+
+Status: PREPARATION (pre v0.2.0 groundwork)
+
+## Motivation
+
+The current system assumes rectangular footprints defined by:
+
+- length
+- width
+- rotation
+
+This model is insufficient for:
+
+- polygonal parcels
+- corner lots
+- sloped terrain (hanglagen)
+- basements
+- bridges / clearance volumes
+- high-rise stepback logic
+- partial underground structures
+
+To avoid a future architectural refactor, BVILLAGE introduces:
+
+- Plot as polygonal core primitive
+- 3D BuildEnvelope as constraint system
+
+This is a foundational change and must be introduced carefully,
+without breaking existing Langhaus stability.
+
+---
+
+## Conceptual Separation
+
+### 1) Plot (External Reality Layer)
+
+Represents real-world parcel constraints.
+
+Contains:
+
+- boundary polygon (world coordinates)
+- buildable polygon (after setbacks)
+- street edge indices (one or multiple)
+- terrain model (plane MVP → heightmap later)
+
+Plot is owned by SettlementBuilder.
+Plot must NOT be known to Domain or Blender.
+
+---
+
+### 2) BuildEnvelope (Constraint Layer)
+
+Defines allowed construction volume.
+
+Contains:
+
+- horizontal buildable zones (above ground)
+- horizontal buildable zones (below ground)
+- support zones (where load transfer is allowed)
+- clearance zones (void volumes required)
+- vertical rules:
+  - max height
+  - max depth
+  - storey constraints
+
+All special cases (basement, corner building, bridge, tower)
+must be expressed through envelope constraints.
+
+No procedural special-casing allowed.
+
+---
+
+### 3) BuildingVolume (Decision Layer)
+
+Represents chosen building geometry.
+
+Contains:
+
+- footprint polygon (local coordinates)
+- placement (world transform)
+- levels (including negative values)
+- optional supports
+- optional void zones
+
+Fit validation must verify:
+
+- horizontal containment
+- vertical limits
+- support validity
+- clearance preservation
+
+---
+
+## Architectural Rules
+
+1. Domain must not depend on Plot.
+2. Blender must not perform containment checks.
+3. Grid remains rectangular internally (masked by footprint).
+4. Terrain logic must not exist in Builder.
+5. All fit violations produce Issue objects.
+
+---
+
+## Implementation Strategy
+
+Phase 1 (ARC-003):
+- Introduce Plot dataclass (polygon + terrain plane MVP)
+- Introduce Footprint.polygon_local
+- Introduce Placement abstraction
+- Add deterministic polygon containment validator
+- Add terrain_z() plane function
+- Add Δz slope analysis helper
+
+Phase 2 (ARC-004):
+- Introduce levels abstraction (positive + negative)
+- Add vertical rules
+- Implement 3D envelope validator
+- Define FFL heuristic (street-aligned)
+- Log envelope violations as Issues
+
+---
+
+## Determinism Guarantee
+
+All geometry checks must:
+
+- use centralized EPS tolerances
+- be seed-independent
+- be fully deterministic
+- never silently clamp
+
+---
+
+This foundation prepares:
+
+- hanglage support
+- basements
+- corner buildings
+- bridges
+- towers
+- future multi-domain expansion
+
+without modifying Domain or Builder contracts.
+
 End of snapshot.
