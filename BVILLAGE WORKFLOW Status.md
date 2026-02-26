@@ -119,12 +119,16 @@ Allowed:
 - Refactor domain heuristics
 - Adjust policy parameters
 - Change builder internals
+- Adjust builder implementation details (without altering structural truth)
 
 Not allowed:
 - Silent change of structural truth
 - Removing determinism
 - Mutating core data models
 - Bypassing notes schema
+- Reintroducing structural inference in Blender
+- Adding fallback geometry paths
+- Generating members inside Blender
 
 ------------------------------------------------------------
 6. VERSIONING STRATEGY (LIGHTWEIGHT)
@@ -138,6 +142,11 @@ PATCH: bugfix / determinism fix
 
 Version only updated when CHANGELOG entry written.
 
+Schema increments are mandatory when:
+- Structural truth changes
+- Members schema changes
+- Contract enforcement changes
+
 ------------------------------------------------------------
 7. FILE HYGIENE
 ------------------------------------------------------------
@@ -149,6 +158,8 @@ Version only updated when CHANGELOG entry written.
 - Every .py file must start with a canonical path comment.
 - Path comment must match repository location exactly.
 - During refactors, this line must be updated.
+- Builder modules must be members-only (schema_version >= 3)
+- No axis-derived geometry allowed
 
 ------------------------------------------------------------
 8. SNAPSHOT DISCIPLINE
@@ -158,10 +169,11 @@ Maintain short SNAPSHOT block in PROJECT_MASTER:
 
 Example:
 
-=== SNAPSHOT 6.4.x ===
-FramePlan authoritative.
-Builder refactor in progress.
-Posts now axes_u-driven.
+=== SNAPSHOT 0.3.x ===
+Members-first architecture active.
+schema_version = 3 enforced.
+Builder is pure renderer.
+No legacy fallbacks.
 === END SNAPSHOT ===
 
 This block is used to bootstrap new chats.
@@ -178,6 +190,8 @@ Before coding:
 - Only then implement.
 
 Architecture must be explicit.
+Structural decisions affecting members or schema_version
+require explicit architecture update before implementation.
 
 ------------------------------------------------------------
 10. PRINCIPLE OF CALM DEVELOPMENT

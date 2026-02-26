@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, Optional, Tuple
 
 import inspect
 
@@ -13,18 +13,10 @@ from bvillage.core.notes import get_domain_artifact
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.build_frame")
 
-# Global override: always rebuild cleanly
-FORCE_CLEAR_PREVIOUS = True
-
 
 def _call_compat(func, /, **kwargs):
-    """Call `func` with only the kwargs it actually accepts.
-
-    This is a small compatibility shim to reduce churn when domain modules
-    evolve their call signatures (e.g. debug flags, renamed collection params).
-    """
+    """Call `func` with only the kwargs it actually accepts."""
     sig = inspect.signature(func)
-    # If function accepts **kwargs, pass through unchanged.
     for p in sig.parameters.values():
         if p.kind == inspect.Parameter.VAR_KEYWORD:
             return func(**kwargs)
@@ -38,7 +30,6 @@ def _call_compat(func, /, **kwargs):
 # ------------------------------------------------------------
 
 def _count_objects(col: bpy.types.Collection) -> int:
-    """Count objects in a collection including children (best-effort)."""
     try:
         return len(list(col.all_objects))
     except Exception:
@@ -65,11 +56,6 @@ def _ensure_collection(name: str, parent: Optional[bpy.types.Collection] = None)
 
 
 def _unlink_and_remove_collection(col: bpy.types.Collection) -> None:
-    """
-    Robustly unlink and delete a collection subtree in Blender 4.x/5.x.
-
-    Blender 5: Collection has no `users_scene`. Use `users_collection`.
-    """
     # 1) Recursively remove children first
     for child in list(col.children):
         _unlink_and_remove_collection(child)
@@ -111,15 +97,8 @@ def _unlink_and_remove_collection(col: bpy.types.Collection) -> None:
 
 
 def _clear_fachwerk_subtree(col_fachwerk: bpy.types.Collection) -> int:
-    """
-    Clear everything under the Fachwerk collection:
-    - remove all objects directly inside
-    - remove all child collections recursively
-    Returns estimated removed object count.
-    """
     removed = 0
 
-    # remove direct objects
     try:
         for obj in list(col_fachwerk.objects):
             try:
@@ -130,7 +109,6 @@ def _clear_fachwerk_subtree(col_fachwerk: bpy.types.Collection) -> int:
     except Exception:
         pass
 
-    # remove child collections (and their objects)
     for child in list(col_fachwerk.children):
         try:
             removed += _count_objects(child)
@@ -166,17 +144,6 @@ def _ensure_subcollections(root_collection: bpy.types.Collection) -> Dict[str, b
 # ------------------------------------------------------------
 
 def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
-    """
-    Retrieve canonical house dict from any available source.
-
-    Sources (first hit wins):
-      1) structure.notes["house"]
-      2) ctx.notes["house"]
-      3) dict style: obj["notes"]["house"] or obj["house"]
-      4) attribute style: obj.house
-      5) DERIVE from StructurePlan-like object (structure.grid + structure.footprint + walls)
-    """
-
     def _is_house(d: Any) -> bool:
         return isinstance(d, dict) and bool(d.get("axis_x")) and bool(d.get("axis_y"))
 
@@ -184,17 +151,14 @@ def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
         n = getattr(obj, "notes", None)
         return n if isinstance(n, dict) else None
 
-    # 1) structure.notes["house"]
     n = _get_notes(structure)
     if n and _is_house(n.get("house")):
         return n["house"]
 
-    # 2) ctx.notes["house"]
     n = _get_notes(ctx)
     if n and _is_house(n.get("house")):
         return n["house"]
 
-    # 3) dict style
     if isinstance(structure, dict):
         nn = structure.get("notes")
         if isinstance(nn, dict) and _is_house(nn.get("house")):
@@ -213,7 +177,6 @@ def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
         if _is_house(ctx):
             return ctx
 
-    # 4) attribute style
     h = getattr(structure, "house", None)
     if _is_house(h):
         return h
@@ -221,14 +184,12 @@ def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
     if _is_house(h):
         return h
 
-    # 5) Derive from StructurePlan-like object
     grid = getattr(structure, "grid", None)
     footprint = getattr(structure, "footprint", None)
     if grid is not None and hasattr(grid, "axis_x") and hasattr(grid, "axis_y") and footprint is not None:
         axis_x = list(getattr(grid, "axis_x"))
         axis_y = list(getattr(grid, "axis_y"))
         if axis_x and axis_y:
-            # infer z0 / H_e from walls if present
             z0 = 0.0
             H_e = 2.6
             walls = getattr(structure, "walls", None)
@@ -239,7 +200,6 @@ def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
                 except Exception:
                     pass
 
-            # basic counts
             fields = getattr(grid, "fields", None)
             fields_n = len(fields) if isinstance(fields, (list, tuple)) else getattr(grid, "n_fields", None)
 
@@ -251,8 +211,6 @@ def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
                 "W": float(getattr(footprint, "width", max(axis_y) - min(axis_y))),
                 "z0": z0,
                 "H_e": H_e,
-
-                # conservative defaults (can be overridden upstream later)
                 "z_plate": 2.2,
                 "roof_pitch_deg": 45.0,
                 "roof_overhang": 0.35,
@@ -269,7 +227,6 @@ def _require_house_keys(house: Dict[str, Any]) -> None:
     if not house.get("axis_x") or not house.get("axis_y"):
         raise RuntimeError("Invalid house: axis_x/axis_y missing or empty")
 
-    # conservative defaults
     house.setdefault("z0", 0.0)
     house.setdefault("z_plate", 2.2)
     house.setdefault("roof_pitch_deg", 45.0)
@@ -332,58 +289,27 @@ def _map_post_member(member: Dict[str, Any], *, house: Dict[str, Any], z1_cap: O
     raise ValueError(f"Unknown wall '{wall}'")
 
 
+def _map_rail_member(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[Vector, Vector]:
+    x_min, x_max, center_x, halfW = _house_basis(house)
+    wall = member["wall"]
+    u0 = float(member["u0"])
+    u1 = float(member["u1"])
+    z = float(member["z"])
+
+    if wall == "N":
+        return Vector((center_x + u0, -halfW, z)), Vector((center_x + u1, -halfW, z))
+    if wall == "S":
+        return Vector((center_x + u0, +halfW, z)), Vector((center_x + u1, +halfW, z))
+    if wall == "E":
+        return Vector((x_max, u0, z)), Vector((x_max, u1, z))
+    if wall == "W":
+        return Vector((x_min, u0, z)), Vector((x_min, u1, z))
+    raise ValueError(f"Unknown wall '{wall}'")
+
+
 # ------------------------------------------------------------
-# Phase 1/2: posts + plates
+# Phase 1/2: members-only posts + plates (NO LEGACY)
 # ------------------------------------------------------------
-
-def _build_posts_and_plates_legacy(house: Dict[str, Any], col_frame: bpy.types.Collection) -> None:
-    from .timber import make_beam_rect
-
-    axis_x = house["axis_x"]
-    axis_y = house["axis_y"]
-    z0 = float(house["z0"])
-    z_plate = float(house["z_plate"])
-
-    w_p, d_p = house["profile_post"]
-    w_pl, d_pl = house["profile_plate"]
-
-    # perimeter posts at each axis_x for both walls (S/N)
-    for i, x in enumerate(axis_x):
-        make_beam_rect(
-            f"Post_S_{i:02d}",
-            Vector((x, axis_y[0], z0)),
-            Vector((x, axis_y[0], z_plate)),
-            width=w_p,
-            depth=d_p,
-            collection=col_frame,
-        )
-        make_beam_rect(
-            f"Post_N_{i:02d}",
-            Vector((x, axis_y[-1], z0)),
-            Vector((x, axis_y[-1], z_plate)),
-            width=w_p,
-            depth=d_p,
-            collection=col_frame,
-        )
-
-    # Plates along S/N
-    make_beam_rect(
-        "Plate_S",
-        Vector((axis_x[0], axis_y[0], z_plate)),
-        Vector((axis_x[-1], axis_y[0], z_plate)),
-        width=w_pl,
-        depth=d_pl,
-        collection=col_frame,
-    )
-    make_beam_rect(
-        "Plate_N",
-        Vector((axis_x[0], axis_y[-1], z_plate)),
-        Vector((axis_x[-1], axis_y[-1], z_plate)),
-        width=w_pl,
-        depth=d_pl,
-        collection=col_frame,
-    )
-
 
 def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection) -> int:
     from .timber import make_beam_rect
@@ -396,13 +322,13 @@ def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any],
     if not isinstance(posts, list):
         return 0
 
-    primary = [m for m in posts if m.get("role") == "PRIMARY_POST"]
+    primary = [m for m in posts if isinstance(m, dict) and m.get("role") == "PRIMARY_POST"]
     if not primary:
         return 0
 
     z_plate = float(house["z_plate"])
 
-    by_wall: Dict[str, List[Dict[str, Any]]] = {"N": [], "S": [], "E": [], "W": []}
+    by_wall: Dict[str, list] = {"N": [], "S": [], "E": [], "W": []}
     for m in primary:
         w = m.get("wall")
         if w in by_wall:
@@ -437,38 +363,58 @@ def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any],
     return built
 
 
+def _build_plates_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection) -> int:
+    from .timber import make_beam_rect
+
+    members = fp.get("members")
+    if not isinstance(members, dict):
+        return 0
+
+    rails = members.get("rails") or []
+    if not isinstance(rails, list):
+        return 0
+
+    plate_roles = {"EAVES_PLATE_S", "EAVES_PLATE_N", "EAVES_PLATE_E", "EAVES_PLATE_W"}
+    plates = [m for m in rails if isinstance(m, dict) and m.get("role") in plate_roles]
+    if not plates:
+        return 0
+
+    built = 0
+    for m in plates:
+        try:
+            p0, p1 = _map_rail_member(m, house=house)
+        except Exception:
+            LOG.exception("Phase1/2: invalid plate member: %s", m)
+            continue
+
+        prof = m.get("profile") or {}
+        w = float(prof.get("w", house["profile_plate"][0]))
+        d = float(prof.get("d", house["profile_plate"][1]))
+
+        wall = str(m.get("wall", "?"))
+        make_beam_rect(
+            f"Plate_{wall}",
+            p0,
+            p1,
+            width=w,
+            depth=d,
+            collection=col_frame,
+        )
+        built += 1
+
+    return built
+
+
 def _build_posts_and_plates(house: Dict[str, Any], fp: Dict[str, Any], col_frame: bpy.types.Collection) -> None:
     built_primary = _build_primary_posts_from_members(fp, house, col_frame)
     if built_primary <= 0:
-        _build_posts_and_plates_legacy(house, col_frame)
-        return
+        raise RuntimeError("members-first required: missing/empty members.posts PRIMARY_POST")
 
-    LOG.info("Phase1/2: PRIMARY_POST from members built=%d", built_primary)
+    built_plates = _build_plates_from_members(fp, house, col_frame)
+    if built_plates <= 0:
+        raise RuntimeError("members-first required: missing/empty members.rails EAVES_PLATE_*")
 
-    # Plates still from grid endpoints (for now)
-    from .timber import make_beam_rect
-
-    axis_x = house["axis_x"]
-    axis_y = house["axis_y"]
-    z_plate = float(house["z_plate"])
-    w_pl, d_pl = house["profile_plate"]
-
-    make_beam_rect(
-        "Plate_S",
-        Vector((axis_x[0], axis_y[0], z_plate)),
-        Vector((axis_x[-1], axis_y[0], z_plate)),
-        width=w_pl,
-        depth=d_pl,
-        collection=col_frame,
-    )
-    make_beam_rect(
-        "Plate_N",
-        Vector((axis_x[0], axis_y[-1], z_plate)),
-        Vector((axis_x[-1], axis_y[-1], z_plate)),
-        width=w_pl,
-        depth=d_pl,
-        collection=col_frame,
-    )
+    LOG.info("Phase1/2: members-first posts=%d plates=%d", built_primary, built_plates)
 
 
 # ------------------------------------------------------------
@@ -525,13 +471,11 @@ def build_frame(
     root_collection: bpy.types.Collection,
     clear_previous: bool,
 ) -> bpy.types.Collection:
-    clear_effective = True if FORCE_CLEAR_PREVIOUS else clear_previous
-
     cols = _ensure_subcollections(root_collection)
 
-    if clear_effective:
+    if clear_previous:
         removed = _clear_fachwerk_subtree(cols["fachwerk"])
-        LOG.info("clear_previous=%s -> cleared fachwerk subtree, removed_objects=%d", clear_previous, removed)
+        LOG.info("clear_previous=True -> cleared fachwerk subtree, removed_objects=%d", removed)
         cols = _ensure_subcollections(root_collection)
 
     house = _coerce_house(ctx, structure)
@@ -540,14 +484,13 @@ def build_frame(
     _log_build_header(root_collection.name, house)
     LOG.info("build_frame() ENTER")
 
-    # Pre-flight contract audit (best-effort)
-    try:
-        from bvillage.domains.fachwerk.core.frameplan_contract import audit_frameplan_contract
-        audit_frameplan_contract(frameplan, house, strict=False)
-    except Exception:
-        LOG.exception("FramePlan contract audit failed unexpectedly")
+    # Contract is now an actual gate (members-first cut)
+    from bvillage.domains.fachwerk.core.frameplan_contract import audit_frameplan_contract
+    report = audit_frameplan_contract(frameplan, house, strict=False)
+    if not report.ok:
+        raise RuntimeError(f"FramePlan contract failed: hard={len(report.hard)}")
 
-    # Phase1/2
+    # Phase1/2 (members-only)
     _build_posts_and_plates(house, frameplan, cols["frame"])
     LOG.info("Phase1/2 posts+plates done")
 
@@ -565,8 +508,8 @@ def build_frame(
 
     from bvillage.domains.fachwerk.core.frameplan import normalize_frameplan_dict
     frameplan = normalize_frameplan_dict(frameplan)
-    
-    # Phase4 modules
+
+    # Phase4 modules (members-only inside their modules)
     from .opening_frames import build_opening_frames
     from .braces import build_braces_corner_band
     from .infills import build_infills
@@ -591,11 +534,10 @@ def build_frame(
         _count_objects(cols["debug"]),
     )
     LOG.info("scene objects total=%d", len(bpy.data.objects))
-    LOG.info("roof=%d", _count_objects(cols["roof"]))
 
     ok = check_integrity(fp=frameplan, house=house, collections=cols)
     if not ok:
-        LOG.error("Integrity check failed (see previous errors)")
+        raise RuntimeError("Integrity check failed (see previous errors)")
 
     return cols["fachwerk"]
 
@@ -622,7 +564,7 @@ def build_fachwerk_frame(
 
 
 # ------------------------------------------------------------
-# Legacy wrapper (compat)
+# Legacy wrapper (artifact fetch only; NOT geometry legacy)
 # ------------------------------------------------------------
 
 def build_fachwerk_frame_from_structure_notes(

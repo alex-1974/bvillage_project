@@ -198,74 +198,58 @@ def _make_infill_quad(collection: bpy.types.Collection, name: str, v00: Vector, 
 def build_infills(
     *,
     fp: Dict[str, Any],
-    house: Dict[str, Any],  # kept for signature compatibility; not required if fp canonical
+    house: Dict[str, Any],  # kept for signature compatibility
     collection: bpy.types.Collection,
 ):
-    """
-    Build infill quads between (u,z) cells on all exterior walls.
-
-    Canonical inputs (preferred):
-      - fp["basis"]
-      - fp["axes_u_flat"][wall]
-      - fp["axes_z_flat"]
-      - fp["openings_norm"]
-
-    Fallbacks exist for partially-normalized fp.
-    """
     basis = _get_basis(fp)
     x_min = basis["x_min"]
     x_max = basis["x_max"]
     center_x = basis["center_x"]
     halfW = basis["halfW"]
 
-    axes_z = _get_axes_z(fp)
-    axes_u = _get_axes_u_flat(fp)
-    openings = _get_openings(fp)
+    members = fp.get("members")
+    if not isinstance(members, dict):
+        raise ValueError("Infills: schema requires fp['members']")
 
-    if len(axes_z) < 2:
-        LOG.warning("Phase4A infills: axes_z too short -> nothing built")
-        return
+    cells = members.get("infills")
+    if not isinstance(cells, list):
+        raise ValueError("Infills: schema requires fp['members']['infills'] list")
 
     built = 0
-
-    for wall in ("N", "S", "E", "W"):
-        u_axes = axes_u.get(wall, [])
-        if len(u_axes) < 2:
+    for c in cells:
+        if not isinstance(c, dict):
+            continue
+        if c.get("role") != "INFILL_CELL":
             continue
 
-        for i in range(len(u_axes) - 1):
-            u0 = float(u_axes[i])
-            u1 = float(u_axes[i + 1])
+        wall = c.get("wall")
+        u0 = float(c["u0"]); u1 = float(c["u1"])
+        z0 = float(c["z0"]); z1 = float(c["z1"])
 
-            for j in range(len(axes_z) - 1):
-                z0 = float(axes_z[j])
-                z1 = float(axes_z[j + 1])
+        if wall == "N":
+            v00 = Vector((center_x + u0, -halfW, z0))
+            v10 = Vector((center_x + u1, -halfW, z0))
+            v11 = Vector((center_x + u1, -halfW, z1))
+            v01 = Vector((center_x + u0, -halfW, z1))
+        elif wall == "S":
+            v00 = Vector((center_x + u0, halfW, z0))
+            v10 = Vector((center_x + u1, halfW, z0))
+            v11 = Vector((center_x + u1, halfW, z1))
+            v01 = Vector((center_x + u0, halfW, z1))
+        elif wall == "E":
+            v00 = Vector((x_max, u0, z0))
+            v10 = Vector((x_max, u1, z0))
+            v11 = Vector((x_max, u1, z1))
+            v01 = Vector((x_max, u0, z1))
+        elif wall == "W":
+            v00 = Vector((x_min, u0, z0))
+            v10 = Vector((x_min, u1, z0))
+            v11 = Vector((x_min, u1, z1))
+            v01 = Vector((x_min, u0, z1))
+        else:
+            continue
 
-                if _cell_hits_opening(wall, u0, u1, z0, z1, openings):
-                    continue
+        _make_infill_quad(collection, f"Infill_{wall}_{built:04d}", v00, v10, v11, v01)
+        built += 1
 
-                if wall == "N":
-                    v00 = Vector((center_x + u0, -halfW, z0))
-                    v10 = Vector((center_x + u1, -halfW, z0))
-                    v11 = Vector((center_x + u1, -halfW, z1))
-                    v01 = Vector((center_x + u0, -halfW, z1))
-                elif wall == "S":
-                    v00 = Vector((center_x + u0, halfW, z0))
-                    v10 = Vector((center_x + u1, halfW, z0))
-                    v11 = Vector((center_x + u1, halfW, z1))
-                    v01 = Vector((center_x + u0, halfW, z1))
-                elif wall == "E":
-                    v00 = Vector((x_max, u0, z0))
-                    v10 = Vector((x_max, u1, z0))
-                    v11 = Vector((x_max, u1, z1))
-                    v01 = Vector((x_max, u0, z1))
-                else:  # W
-                    v00 = Vector((x_min, u0, z0))
-                    v10 = Vector((x_min, u1, z0))
-                    v11 = Vector((x_min, u1, z1))
-                    v01 = Vector((x_min, u0, z1))
-
-                _make_infill_quad(collection, f"Infill_{wall}_{i}_{j}", v00, v10, v11, v01)
-                built += 1
-
-    LOG.info("Phase4A infills: done built=%d", built)
+    LOG.info("Phase4A infills: members-first done built=%d", built)

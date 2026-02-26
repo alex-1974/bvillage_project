@@ -16,6 +16,17 @@ They are intentionally strict and minimal.
 1.2 Blender layer must not compute axes.
     - No U/Z axis generation inside any blender module.
     - Blender consumes, never decides.
+    
+1.3 Structural members are the canonical construction definition.
+    - All geometry emitted by Blender must derive exclusively from:
+          members = { posts, rails, braces, infills }
+    - Axis data (axes_u / axes_z) is planning metadata only.
+    - Axis data must never be interpreted as geometry inside Blender.
+
+1.4 FramePlan must emit explicit members.
+    - FramePlan may internally use axes for planning.
+    - frameplan_to_dict() must convert planning data into members.
+    - Blender must never reconstruct structure from axes.
 
 ------------------------------------------------------------
 2. LAYER BOUNDARIES
@@ -78,6 +89,15 @@ They are intentionally strict and minimal.
     - transform artifact data into mesh
     - create collections
     - assign materials
+7.4 Builder must never:
+    - derive structure from grid
+    - generate braces from axes
+    - infer plates from spans
+    - create structural members not present in `members`
+
+7.5 Missing members is a contract failure.
+    - Builder must abort if required members are absent.
+    - No legacy fallbacks are permitted (schema_version >= 3)
 
 ------------------------------------------------------------
 8. VALIDATION
@@ -194,6 +214,19 @@ Blender:
 
 ---
 
+------------------------------------------------------------
+13. SCHEMA VERSIONING
+------------------------------------------------------------
+
+13.1 schema_version = 3 defines the Members-Only Architecture.
+
+13.2 For schema_version >= 3:
+     - members are mandatory
+     - legacy geometry paths are forbidden
+     - builder fallback logic is prohibited
+
+13.3 Structural changes require schema increment.
+
 # Known Failure Modes (Architecture Pitfalls)
 
 1. Builder derives posts from grid instead of FramePlan
@@ -204,5 +237,11 @@ Blender:
 
 3. Interior modifies exterior walls directly
 → role boundary violation
+
+4. Blender reconstructs members from axes
+→ violates members-first architecture
+
+5. FramePlan emits incomplete members
+→ contract breach
 
 These are considered architectural violations.
