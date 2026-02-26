@@ -1,27 +1,17 @@
 # bvillage/domains/fachwerk/blender/braces.py
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, Tuple
 
 import bpy
 from mathutils import Vector
 
-from .timber import make_beam_rect
-
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.braces")
 
 
-# ---------------------------------------------------------------------
-# Canonical FramePlan-first helpers
-# ---------------------------------------------------------------------
-
 def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
-    """
-    Prefer canonical fp["basis"].
-    Fallback: derive from fp["dims"] (L,W).
-    """
     basis = fp.get("basis")
-    if isinstance(basis, dict) and all(k in basis for k in ("x_min", "x_max", "center_x", "halfW")):
+    if isinstance(basis, dict):
         return {
             "x_min": float(basis["x_min"]),
             "x_max": float(basis["x_max"]),
@@ -29,146 +19,115 @@ def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
             "halfW": float(basis["halfW"]),
         }
 
+    # fallback from dims
     dims = fp.get("dims") or {}
-    L = dims.get("L")
-    W = dims.get("W")
-    if L is None or W is None:
-        raise ValueError("Missing basis and dims.L/dims.W in frameplan dict")
-
-    Lf = float(L)
-    Wf = float(W)
-    return {"x_min": 0.0, "x_max": Lf, "center_x": 0.5 * Lf, "halfW": 0.5 * Wf}
-
-
-def _flatten_numeric(x: Any) -> List[float]:
-    """Collect numeric values from nested lists/dicts; return sorted unique floats."""
-    vals: List[float] = []
-
-    def _collect(v: Any) -> None:
-        if v is None:
-            return
-        if isinstance(v, (int, float)):
-            vals.append(float(v))
-            return
-        if isinstance(v, str):
-            try:
-                vals.append(float(v))
-            except Exception:
-                return
-            return
-        if isinstance(v, (list, tuple)):
-            for it in v:
-                _collect(it)
-            return
-        if isinstance(v, dict):
-            for it in v.values():
-                _collect(it)
-            return
-
-    _collect(x)
-    return sorted(set(vals))
+    L = float(dims.get("L", 0.0))
+    W = float(dims.get("W", 0.0))
+    return {
+        "x_min": 0.0,
+        "x_max": L,
+        "center_x": 0.5 * L,
+        "halfW": 0.5 * W,
+    }
 
 
-def _get_axes_z(fp: Dict[str, Any]) -> List[float]:
-    z = fp.get("axes_z_flat")
-    if isinstance(z, list) and z:
-        return [float(v) for v in z]
-    return _flatten_numeric(fp.get("axes_z"))
+def _map_wall_uvz_to_world(
+    *,
+    wall: str,
+    u: float,
+    z: float,
+    basis: Dict[str, float],
+) -> Vector:
+    x_min = basis["x_min"]
+    x_max = basis["x_max"]
+    center_x = basis["center_x"]
+    halfW = basis["halfW"]
 
+    if wall == "N":
+        return Vector((center_x + u, -halfW, z))
+    if wall == "S":
+        return Vector((center_x + u, +halfW, z))
+    if wall == "E":
+        return Vector((x_max, u, z))
+    if wall == "W":
+        return Vector((x_min, u, z))
+    raise ValueError(f"Unknown wall '{wall}'")
 
-# ---------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------
 
 def build_braces_corner_band(
     *,
     fp: Dict[str, Any],
-    house: Dict[str, Any],  # kept for signature compatibility; not required if fp canonical
+    house: Dict[str, Any],  # kept for signature compat
     collection: bpy.types.Collection,
-):
+    debug: bool = False,
+) -> int:
     """
-    Corner-only knee braces in the upper band (FramePlan-first).
+    Members-first braces builder.
 
-    Uses:
-      - fp["basis"] for extents (fallback: dims)
-      - fp["axes_z_flat"] for z band (fallback: axes_z)
+    Requires:
+      fp["members"]["braces"] : list of brace members.
+
+    Brace member schema (MVP):
+      {
+        "role": "BRACE_DIAG",
+        "wall": "S"|"N"|"E"|"W",
+        "u0": float, "z0": float,
+        "u1": float, "z1": float,
+        "profile": {"w": float, "d": float},
+        "kind": "X"|... (optional)
+      }
     """
+    from .timber import make_beam_rect
+
+    members = fp.get("members")
+    if not isinstance(members, dict):
+        raise ValueError("Braces: schema requires fp['members'] dict")
+
+    braces = members.get("braces")
+    if not isinstance(braces, list):
+        raise ValueError("Braces: schema requires fp['members']['braces'] list")
+
     basis = _get_basis(fp)
-    x_min = basis["x_min"]
-    x_max = basis["x_max"]
-    halfW = basis["halfW"]
 
-    axes_z = _get_axes_z(fp)
-    if len(axes_z) < 2:
-        LOG.warning("Phase4C braces: axes_z too short -> nothing built")
-        return
-
-    # Use top band (second last -> last)
-    z0 = float(axes_z[-2])
-    z1 = float(axes_z[-1])
-
-    profile = (0.12, 0.12)
     built = 0
-    brace_len = 0.6  # meters
+    for i, b in enumerate(braces):
+        if not isinstance(b, dict):
+            continue
+        if b.get("role") != "BRACE_DIAG":
+            continue
 
-    # N/S walls: braces along X direction at corners
-    for wall in ("N", "S"):
-        y = -halfW if wall == "N" else halfW
+        try:
+            wall = str(b["wall"])
+            u0 = float(b["u0"]); z0 = float(b["z0"])
+            u1 = float(b["u1"]); z1 = float(b["z1"])
+        except Exception:
+            LOG.exception("Brace[%d] invalid fields: %s", i, b)
+            continue
 
-        # left corner
-        p0 = Vector((x_min, y, z0))
-        p1 = Vector((x_min + brace_len, y, z1))
+        try:
+            p0 = _map_wall_uvz_to_world(wall=wall, u=u0, z=z0, basis=basis)
+            p1 = _map_wall_uvz_to_world(wall=wall, u=u1, z=z1, basis=basis)
+        except Exception:
+            LOG.exception("Brace[%d] invalid wall mapping: %s", i, b)
+            continue
+
+        prof = b.get("profile") or {}
+        try:
+            w = float(prof.get("w", 0.12))
+            d = float(prof.get("d", 0.12))
+        except Exception:
+            w, d = 0.12, 0.12
+
+        name = f"Brace_{wall}_{i:04d}"
         make_beam_rect(
-            f"Brace_{wall}_L",
+            name,
             p0,
             p1,
-            width=profile[0],
-            depth=profile[1],
+            width=w,
+            depth=d,
             collection=collection,
         )
         built += 1
 
-        # right corner
-        p0 = Vector((x_max, y, z0))
-        p1 = Vector((x_max - brace_len, y, z1))
-        make_beam_rect(
-            f"Brace_{wall}_R",
-            p0,
-            p1,
-            width=profile[0],
-            depth=profile[1],
-            collection=collection,
-        )
-        built += 1
-
-    # E/W walls: braces along Y direction at corners
-    for wall in ("E", "W"):
-        x = x_max if wall == "E" else x_min
-
-        # near -halfW
-        p0 = Vector((x, -halfW, z0))
-        p1 = Vector((x, -halfW + brace_len, z1))
-        make_beam_rect(
-            f"Brace_{wall}_L",
-            p0,
-            p1,
-            width=profile[0],
-            depth=profile[1],
-            collection=collection,
-        )
-        built += 1
-
-        # near +halfW
-        p0 = Vector((x, halfW, z0))
-        p1 = Vector((x, halfW - brace_len, z1))
-        make_beam_rect(
-            f"Brace_{wall}_R",
-            p0,
-            p1,
-            width=profile[0],
-            depth=profile[1],
-            collection=collection,
-        )
-        built += 1
-
-    LOG.info("Phase4C braces: done built=%d", built)
+    LOG.info("Phase4C braces: members-first done built=%d", built)
+    return built

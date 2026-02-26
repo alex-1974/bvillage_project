@@ -1,5 +1,3 @@
-# bvillage/domains/fachwerk/core/frameplan.py
-
 """
 bvillage.domains.fachwerk.core.frameplan
 =======================================
@@ -17,7 +15,13 @@ Schema
 frameplan_to_dict() emits a stable schema used by Blender builders.
 
 As of schema_version=2, the artifact contains:
-- "members": MVP structural members (posts/rails/braces)
+- "members": structural truth (posts/rails/braces/infills)
+  Blender must build members, not derive structural geometry from axes.
+
+Notes
+-----
+- axes_u / axes_z remain as planning geometry and for contract/validation.
+- members.* are the canonical "what to build" lists.
 """
 
 from __future__ import annotations
@@ -58,6 +62,29 @@ class FramePolicy:
     # How to interpret opening width (axis vs clear)
     width_type: WidthType = "axis"
 
+    # --- NEW: members policy knobs ---
+    profile_post_w: float = 0.20
+    profile_post_d: float = 0.20
+
+    profile_plate_w: float = 0.18
+    profile_plate_d: float = 0.18
+
+    profile_opening_jamb_w: float = 0.18
+    profile_opening_jamb_d: float = 0.18
+
+    profile_opening_lintel_gate_w: float = 0.20
+    profile_opening_lintel_gate_d: float = 0.20
+    profile_opening_lintel_window_w: float = 0.16
+    profile_opening_lintel_window_d: float = 0.18
+    profile_opening_sill_w: float = 0.16
+    profile_opening_sill_d: float = 0.18
+
+    braces_enable: bool = True
+    brace_profile_w: float = 0.12
+    brace_profile_d: float = 0.12
+    brace_min_cell_w: float = 0.80
+    brace_min_cell_h: float = 0.80
+    
     def __post_init__(self):
         if self.horizontal_axes_style is None:
             object.__setattr__(self, "horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])
@@ -86,7 +113,9 @@ class FramePlan:
 
     wall_tags: Dict[str, List[str]]
     front_wall: str
-
+    
+    policy: Optional[FramePolicy] = None
+    
 
 def _infer_wall_height(structure: StructurePlan) -> Tuple[float, float]:
     """
@@ -165,6 +194,7 @@ def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePol
         z_repair_log=z_repair_log,
         wall_tags=wall_tags,
         front_wall=front_wall,
+        policy=policy, 
     )
 
 
@@ -172,9 +202,18 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
     """
     Convert FramePlan to a JSON-like dict for notes storage (stable schema).
 
-    schema_version=2 introduces "members".
+    schema_version=3: members-first enforced end-to-end (no legacy fallback).
+    Members are the structural truth (posts/rails/braces/infills).
     """
-    # ---- Members v1: PRIMARY_POST + opening frames as structural truth ----
+    # Robust policy access (older FramePlan instances may have policy=None)
+    pol = fp.policy
+    if pol is None:
+        # b_max not needed here; only profile/threshold defaults matter for members emission
+        pol = FramePolicy(b_max=0.0)
+
+    # ---- Members v3: PRIMARY_POST + opening frames + eaves plates + infill cells + braces ----
+
+    # 1) Primary posts from vertical axes
     primary_posts: List[Dict[str, Any]] = []
     for wall in ("N", "S", "E", "W"):
         w = fp.vertical_axes.get(wall, {})
@@ -186,10 +225,11 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "u": float(u),
                     "z0": float(fp.z0),
                     "z1": float(fp.H_e),
-                    "profile": {"w": 0.20, "d": 0.20},
+                    "profile": {"w": float(pol.profile_post_w), "d": float(pol.profile_post_d)},
                 }
             )
 
+    # 2) Opening frames (jambs + lintel + optional sill)
     opening_posts: List[Dict[str, Any]] = []
     opening_rails: List[Dict[str, Any]] = []
 
@@ -202,7 +242,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "u": float(o.u0),
                 "z0": float(o.z0),
                 "z1": float(o.z1),
-                "profile": {"w": 0.18, "d": 0.18},
+                "profile": {"w": float(pol.profile_opening_jamb_w), "d": float(pol.profile_opening_jamb_d)},
                 "opening": o.name,
             }
         )
@@ -213,16 +253,22 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "u": float(o.u1),
                 "z0": float(o.z0),
                 "z1": float(o.z1),
-                "profile": {"w": 0.18, "d": 0.18},
+                "profile": {"w": float(pol.profile_opening_jamb_w), "d": float(pol.profile_opening_jamb_d)},
                 "opening": o.name,
             }
         )
 
         # lintel (gate vs window profile)
         if o.typ == "gate":
-            lintel_prof = {"w": 0.20, "d": 0.20}
+            lintel_prof = {
+                "w": float(pol.profile_opening_lintel_gate_w),
+                "d": float(pol.profile_opening_lintel_gate_d),
+            }
         else:
-            lintel_prof = {"w": 0.16, "d": 0.18}
+            lintel_prof = {
+                "w": float(pol.profile_opening_lintel_window_w),
+                "d": float(pol.profile_opening_lintel_window_d),
+            }
 
         opening_rails.append(
             {
@@ -245,16 +291,139 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "u0": float(o.u0),
                     "u1": float(o.u1),
                     "z": float(o.z0),
-                    "profile": {"w": 0.16, "d": 0.18},
+                    "profile": {"w": float(pol.profile_opening_sill_w), "d": float(pol.profile_opening_sill_d)},
                     "opening": o.name,
                 }
             )
 
+    # 3) Eaves plates as members (rails)
+    # Infer "z_plate" as the highest z-axis below H_e.
+    eps = 1e-6
+    try:
+        z_plate = max(z for z in fp.z_axes if float(z) < float(fp.H_e) - eps)
+    except Exception:
+        z_plate = float(fp.H_e)
+
+    plate_rails: List[Dict[str, Any]] = []
+    for wall, role in (("S", "EAVES_PLATE_S"), ("N", "EAVES_PLATE_N")):
+        w = fp.vertical_axes.get(wall, {})
+        u_all = w.get("all") or []
+        if isinstance(u_all, list) and len(u_all) >= 2:
+            u0 = float(min(u_all))
+            u1 = float(max(u_all))
+            plate_rails.append(
+                {
+                    "role": role,
+                    "wall": wall,
+                    "u0": u0,
+                    "u1": u1,
+                    "z": float(z_plate),
+                    "profile": {"w": float(pol.profile_plate_w), "d": float(pol.profile_plate_d)},
+                }
+            )
+
+    # Shared: opening overlap test (used for infills and braces)
+    def _cell_hits_opening(wall: str, u0: float, u1: float, z0c: float, z1c: float) -> bool:
+        for op in fp.openings_final:
+            if op.wall != wall:
+                continue
+            ou0 = float(op.u0)
+            ou1 = float(op.u1)
+            oz0 = float(op.z0)
+            oz1 = float(op.z1)
+
+            # overlap in u and z (open interval-ish is fine here)
+            if not (u1 <= ou0 or u0 >= ou1):
+                if not (z1c <= oz0 or z0c >= oz1):
+                    return True
+        return False
+
+    # 4) Infills as members (cells), derived from axes but stored as structural truth
+    infills: List[Dict[str, Any]] = []
+    if isinstance(fp.z_axes, list) and len(fp.z_axes) >= 2:
+        for wall in ("N", "S", "E", "W"):
+            w = fp.vertical_axes.get(wall, {})
+            u_all = w.get("all") or []
+            if not isinstance(u_all, list) or len(u_all) < 2:
+                continue
+
+            for i in range(len(u_all) - 1):
+                u0 = float(u_all[i])
+                u1 = float(u_all[i + 1])
+
+                for j in range(len(fp.z_axes) - 1):
+                    z0c = float(fp.z_axes[j])
+                    z1c = float(fp.z_axes[j + 1])
+
+                    if _cell_hits_opening(wall, u0, u1, z0c, z1c):
+                        continue
+
+                    infills.append(
+                        {
+                            "role": "INFILL_CELL",
+                            "wall": wall,
+                            "u0": u0,
+                            "u1": u1,
+                            "z0": z0c,
+                            "z1": z1c,
+                            "material": "infill_default",
+                        }
+                    )
+
+    # 5) Braces as members (policy-driven): X-braces in sufficiently large clear cells
+    braces: List[Dict[str, Any]] = []
+    if pol.braces_enable and isinstance(fp.z_axes, list) and len(fp.z_axes) >= 2:
+        brace_w = float(pol.brace_profile_w)
+        brace_d = float(pol.brace_profile_d)
+        min_cell_w = float(pol.brace_min_cell_w)
+        min_cell_h = float(pol.brace_min_cell_h)
+
+        for wall in ("N", "S", "E", "W"):
+            w = fp.vertical_axes.get(wall, {})
+            u_all = w.get("all") or []
+            if not isinstance(u_all, list) or len(u_all) < 2:
+                continue
+
+            for i in range(len(u_all) - 1):
+                u0 = float(u_all[i])
+                u1 = float(u_all[i + 1])
+                if (u1 - u0) < min_cell_w:
+                    continue
+
+                for j in range(len(fp.z_axes) - 1):
+                    z0c = float(fp.z_axes[j])
+                    z1c = float(fp.z_axes[j + 1])
+                    if (z1c - z0c) < min_cell_h:
+                        continue
+
+                    if _cell_hits_opening(wall, u0, u1, z0c, z1c):
+                        continue
+
+                    # X brace = two diagonals
+                    braces.append(
+                        {
+                            "role": "BRACE_DIAG",
+                            "wall": wall,
+                            "u0": u0, "z0": z0c,
+                            "u1": u1, "z1": z1c,
+                            "profile": {"w": brace_w, "d": brace_d},
+                            "kind": "X",
+                        }
+                    )
+                    braces.append(
+                        {
+                            "role": "BRACE_DIAG",
+                            "wall": wall,
+                            "u0": u0, "z0": z1c,
+                            "u1": u1, "z1": z0c,
+                            "profile": {"w": brace_w, "d": brace_d},
+                            "kind": "X",
+                        }
+                    )
+
     return {
-        "schema_version": 2,
-
+        "schema_version": 3,
         "dims": {"L": fp.L, "W": fp.W, "H_e": fp.H_e, "z0": fp.z0},
-
         "openings": [
             {
                 "name": o.name,
@@ -271,17 +440,16 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
             }
             for o in fp.openings_final
         ],
-
         "axes_u": fp.vertical_axes,
         "axes_z": fp.z_axes,
         "z_repair_log": list(fp.z_repair_log),
         "wall_tags": fp.wall_tags,
         "front_wall": fp.front_wall,
-
         "members": {
             "posts": primary_posts + opening_posts,
-            "rails": opening_rails,
-            "braces": [],
+            "rails": opening_rails + plate_rails,
+            "braces": braces,
+            "infills": infills,
         },
     }
 
@@ -404,6 +572,7 @@ def normalize_frameplan_dict(fp: Dict[str, Any]) -> Dict[str, Any]:
 
     fp["openings_norm"] = openings_norm
     return fp
+
 
 def frameplan_report(fp: FramePlan) -> str:
     """Human-readable planner report."""

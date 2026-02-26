@@ -7,6 +7,4 @@ bvillage_project.egg-info/
 
 ARCH_SCAN.txt
 
-tools/arch_scan.sh
 
-tools/fix_headers.py

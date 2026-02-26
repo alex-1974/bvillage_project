@@ -60,25 +60,30 @@ Golden Reports/Tests sind der Anker.
 ## 4. Architekturgrenzen (minimal, aber hart)
 1) **Core importiert kein Blender** (`bpy` verboten in core)
 2) **Domain-Core importiert kein Blender**
-3) **Blender baut nur aus Artefakten** (notes / Plans), keine Achsenberechnung
+3) Blender builds exclusively from members (schema_version >= 3).
+   - No axis-derived geometry.
+   - No structural inference.
+   - No fallback paths.
 4) **Repairs müssen sichtbar sein** (Report + WARNING)
 5) **Ordering deterministisch** (Sortierung, Naming)
 
 ---
 
-## 5. Current Focus (aktuelle Baustelle)
-- Builder schrittweise FramePlan-getrieben machen
-- Tragwerk muss Öffnungen konstruktiv reflektieren
-- Thin-band / Achsen-Reparaturen müssen nachvollziehbar bleiben
+## 5. Current Focus (active domain phase)
 
+- Members-first architecture stabilized (schema_version = 3)
+- FramePolicy fully drives structural profiles
+- Contract enforces structural completeness
+- Preparing Variation & deterministic differentiation layer
 ---
 
 ## 6. Snapshot (für neue Chats)
-=== SNAPSHOT ===
+=== SNAPSHOT 0.3.x ===
 - Stable core: model / notes / registry / logging_conf / geom_eps
-- Active domain: fachwerk (axes_u, axes_z, frameplan, openings_norm)
-- Active type: fachwerkhaus.hallenhaus
-- Builder refactor: moving from axis_x raster to FramePlan axes_u truth
+- Domain: Fachwerk members-first (schema_version = 3)
+- Builder is pure renderer (no structural inference)
+- Contract hardened (members mandatory)
+- Determinism preserved
 === END SNAPSHOT ===
 
 
@@ -96,6 +101,10 @@ Golden Reports/Tests sind der Anker.
 ---
 
 ## Next Structural Milestone
+
+NOTE:
+Structural interface stabilization completed in v0.3.0 (Members-Only Architecture).
+v0.2.0 milestone remains planned but is now independent of builder refactors.
 
 ### v0.2.0 – Typed Order & Offer Interface
 
