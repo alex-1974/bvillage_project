@@ -563,6 +563,9 @@ def build_frame(
     _build_hall_posts_to_ridge(house, cols["frame"], z_ridge)
     LOG.info("Hall posts through to ridge done")
 
+    from bvillage.domains.fachwerk.core.frameplan import normalize_frameplan_dict
+    frameplan = normalize_frameplan_dict(frameplan)
+    
     # Phase4 modules
     from .opening_frames import build_opening_frames
     from .braces import build_braces_corner_band

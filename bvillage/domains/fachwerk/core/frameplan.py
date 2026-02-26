@@ -285,6 +285,125 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
         },
     }
 
+def _flatten_numeric(x: Any) -> List[float]:
+    """Collect all numeric values from nested lists/dicts, return sorted unique floats."""
+    vals: List[float] = []
+
+    def _collect(v: Any) -> None:
+        if v is None:
+            return
+        if isinstance(v, (int, float)):
+            vals.append(float(v))
+            return
+        if isinstance(v, str):
+            try:
+                vals.append(float(v))
+            except Exception:
+                return
+            return
+        if isinstance(v, (list, tuple)):
+            for it in v:
+                _collect(it)
+            return
+        if isinstance(v, dict):
+            for it in v.values():
+                _collect(it)
+            return
+
+    _collect(x)
+    return sorted(set(vals))
+
+
+def normalize_frameplan_dict(fp: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize/enrich a frameplan dict to a canonical schema.
+
+    Adds:
+      - fp["basis"]         : x_min,x_max,center_x,halfW
+      - fp["axes_u_flat"]   : {wall: [u...]}  (sorted unique)
+      - fp["axes_z_flat"]   : [z...]
+      - fp["openings_norm"] : openings with guaranteed u0/u1/z0/z1 keys
+
+    Keeps original keys untouched.
+    """
+    dims = fp.get("dims") or {}
+    L = dims.get("L")
+    W = dims.get("W")
+    if L is None or W is None:
+        raise ValueError("frameplan dict missing dims.L/dims.W")
+
+    Lf = float(L)
+    Wf = float(W)
+
+    fp.setdefault("basis", {
+        "x_min": 0.0,
+        "x_max": Lf,
+        "center_x": 0.5 * Lf,
+        "halfW": 0.5 * Wf,
+    })
+
+    # axes_z_flat
+    fp["axes_z_flat"] = _flatten_numeric(fp.get("axes_z"))
+
+    # axes_u_flat per wall
+    axes_u = fp.get("axes_u") or {}
+    axes_u_flat: Dict[str, List[float]] = {}
+    for wall in ("N", "S", "E", "W"):
+        w = axes_u.get(wall)
+        if w is None:
+            axes_u_flat[wall] = []
+            continue
+        # Prefer canonical w["all"] if present (your current schema provides this)
+        if isinstance(w, dict) and "all" in w:
+            axes_u_flat[wall] = _flatten_numeric(w.get("all"))
+        else:
+            axes_u_flat[wall] = _flatten_numeric(w)
+
+    fp["axes_u_flat"] = axes_u_flat
+
+    # openings_norm
+    openings = fp.get("openings") or []
+    if isinstance(openings, dict):
+        openings_list = list(openings.values())
+    elif isinstance(openings, list):
+        openings_list = openings
+    else:
+        openings_list = []
+
+    openings_norm = []
+    for op in openings_list:
+        if not isinstance(op, dict):
+            continue
+        wall = op.get("wall")
+        if wall is None:
+            continue
+
+        u0 = op.get("u0")
+        u1 = op.get("u1")
+        if u0 is None or u1 is None:
+            ur = op.get("u")
+            if isinstance(ur, (list, tuple)) and len(ur) == 2:
+                u0, u1 = ur[0], ur[1]
+
+        z0 = op.get("z0")
+        z1 = op.get("z1")
+        if z0 is None or z1 is None:
+            zr = op.get("z")
+            if isinstance(zr, (list, tuple)) and len(zr) == 2:
+                z0, z1 = zr[0], zr[1]
+
+        if u0 is None or u1 is None or z0 is None or z1 is None:
+            continue
+
+        o2 = dict(op)
+        o2["u0"] = float(u0)
+        o2["u1"] = float(u1)
+        o2["z0"] = float(z0)
+        o2["z1"] = float(z1)
+        openings_norm.append(o2)
+
+    fp["openings_norm"] = openings_norm
+    return fp
 
 def frameplan_report(fp: FramePlan) -> str:
     """Human-readable planner report."""
