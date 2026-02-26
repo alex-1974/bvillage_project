@@ -621,6 +621,10 @@ def build_frame(
     # Contract is now an actual gate (members-first cut)
     from bvillage.domains.fachwerk.core.frameplan_contract import audit_frameplan_contract
     report = audit_frameplan_contract(frameplan, house, strict=False)
+    if report.hard:
+        print("=== FRAMEPLAN HARD ERRORS ===")
+    for h in report.hard:
+        print(h)
     if not report.ok:
         raise RuntimeError(f"FramePlan contract failed: hard={len(report.hard)}")
 
