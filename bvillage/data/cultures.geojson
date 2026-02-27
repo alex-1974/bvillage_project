@@ -1,0 +1,49 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "culture_id": "culture.fachwerk_north_german_plain",
+        "trace_id": "cfngp_1350_1550_core",
+        "label": "Fachwerk (North German Plain) core phase",
+        "role": "core_phase",
+        "domain_ids": ["timber_frame"],
+        "archetype_ids": ["fachwerk.hallenhaus"],
+        "core_time": { "start_year": 1350, "end_year": 1550 },
+        "halo_time": { "start_year": 1200, "end_year": 1750 },
+        "typicality": 1.0,
+        "confidence": 0.8,
+        "worldview_id": "hist_v1",
+        "source": "manual_v0"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [7.0, 52.0],
+            [11.0, 52.0],
+            [11.0, 54.0],
+            [7.0, 54.0],
+            [7.0, 52.0]
+          ]
+        ]
+      },
+      "bbox": [7.0, 52.0, 11.0, 54.0],
+      "properties_ext": {
+        "halo_geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [5.5, 51.0],
+              [13.0, 51.0],
+              [13.0, 55.0],
+              [5.5, 55.0],
+              [5.5, 51.0]
+            ]
+          ]
+        }
+      }
+    }
+  ]
+}
