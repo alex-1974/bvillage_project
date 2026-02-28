@@ -1,21 +1,56 @@
 # bvillage/domains/fachwerk/blender/build_frame.py
 
+"""
+Fachwerk Frame Builder (Blender Layer)
+
+Responsibilities:
+- Render a validated Fachwerk FramePlan into Blender geometry.
+- Members-first rendering (no legacy geometry paths).
+- Enforce contract via frameplan_contract gate.
+- Apply deterministic materials via MaterialRegistry.
+
+Layer rules:
+- Does NOT perform planning.
+- Does NOT infer structural axes.
+- Consumes FramePlan + house metadata.
+- Delegates material resolution to core.materials.
+
+Phases:
+# STRUCT_BASE   : PRIMARY_POST + EAVES_PLATE_* (members-only)
+# ROOF          : Roof geometry
+# HALL_SUPPORT  : Hall posts to ridge (optional)
+# FP_NORMALIZE  : Canonicalize FramePlan dict for downstream modules (optional)
+# OPENINGS      : Opening frames
+# BRACES        : Bracing system (policy-controlled; optional)
+# INFILLS       : Infills (policy-controlled; optional)
+# INTEGRITY     : Final geometry validation
+
+Public API:
+- build_fachwerk_frame()
+- build_fachwerk_frame_from_structure_notes()
+"""
+
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 import inspect
 import hashlib
 
 import bpy
 from mathutils import Vector
 
-from bvillage.core.notes import get_domain_artifact
+from bvillage.core.errors import SchemaError
 from bvillage.core.materials.material_registry import resolve_for_builder
 
-LOG = logging.getLogger("bvillage.domains.fachwerk.blender.build_frame")
+LOG = logging.getLogger(__name__)
+
+__all__ = [
+    "build_fachwerk_frame",
+    "build_fachwerk_frame_from_structure_notes",
+]
 
 # Material cache (avoid thousands of duplicate Blender materials while keeping deterministic variation)
-_MATERIAL_CACHE: Dict[str, bpy.types.Material] = {}
+_MATERIAL_CACHE: dict[str, bpy.types.Material] = {}
 
 
 def _call_compat(func, /, **kwargs):
@@ -29,10 +64,14 @@ def _call_compat(func, /, **kwargs):
     return func(**filtered)
 
 
-# ------------------------------------------------------------
 # Materials (Builder-side, deterministic)
-# ------------------------------------------------------------
-
+#
+# Material flow:
+# member.role/material_id → resolve_for_builder → RenderSample
+# → deterministic hash → Blender material cache
+#
+# No policy decisions here.
+# No fallback material inference beyond defaults provided by registry.
 def _ensure_bv_material(mat_name: str, sample):
     """
     Create/update a Blender material with deterministic Principled BSDF values.
@@ -86,8 +125,8 @@ def _assign_material(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
 
 
 def _assign_member_material(
-    obj: Optional[bpy.types.Object],
-    member: Dict[str, Any],
+    obj: bpy.types.Object | None,
+    member: dict[str, Any],
     ctx_view: Any,
     *,
     default_material_id: str,
@@ -205,8 +244,45 @@ def _count_objects(col: bpy.types.Collection) -> int:
         except Exception:
             return 0
 
+def _counts(cols: dict[str, bpy.types.Collection]) -> dict[str, int]:
+    # exclude "fachwerk" because it's a container
+    return {k: _count_objects(v) for k, v in cols.items() if k != "fachwerk"}
 
-def _ensure_collection(name: str, parent: Optional[bpy.types.Collection] = None) -> bpy.types.Collection:
+def _delta(a: dict[str, int], b: dict[str, int]) -> dict[str, int]:
+    keys = sorted(set(a) | set(b))
+    return {k: int(b.get(k, 0)) - int(a.get(k, 0)) for k in keys}
+
+def _log_phase(
+    phase: str,
+    before: dict[str, int],
+    after: dict[str, int],
+) -> dict[str, int]:
+    d = _delta(before, after)
+    LOG.debug("PHASE %-10s | delta=%s | after=%s", phase, d, after)
+    return d
+
+def _require_delta(
+    phase: str,
+    d: dict[str, int],
+    key: str,
+    *,
+    min_delta: int = 1,
+) -> None:
+    value = int(d.get(key, 0))
+
+    if value < min_delta:
+        LOG.error(
+            "PHASE FAIL | %s produced %s delta=%d (<%d)",
+            phase,
+            key,
+            value,
+            min_delta,
+        )
+        raise RuntimeError(
+            f"Phase {phase} produced insufficient {key} objects"
+        )
+
+def _ensure_collection(name: str, parent: bpy.types.Collection | None = None) -> bpy.types.Collection:
     col = bpy.data.collections.get(name)
     if col is None:
         col = bpy.data.collections.new(name)
@@ -286,7 +362,9 @@ def _clear_fachwerk_subtree(col_fachwerk: bpy.types.Collection) -> int:
     return removed
 
 
-def _ensure_subcollections(root_collection: bpy.types.Collection) -> Dict[str, bpy.types.Collection]:
+def _ensure_subcollections(
+    root_collection: bpy.types.Collection,
+) -> dict[str, bpy.types.Collection]:
     col_fachwerk = _ensure_collection("Fachwerk", parent=root_collection)
     col_frame = _ensure_collection("Frame", parent=col_fachwerk)
     col_roof = _ensure_collection("Roof", parent=col_fachwerk)
@@ -307,14 +385,33 @@ def _ensure_subcollections(root_collection: bpy.types.Collection) -> Dict[str, b
 
 
 # ------------------------------------------------------------
-# House coercion (must provide axis_x/axis_y)
+# House coercion (metadata resolution layer)
+#
+# Purpose:
+# - Extract a usable "house" dict from ctx/structure/notes.
+# - Must provide axis_x and axis_y.
+#
+# Fallback order:
+# 1) structure.notes["house"]
+# 2) ctx.notes["house"]
+# 3) dict-based structure/ctx
+# 4) attribute-based structure.house / ctx.house
+# 5) (temporary) derive from structure.grid + footprint
+#
+# WARNING:
+# The grid/footprint fallback performs structural inference.
+# This should be removed once Planner guarantees house metadata.
 # ------------------------------------------------------------
 
-def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
+def _coerce_house(ctx: Any, structure: Any) -> dict[str, Any]:
     def _is_house(d: Any) -> bool:
-        return isinstance(d, dict) and bool(d.get("axis_x")) and bool(d.get("axis_y"))
+        if not isinstance(d, dict):
+            return False
+        ax = d.get("axis_x")
+        ay = d.get("axis_y")
+        return isinstance(ax, (list, tuple)) and len(ax) > 0 and isinstance(ay, (list, tuple)) and len(ay) > 0
 
-    def _get_notes(obj: Any) -> Optional[dict]:
+    def _get_notes(obj: Any) -> dict | None:
         n = getattr(obj, "notes", None)
         return n if isinstance(n, dict) else None
 
@@ -354,8 +451,10 @@ def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
     grid = getattr(structure, "grid", None)
     footprint = getattr(structure, "footprint", None)
     if grid is not None and hasattr(grid, "axis_x") and hasattr(grid, "axis_y") and footprint is not None:
-        axis_x = list(getattr(grid, "axis_x"))
-        axis_y = list(getattr(grid, "axis_y"))
+        axis_x_raw = getattr(grid, "axis_x", None)
+        axis_y_raw = getattr(grid, "axis_y", None)
+        axis_x = list(axis_x_raw) if axis_x_raw is not None else []
+        axis_y = list(axis_y_raw) if axis_y_raw is not None else []
         if axis_x and axis_y:
             z0 = 0.0
             H_e = 2.6
@@ -390,7 +489,7 @@ def _coerce_house(ctx: Any, structure: Any) -> Dict[str, Any]:
     )
 
 
-def _require_house_keys(house: Dict[str, Any]) -> None:
+def _require_house_keys(house: dict[str, Any]) -> None:
     if not house.get("axis_x") or not house.get("axis_y"):
         raise RuntimeError("Invalid house: axis_x/axis_y missing or empty")
 
@@ -406,7 +505,7 @@ def _require_house_keys(house: Dict[str, Any]) -> None:
 # Geometry helpers
 # ------------------------------------------------------------
 
-def _log_build_header(house_name: str, house: Dict[str, Any]) -> None:
+def _log_build_header(house_name: str, house: dict[str, Any]) -> None:
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines = []
     lines.append("=" * 70)
@@ -424,7 +523,7 @@ def _log_build_header(house_name: str, house: Dict[str, Any]) -> None:
     LOG.info("\n" + "\n".join(lines))
 
 
-def _house_basis(house: Dict[str, Any]) -> Tuple[float, float, float, float]:
+def _house_basis(house: dict[str, Any]) -> tuple[float, float, float, float]:
     axis_x = house["axis_x"]
     axis_y = house["axis_y"]
     x_min = min(axis_x)
@@ -436,7 +535,12 @@ def _house_basis(house: Dict[str, Any]) -> Tuple[float, float, float, float]:
     return x_min, x_max, center_x, halfW
 
 
-def _map_post_member(member: Dict[str, Any], *, house: Dict[str, Any], z1_cap: Optional[float] = None) -> Tuple[Vector, Vector]:
+def _map_post_member(
+    member: dict[str, Any],
+    *,
+    house: dict[str, Any],
+    z1_cap: float | None = None,
+) -> tuple[Vector, Vector]:
     x_min, x_max, center_x, halfW = _house_basis(house)
     wall = member["wall"]
     u = float(member["u"])
@@ -456,7 +560,11 @@ def _map_post_member(member: Dict[str, Any], *, house: Dict[str, Any], z1_cap: O
     raise ValueError(f"Unknown wall '{wall}'")
 
 
-def _map_rail_member(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[Vector, Vector]:
+def _map_rail_member(
+    member: dict[str, Any],
+    *,
+    house: dict[str, Any],
+) -> tuple[Vector, Vector]:
     x_min, x_max, center_x, halfW = _house_basis(house)
     wall = member["wall"]
     u0 = float(member["u0"])
@@ -471,6 +579,7 @@ def _map_rail_member(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[
         return Vector((x_max, u0, z)), Vector((x_max, u1, z))
     if wall == "W":
         return Vector((x_min, u0, z)), Vector((x_min, u1, z))
+
     raise ValueError(f"Unknown wall '{wall}'")
 
 
@@ -478,7 +587,7 @@ def _map_rail_member(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[
 # Phase 1/2: members-only posts + plates (NO LEGACY)
 # ------------------------------------------------------------
 
-def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
+def _build_primary_posts_from_members(fp: dict[str, Any], house: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
     from .timber import make_beam_rect
 
     members = fp.get("members")
@@ -495,7 +604,7 @@ def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any],
 
     z_plate = float(house["z_plate"])
 
-    by_wall: Dict[str, list] = {"N": [], "S": [], "E": [], "W": []}
+    by_wall: dict[str, list] = {"N": [], "S": [], "E": [], "W": []}
     for m in primary:
         w = m.get("wall")
         if w in by_wall:
@@ -510,7 +619,7 @@ def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any],
             try:
                 p0, p1 = _map_post_member(mm, house=house, z1_cap=z_plate)
             except Exception:
-                LOG.exception("Phase1/2: invalid PRIMARY_POST member: %s", mm)
+                LOG.exception("Phase STRUCT_BASE: invalid PRIMARY_POST member: %s", mm)
                 continue
 
             prof = mm.get("profile") or {}
@@ -533,7 +642,7 @@ def _build_primary_posts_from_members(fp: Dict[str, Any], house: Dict[str, Any],
     return built
 
 
-def _build_plates_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
+def _build_plates_from_members(fp: dict[str, Any], house: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
     from .timber import make_beam_rect
 
     members = fp.get("members")
@@ -554,7 +663,7 @@ def _build_plates_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_fr
         try:
             p0, p1 = _map_rail_member(m, house=house)
         except Exception:
-            LOG.exception("Phase1/2: invalid plate member: %s", m)
+            LOG.exception("Phase STRUCT_BASE: invalid plate member: %s", m)
             continue
 
         prof = m.get("profile") or {}
@@ -578,7 +687,7 @@ def _build_plates_from_members(fp: Dict[str, Any], house: Dict[str, Any], col_fr
     return built
 
 
-def _build_posts_and_plates(house: Dict[str, Any], fp: Dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> None:
+def _build_posts_and_plates(house: dict[str, Any], fp: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> None:
     built_primary = _build_primary_posts_from_members(fp, house, col_frame, ctx_view)
     if built_primary <= 0:
         raise RuntimeError("members-first required: missing/empty members.posts PRIMARY_POST")
@@ -587,14 +696,14 @@ def _build_posts_and_plates(house: Dict[str, Any], fp: Dict[str, Any], col_frame
     if built_plates <= 0:
         raise RuntimeError("members-first required: missing/empty members.rails EAVES_PLATE_*")
 
-    LOG.info("Phase1/2: members-first posts=%d plates=%d", built_primary, built_plates)
+    LOG.info("Phase STRUCT_BASE: members-first posts=%d plates=%d", built_primary, built_plates)
 
 
 # ------------------------------------------------------------
 # Phase 3: roof, Phase 3.5 hall posts
 # ------------------------------------------------------------
 
-def _build_roof(house: Dict[str, Any], col_roof: bpy.types.Collection) -> Dict[str, Any]:
+def _build_roof(house: dict[str, Any], col_roof: bpy.types.Collection) -> dict[str, Any]:
     from .roof import build_roof_per_field
 
     axis_x = house["axis_x"]
@@ -610,7 +719,7 @@ def _build_roof(house: Dict[str, Any], col_roof: bpy.types.Collection) -> Dict[s
     )
 
 
-def _build_hall_posts_to_ridge(ctx_view: Any, house: Dict[str, Any], col_frame: bpy.types.Collection, z_ridge: float) -> None:
+def _build_hall_posts_to_ridge(ctx_view: Any, house: dict[str, Any], col_frame: bpy.types.Collection, z_ridge: float) -> None:
     from .timber import make_beam_rect
 
     axis_y = house["axis_y"]
@@ -643,87 +752,192 @@ def _build_hall_posts_to_ridge(ctx_view: Any, house: Dict[str, Any], col_frame: 
 # ------------------------------------------------------------
 
 def build_frame(
+    ctx_view: Any,
     *,
-    ctx: Any,
+    frameplan: dict[str, Any],
     structure: Any,
-    frameplan: Dict[str, Any],
-    root_collection: bpy.types.Collection,
-    clear_previous: bool,
+    root_collection: bpy.types.Collection | None = None,
+    clear_previous: bool = True,
 ) -> bpy.types.Collection:
-    cols = _ensure_subcollections(root_collection)
+    if root_collection is None:
+        root_collection = bpy.context.scene.collection
 
+    cols = _ensure_subcollections(root_collection)
     if clear_previous:
         removed = _clear_fachwerk_subtree(cols["fachwerk"])
         LOG.info("clear_previous=True -> cleared fachwerk subtree, removed_objects=%d", removed)
         cols = _ensure_subcollections(root_collection)
 
-    house = _coerce_house(ctx, structure)
+    house = _coerce_house(ctx_view, structure)
     _require_house_keys(house)
 
     # NEVER mutate ctx (ctx may be frozen dataclass)
-    ctx_view = _material_ctx_view(ctx, house_name=root_collection.name)
+    ctx_view = _material_ctx_view(ctx_view, house_name=root_collection.name)
+    
+    # ---- Optional feature flags (policy driven) ----
+
+    policy = getattr(ctx_view, "policy_resolved", None)
+    if isinstance(policy, dict):
+        braces_enable = bool(policy.get("braces_enable", True))
+        infills_enable = bool(policy.get("infills_enable", True))
+    else:
+        braces_enable = True
+        infills_enable = True
+
+    LOG.debug(
+        "POLICY | braces_enable=%s infills_enable=%s",
+        braces_enable,
+        infills_enable,
+    )
+    
+    LOG.info("BUILD START | house=%s clear=%s", root_collection.name, clear_previous)
+    LOG.debug("HOUSE | L=%.3f W=%.3f z0=%.3f z_plate=%.3f pitch=%.1f", 
+        float(house.get("L", 0.0)), float(house.get("W", 0.0)),
+        float(house.get("z0", 0.0)), float(house.get("z_plate", 0.0)),
+        float(house.get("roof_pitch_deg", 0.0)))
+    LOG.debug("CTX | seed=%s", ctx_view.get("seed"))
+    
+    members = (frameplan.get("members") or {}) if isinstance(frameplan, dict) else {}
+    def _mlen(k: str) -> int:
+        v = members.get(k) or []
+        return len(v) if isinstance(v, list) else -1
+
+    LOG.debug(
+        "MEMBERS | posts=%d rails=%d braces=%d infills=%d openings=%d schema=%s",
+        _mlen("posts"),
+        _mlen("rails"),
+        _mlen("braces"),
+        _mlen("infills"),
+        len(frameplan.get("openings", [])) if isinstance(frameplan.get("openings", None), list) else -1,
+        frameplan.get("schema_version", "?"),
+    )
 
     _log_build_header(root_collection.name, house)
     LOG.info("build_frame() ENTER")
 
     # Contract is now an actual gate (members-first cut)
     from bvillage.domains.fachwerk.core.frameplan_contract import audit_frameplan_contract
+    # Contract gate: no geometry is built if FramePlan is invalid.
+    # Renderer never compensates for structural errors.
     report = audit_frameplan_contract(frameplan, house, strict=False)
     if report.hard:
-        print("=== FRAMEPLAN HARD ERRORS ===")
-    for h in report.hard:
-        print(h)
+        for h in report.hard:
+            LOG.error("CONTRACT HARD | %s", h)
     if not report.ok:
-        raise RuntimeError(f"FramePlan contract failed: hard={len(report.hard)}")
-
-    # Phase1/2 (members-only)
+        LOG.error("CONTRACT FAIL | hard=%d soft=%d", len(report.hard), len(report.soft))
+        raise SchemaError(f"FramePlan contract failed: {report.summary}")
+    LOG.info("CONTRACT OK | hard=%d soft=%d", len(report.hard), len(report.soft))
+    
+    # ------------------------------------------------------------
+    # Build stages (semantic IDs; order is defined by code below)
+    #
+    # STRUCT_BASE   : PRIMARY_POST + EAVES_PLATE_* (members-only)
+    # ROOF          : Roof geometry
+    # HALL_SUPPORT  : Hall posts to ridge (optional)
+    # FP_NORMALIZE  : Canonicalize FramePlan dict for downstream modules (optional)
+    # OPENINGS      : Opening frames
+    # BRACES        : Bracing system (policy-controlled; optional)
+    # INFILLS       : Infills (policy-controlled; optional)
+    # INTEGRITY     : Final geometry validation
+    # ------------------------------------------------------------
+    
+    # Phase STRUCT_BASE (members-only)
+    b = _counts(cols)
     _build_posts_and_plates(house, frameplan, cols["frame"], ctx_view)
-    LOG.info("Phase1/2 posts+plates done")
-
-    # Phase3
+    a = _counts(cols)
+    d = _log_phase("STRUCT_BASE", b, a)
+    _require_delta("STRUCT_BASE", d, "frame")
+    LOG.info("PHASE OK | STRUCT_BASE")
+    
+    # Phase ROOF
+    b = _counts(cols)
     roof_res = _build_roof(house, cols["roof"])
-    LOG.info("Phase3 roof done")
+    a = _counts(cols)
+    d = _log_phase("ROOF", b, a)
+    _require_delta("ROOF", d, "roof")
+    LOG.info("PHASE OK | ROOF")
 
-    # Phase3.5
+    # Phase HALL_SUPPORT
     try:
         z_ridge = float(roof_res.get("z_ridge"))
     except Exception:
         z_ridge = float(house["z_plate"]) + 1.0
+    b = _counts(cols)
     _build_hall_posts_to_ridge(ctx_view, house, cols["frame"], z_ridge)
-    LOG.info("Hall posts through to ridge done")
+    a = _counts(cols)
+    d = _log_phase("HALL_SUPPORT", b, a)
+    # not always required -> WARN, not hard fail
+    if int(d.get("frame", 0)) <= 0:
+        LOG.warning("PHASE WARN | HALL_SUPPORT produced 0 hall posts (may be expected)")
+    else:
+        LOG.info("PHASE OK | HALL_SUPPORT")
 
     from bvillage.domains.fachwerk.core.frameplan import normalize_frameplan_dict
+    before = _counts(cols)
     frameplan = normalize_frameplan_dict(frameplan)
+    after = _counts(cols)
+    _log_phase("FP_NORMALIZE", before, after)   # delta meist 0 → kein require
 
-    # Phase4 modules (members-only inside their modules)
+    # Phase OPENINGS modules (members-only inside their modules)
     from .opening_frames import build_opening_frames
     from .braces import build_braces_corner_band
     from .infills import build_infills
     from .integrity import check_integrity
 
-    _call_compat(build_opening_frames, fp=frameplan, house=house,
-             collection=cols["openings"], ctx_view=ctx_view)
-    LOG.info("Phase4B opening frames done")
+    b = _counts(cols)
+    _call_compat(build_opening_frames, fp=frameplan, house=house, collection=cols["openings"], ctx_view=ctx_view)
+    a = _counts(cols)
+    _log_phase("OPENINGS", b, a)
+    LOG.info("PHASE OK | OPENINGS")
 
-    _call_compat(build_braces_corner_band, fp=frameplan, house=house,
-             collection=cols["braces"], ctx_view=ctx_view)
-    LOG.info("Phase4C braces done")
+    # ---- Phase BRACES ----
+    b = _counts(cols)
 
-    _call_compat(build_infills, fp=frameplan, house=house,
-             collection=cols["infills"], ctx_view=ctx_view)
-    LOG.info("Phase4A infills done")
+    if braces_enable:
+        _call_compat(
+            build_braces_corner_band,
+            fp=frameplan,
+            house=house,
+            collection=cols["braces"],
+            ctx_view=ctx_view,
+        )
 
-    LOG.info(
-        "BUILD SUMMARY | cols: frame=%d roof=%d openings=%d braces=%d infills=%d debug=%d",
-        _count_objects(cols["frame"]),
-        _count_objects(cols["roof"]),
-        _count_objects(cols["openings"]),
-        _count_objects(cols["braces"]),
-        _count_objects(cols["infills"]),
-        _count_objects(cols["debug"]),
-    )
-    LOG.info("scene objects total=%d", len(bpy.data.objects))
+        a = _counts(cols)
+        d = _log_phase("BRACES", b, a)
 
+        if int(d.get("braces", 0)) <= 0:
+            LOG.warning("PHASE WARN | BRACES enabled but produced 0 braces")
+        else:
+            LOG.info("PHASE OK | BRACES")
+    else:
+        LOG.info("PHASE SKIP | BRACES disabled by policy")
+
+    # ---- Phase INFILLS ----
+    b = _counts(cols)
+
+    if infills_enable:
+        _call_compat(
+            build_infills,
+            fp=frameplan,
+            house=house,
+            collection=cols["infills"],
+            ctx_view=ctx_view,
+        )
+
+        a = _counts(cols)
+        d = _log_phase("INFILLS", b, a)
+
+        if int(d.get("infills", 0)) <= 0:
+            LOG.warning("PHASE WARN | INFILLS enabled but produced 0 infills")
+        else:
+            LOG.info("PHASE OK | INFILLS")
+    else:
+        LOG.info("PHASE SKIP | INFILLS disabled by policy")
+
+    final_counts = _counts(cols)
+    LOG.info("BUILD SUMMARY | %s", final_counts)
+    LOG.info("BUILD OK")
+    
     ok = check_integrity(fp=frameplan, house=house, collections=cols)
     if not ok:
         raise RuntimeError("Integrity check failed (see previous errors)")
@@ -739,12 +953,12 @@ def build_fachwerk_frame(
     *,
     ctx: Any,
     structure: Any,
-    frameplan: Dict[str, Any],
-    root_collection: bpy.types.Collection,
+    frameplan: dict[str, Any],
+    root_collection: bpy.types.Collection | None = None,
     clear_previous: bool = True,
 ) -> bpy.types.Collection:
     return build_frame(
-        ctx=ctx,
+        ctx_view=ctx,
         structure=structure,
         frameplan=frameplan,
         root_collection=root_collection,
