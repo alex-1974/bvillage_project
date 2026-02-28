@@ -15,39 +15,64 @@ from .policy_types import (
 
 def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
     """
-    v0.4.0 MVP:
-    Resolve a small, type-aware policy set from Context.
+    Resolve minimal cultural + structural policy from Context.
 
-    Later:
-    - split into modular policy_*.py files
-    - add region/epoch tables + overrides
-    - add richer schemas + provenance
+    This is the ONLY place where:
+    - b_max
+    - target_gefach_w
+    - typological parameters
+
+    are derived.
+
+    Planner and Domains must not invent structural defaults.
     """
+
     epoch = getattr(ctx, "epoch_band", "late_medieval")
     region = getattr(ctx, "region", "north")
     settlement = getattr(ctx, "settlement_type", "village")
     wealth = float(getattr(ctx, "wealth", 0.5))
     house_type = getattr(ctx, "house_type", "")
 
-    # --- Fachwerk domain inputs (minimal) ---
-    # Keep your existing idea but move it here (planner stays dumb).
-    base = 1.55
-    span = 0.35
-    b_max = base + span * (wealth - 0.3)
-    b_max = max(1.45, min(1.85, b_max))
+    # =========================================================
+    # Fachwerk Structural Policy
+    # =========================================================
+
+    if house_type == "fachwerkhaus.hallenhaus":
+
+        # ---- Statics limit (hard structural max spacing) ----
+        # Historically narrower than decorative later Fachwerk.
+        # Wealth slightly increases span (better timber quality).
+        base = 1.50
+        span = 0.15
+        b_max = base + span * (wealth - 0.5)
+        b_max = max(1.40, min(1.65, b_max))
+
+        # ---- Cultural target gefach width (aesthetic rhythm) ----
+        # Long walls in Hallenhaus typically 1.20–1.50 m
+        target_gefach_w = 1.35 + 0.10 * (wealth - 0.5)
+        target_gefach_w = max(1.20, min(1.50, target_gefach_w))
+
+        target_gefach_jitter = 0.08
+
+    else:
+        # Generic fallback for other Fachwerk types
+        b_max = 1.65
+        target_gefach_w = 1.45
+        target_gefach_jitter = 0.12
 
     fachwerk = FachwerkPolicySpec(
         b_max=b_max,
         default_jamb_t=0.20,
     )
 
-    # --- Constraints (type-specific defaults) ---
-    # These are your planner constants, lifted into policy stack.
-    # You can later branch on epoch/region/settlement/wealth/house_type.
+    # =========================================================
+    # Constraints (minimal MVP set)
+    # =========================================================
+
     constraints: Dict[str, ConstraintSpec] = {}
 
     if house_type == "fachwerkhaus.hallenhaus":
-        # Brustriegel height
+
         constraints["brustriegel_z"] = ConstraintSpec(
             hard=None,
             soft=RangeSoftSpec(
@@ -59,29 +84,19 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
             code_prefix="HALL",
         )
 
-        # Target infill (gefach) width intent (consumed later by fachwerk-core for secondary studs)
         constraints["gefach_width_target"] = ConstraintSpec(
-            hard=RangeHardSpec(0.0, 1.60),
+            hard=RangeHardSpec(0.0, b_max),
             soft=RangeSoftSpec(
-                ideal=(1.20, 1.50),
-                allowed=(0.90, 1.60),
+                ideal=(target_gefach_w - 0.10, target_gefach_w + 0.10),
+                allowed=(1.10, b_max),
                 weight=3.0,
             ),
             unit="m",
             code_prefix="HALL",
         )
 
-    else:
-        # generic fallback (safe, conservative)
-        constraints["brustriegel_z"] = ConstraintSpec(
-            hard=None,
-            soft=RangeSoftSpec(ideal=(0.95, 1.10), allowed=(0.85, 1.25), weight=1.0),
-            unit="m",
-            code_prefix="GEN",
-        )
-
     return ResolvedPolicy(
-        schema=1,
+        schema=2,
         constraints=constraints,
         fachwerk=fachwerk,
     )

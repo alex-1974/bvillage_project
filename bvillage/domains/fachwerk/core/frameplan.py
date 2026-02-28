@@ -86,6 +86,10 @@ class FramePolicy:
     brace_profile_d: float = 0.12
     brace_min_cell_w: float = 0.80
     brace_min_cell_h: float = 0.80
+    
+    # --- historical gefach targeting ---
+    target_gefach_w: float = 1.35
+    target_gefach_jitter: float = 0.10
 
     def __post_init__(self):
         if self.horizontal_axes_style is None:
@@ -145,6 +149,26 @@ def _infer_wall_height(structure: StructurePlan) -> Tuple[float, float]:
 
     return z0, H_e
 
+def _binder_u_from_grid(structure: StructurePlan) -> List[float]:
+    """
+    Convert grid axis_x (0..L) to wall-u coordinates (-L/2..+L/2).
+    Only meaningful for N/S walls.
+    """
+    L = float(structure.footprint.length)
+    halfL = 0.5 * L
+
+    grid = getattr(structure, "grid", None)
+    axis_x = getattr(grid, "axis_x", None) if grid is not None else None
+    if not isinstance(axis_x, (list, tuple)) or len(axis_x) < 2:
+        return []
+
+    # convert x -> u
+    out = [float(x) - halfL for x in axis_x]
+
+    # drop endpoints (corners) because they're already in primary axes
+    eps = 1e-6
+    out = [u for u in out if (u > -halfL + eps) and (u < +halfL - eps)]
+    return out
 
 def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePolicy) -> FramePlan:
     """
@@ -169,9 +193,18 @@ def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePol
         L=L,
         W=W,
         b_max=float(policy.b_max),
-        openings=list(openings_final),
+       openings=list(openings_final),
     )
+    
+    binder_u = _binder_u_from_grid(structure)
 
+    vertical_axes = _adjust_secondary_axes_by_target(
+        vertical_axes,
+        target_width=float(policy.target_gefach_w),
+        jitter=float(policy.target_gefach_jitter),
+        binder_u=binder_u,
+    )
+    
     z_axes, z_clusters, z_repair_log = compute_z_axes(
         z0=z0,
         H_e=H_e,
@@ -200,6 +233,95 @@ def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePol
         policy=policy,
     )
 
+def _adjust_secondary_axes_by_target(
+    axes: Dict[str, Dict[str, List[float]]],
+    *,
+    target_width: float,
+    jitter: float,
+    binder_u: List[float],
+    merge_tol: float = 1e-4,
+) -> Dict[str, Dict[str, List[float]]]:
+    """
+    Hallenhaus MVP: make N/S wall bay segmentation respect binder axes.
+
+    Anchors for segmentation on N/S:
+      - primary axes (usually corners)
+      - opening axes (opening edges)
+      - binder axes (grid axis_x mapped to u)
+
+    Then subdivide spans between anchors to approximate target_width.
+    """
+
+    import random
+
+    def _merge_axis(vals: List[float]) -> List[float]:
+        if not vals:
+            return []
+        vals = sorted(vals)
+        out = [vals[0]]
+        for v in vals[1:]:
+            if abs(v - out[-1]) <= merge_tol:
+                continue
+            out.append(v)
+        return out
+
+    new_axes: Dict[str, Dict[str, List[float]]] = {}
+
+    for wall, data in axes.items():
+        primary = list(data.get("primary", []))
+        opening = list(data.get("opening", []))
+
+        # only adjust long walls
+        if wall not in ("N", "S"):
+            new_axes[wall] = data
+            continue
+
+        # anchors = primary + opening + binder
+        anchors = _merge_axis(primary + opening + list(binder_u))
+
+        # keep originals stable
+        adjusted = list(anchors)
+
+        for i in range(len(anchors) - 1):
+            u0 = anchors[i]
+            u1 = anchors[i + 1]
+            span = u1 - u0
+            if span <= target_width:
+                continue
+
+            # historically moderated subdivision per binder bay
+
+            # small bays → no additional post
+            if span <= 1.6:
+                continue
+
+            # medium binder bay → one middle post
+            elif span <= 2.8:
+                n = 2
+
+            # very large bay (rare in hallenhaus) → max two posts
+            else:
+                n = 3
+
+            for k in range(1, n):
+                pos = u0 + (span * k / n)
+
+                # keep jitter small; we’ll make this deterministic in the next step
+                if jitter > 0.0:
+                    pos += (random.random() - 0.5) * 2 * jitter
+
+                adjusted.append(pos)
+
+        adjusted = _merge_axis(adjusted)
+
+        new_axes[wall] = {
+            "primary": primary,
+            "opening": opening,
+            "secondary": sorted(set(adjusted) - set(primary) - set(opening)),
+            "all": adjusted,
+        }
+
+    return new_axes
 
 def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
     """
