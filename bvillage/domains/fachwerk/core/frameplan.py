@@ -362,6 +362,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "z0": float(fp.z0),
                     "z1": float(fp.H_e),
                     "profile": {"w": float(pol.profile_post_w), "d": float(pol.profile_post_d)},
+                    "material_id": "timber.oak",
                 }
             )
 
@@ -380,6 +381,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "z1": float(o.z1),
                 "profile": {"w": float(pol.profile_opening_jamb_w), "d": float(pol.profile_opening_jamb_d)},
                 "opening": o.name,
+                "material_id": "timber.oak",
             }
         )
         opening_posts.append(
@@ -391,6 +393,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "z1": float(o.z1),
                 "profile": {"w": float(pol.profile_opening_jamb_w), "d": float(pol.profile_opening_jamb_d)},
                 "opening": o.name,
+                "material_id": "timber.oak",
             }
         )
 
@@ -415,6 +418,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "z": float(o.z1),
                 "profile": lintel_prof,
                 "opening": o.name,
+                "material_id": "timber.oak",
             }
         )
 
@@ -429,6 +433,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "z": float(o.z0),
                     "profile": {"w": float(pol.profile_opening_sill_w), "d": float(pol.profile_opening_sill_d)},
                     "opening": o.name,
+                    "material_id": "timber.oak",
                 }
             )
 
@@ -455,6 +460,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "u1": u1,
                     "z": float(z_plate),
                     "profile": {"w": float(pol.profile_plate_w), "d": float(pol.profile_plate_d)},
+                    "material_id": "timber.oak",
                 }
             )
 
@@ -502,7 +508,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                         "u1": u1,
                         "z0": z0c,
                         "z1": z1c,
-                        "material": "infill_default",
+                        "material_id": "mortar.lime_weak",
                     }
                 )
 
@@ -565,6 +571,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                         "u1": float(a_u1), "z1": float(a_z1),
                         "profile": {"w": brace_w, "d": brace_d},
                         "kind": "single",
+                        "material_id": "timber.spruce",
                     }
                 )
 
