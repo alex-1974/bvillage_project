@@ -65,6 +65,7 @@ try:
     from bvillage.core.validate import validate
     from bvillage.core.model import Context
     from bvillage.blender.build import build_house
+    from bvillage.core.seed import Seed
 
     configure_logging(level="INFO", force=True)
 
@@ -72,7 +73,7 @@ try:
     provider = get_house_type(TYPE_ID)
 
     ctx = Context(
-        seed=999,
+        seed=Seed(42),
         epoch_band="late_medieval",
         region="north",
         settlement_type="village",

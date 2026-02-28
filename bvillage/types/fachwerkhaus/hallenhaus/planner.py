@@ -47,7 +47,7 @@ from bvillage.core.constraints import (
     sample_soft,
 )
 
-from bvillage.core.policy_stack import resolve_policy_stack
+from bvillage.core.policy_stack import resolve_policy_stack_with_trace
 from bvillage.core.policy_types import ResolvedPolicy, ConstraintSpec, RangeHardSpec, RangeSoftSpec
 
 from bvillage.domains.fachwerk.core.frameplan import (
@@ -145,7 +145,18 @@ def _policy_to_dict(pol: ResolvedPolicy) -> Dict[str, Any]:
         "constraints": c_out,
     }
 
-
+def _attach_policy_trace_artifact(structure, trace):
+    structure.notes["policy_trace"] = {
+        "schema": trace.schema,
+        "layers": [
+            {
+                "layer_id": layer.layer_id,
+                "keys": [op.key for op in layer.ops],
+            }
+            for layer in trace.layers
+        ],
+    }
+    
 def _attach_resolved_policy_artifact(structure: StructurePlan, pol: ResolvedPolicy) -> None:
     set_domain_artifact(
         structure.notes,
@@ -347,39 +358,23 @@ def _frame_policy_from_resolved(resolved_policy) -> FramePolicy:
         target_gefach_jitter=float(g("target_gefach_jitter", 0.10)),
     )
     
-def attach_frameplan(ctx: Context, structure: StructurePlan, openings: OpeningsPlan, resolved):
-    # Map resolved policy → domain FramePolicy
-    fw = getattr(resolved, "fachwerk", resolved)  # supports either resolved.fachwerk.* or flat
+def attach_frameplan(
+    ctx: Context,
+    structure: StructurePlan,
+    openings,
+    resolved: ResolvedPolicy,
+) -> None:
+    """
+    Build and attach Fachwerk FramePlan domain artifact.
 
-    frame_policy = FramePolicy(
-        b_max=float(getattr(fw, "b_max", 2.4)),
-        default_jamb_t=float(getattr(fw, "default_jamb_t", 0.20)),
-        horizontal_axes_style=list(getattr(fw, "horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])),
-        z_merge_tol=float(getattr(fw, "z_merge_tol", FramePolicy(b_max=0.0).z_merge_tol)),
-        z_band_min=float(getattr(fw, "z_band_min", 0.15)),
-        z_band_target_min=float(getattr(fw, "z_band_target_min", 0.25)),
-        width_type=getattr(fw, "width_type", "axis"),
-        profile_post_w=float(getattr(fw, "profile_post_w", 0.20)),
-        profile_post_d=float(getattr(fw, "profile_post_d", 0.20)),
-        profile_plate_w=float(getattr(fw, "profile_plate_w", 0.18)),
-        profile_plate_d=float(getattr(fw, "profile_plate_d", 0.18)),
-        profile_opening_jamb_w=float(getattr(fw, "profile_opening_jamb_w", 0.18)),
-        profile_opening_jamb_d=float(getattr(fw, "profile_opening_jamb_d", 0.18)),
-        profile_opening_lintel_gate_w=float(getattr(fw, "profile_opening_lintel_gate_w", 0.20)),
-        profile_opening_lintel_gate_d=float(getattr(fw, "profile_opening_lintel_gate_d", 0.20)),
-        profile_opening_lintel_window_w=float(getattr(fw, "profile_opening_lintel_window_w", 0.16)),
-        profile_opening_lintel_window_d=float(getattr(fw, "profile_opening_lintel_window_d", 0.18)),
-        profile_opening_sill_w=float(getattr(fw, "profile_opening_sill_w", 0.16)),
-        profile_opening_sill_d=float(getattr(fw, "profile_opening_sill_d", 0.18)),
-        braces_enable=bool(getattr(fw, "braces_enable", True)),
-        brace_profile_w=float(getattr(fw, "brace_profile_w", 0.12)),
-        brace_profile_d=float(getattr(fw, "brace_profile_d", 0.12)),
-        brace_min_cell_w=float(getattr(fw, "brace_min_cell_w", 0.80)),
-        brace_min_cell_h=float(getattr(fw, "brace_min_cell_h", 0.80)),
-        target_gefach_w=float(getattr(fw, "target_gefach_w", 1.35)),
-        target_gefach_jitter=float(getattr(fw, "target_gefach_jitter", 0.10)),
-    )
+    No structural defaults allowed here.
+    Mapping ResolvedPolicy → FramePolicy is explicit and centralized.
+    """
 
+    # 1) Map resolved policy → domain policy
+    frame_policy = _frame_policy_from_resolved(resolved)
+
+    # 2) Build deterministic frameplan
     fp = build_frameplan(
         structure=structure,
         openings=openings,
@@ -387,8 +382,7 @@ def attach_frameplan(ctx: Context, structure: StructurePlan, openings: OpeningsP
         seed=int(ctx.seed.derive("fachwerk.frameplan.jitter")),
     )
 
-    fp_dict = frameplan_to_dict(fp)
-
+    # 3) Persist artifact
     payload = frameplan_to_dict(fp)
 
     set_domain_artifact(
@@ -399,6 +393,7 @@ def attach_frameplan(ctx: Context, structure: StructurePlan, openings: OpeningsP
         legacy_aliases=("frameplan", "fachwerk.frameplan"),
     )
 
+    # 4) Human-readable report
     logger.info("%s", frameplan_report(fp))
 
 
@@ -414,12 +409,13 @@ def generate_house(ctx: Context):
     )
 
     # 1) Resolve policy stack (mandatory)
-    resolved = resolve_policy_stack(ctx)
+    resolved, trace = resolve_policy_stack_with_trace(ctx)
 
     structure = generate_structure(ctx)
 
     # 2) Persist resolved policy for debugging + downstream consumers
     _attach_resolved_policy_artifact(structure, resolved)
+    _attach_policy_trace_artifact(structure, trace)
 
     # 3) Attach constraints-derived parameters early (independent of interior/openings)
     _attach_constraints_artifact(ctx, structure, resolved)

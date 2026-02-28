@@ -1,7 +1,8 @@
 # bvillage/core/policy_stack.py
 
 from __future__ import annotations
-from typing import Dict
+from dataclasses import dataclass
+from typing import List, Tuple, Any
 
 from .model import Context
 from .policy_types import (
@@ -12,6 +13,22 @@ from .policy_types import (
     FachwerkPolicySpec,
 )
 
+@dataclass(frozen=True)
+class TraceOp:
+    key: str
+    value: Any
+
+
+@dataclass(frozen=True)
+class TraceLayer:
+    layer_id: str
+    ops: Tuple[TraceOp, ...]
+
+
+@dataclass(frozen=True)
+class ResolutionTrace:
+    schema: int
+    layers: Tuple[TraceLayer, ...]
 
 def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
     """
@@ -100,3 +117,41 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
         constraints=constraints,
         fachwerk=fachwerk,
     )
+    
+def resolve_policy_stack_with_trace(ctx: Context) -> tuple[ResolvedPolicy, ResolutionTrace]:
+    resolved = resolve_policy_stack(ctx)
+
+    layers: List[TraceLayer] = []
+
+    # ---- TypePolicy Layer ----
+    if ctx.house_type == "fachwerkhaus.hallenhaus":
+        layer_id = "TypePolicy:fachwerkhaus.hallenhaus"
+    else:
+        layer_id = "TypePolicy:generic"
+
+    ops = [
+        TraceOp("fachwerk.b_max", resolved.fachwerk.b_max),
+        TraceOp("fachwerk.default_jamb_t", resolved.fachwerk.default_jamb_t),
+    ]
+
+    layers.append(TraceLayer(layer_id, tuple(sorted(ops, key=lambda o: o.key))))
+
+    # ---- Constraints Layer ----
+    if resolved.constraints:
+        ops = [
+            TraceOp(f"constraints.{k}", "ConstraintSpec")
+            for k in sorted(resolved.constraints.keys())
+        ]
+        layers.append(
+            TraceLayer(
+                "ConstraintsPolicy",
+                tuple(ops),
+            )
+        )
+
+    trace = ResolutionTrace(
+        schema=resolved.schema,
+        layers=tuple(layers),
+    )
+
+    return resolved, trace

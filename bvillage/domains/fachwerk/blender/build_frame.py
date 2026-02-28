@@ -14,6 +14,9 @@ from bvillage.core.materials.material_registry import resolve_for_builder
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.build_frame")
 
+# Material cache (avoid thousands of duplicate Blender materials while keeping deterministic variation)
+_MATERIAL_CACHE: Dict[str, bpy.types.Material] = {}
+
 
 def _call_compat(func, /, **kwargs):
     """Call `func` with only the kwargs it actually accepts."""
@@ -62,13 +65,24 @@ def _ensure_bv_material(mat_name: str, sample):
 
 
 def _assign_material(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
-    if obj is None or obj.data is None:
+    if obj is None or mat is None:
         return
-    mats = obj.data.materials
-    if len(mats) == 0:
-        mats.append(mat)
-    else:
-        mats[0] = mat
+    try:
+        if getattr(obj, "data", None) is None:
+            return
+        mats = getattr(obj.data, "materials", None)
+        if mats is None:
+            return
+        if len(mats) == 0:
+            mats.append(mat)
+        else:
+            mats[0] = mat
+    except Exception:
+        LOG.exception(
+            "Failed to assign material %s to object %s",
+            getattr(mat, "name", "?"),
+            getattr(obj, "name", "?"),
+        )
 
 
 def _assign_member_material(
@@ -81,8 +95,22 @@ def _assign_member_material(
     if obj is None:
         return
     try:
-        resolved, surface, sample = resolve_for_builder(member, ctx_view, default_material_id=default_material_id)
-        mat = _ensure_bv_material(f"BV_{resolved.id}", sample)
+        resolved, surface, sample = resolve_for_builder(
+            member,
+            ctx_view,
+            default_material_id=default_material_id,
+        )
+
+        # deterministic cache key (resolved id + sampled render)
+        mat_key = f"{resolved.id}|{sample.base_color_hex}|{float(sample.roughness):.4f}|{float(sample.metallic):.4f}"
+        mat_hash = hashlib.blake2b(mat_key.encode("utf-8"), digest_size=4).hexdigest()
+        mat_name = f"BV_{resolved.id}_{mat_hash}"
+
+        mat = _MATERIAL_CACHE.get(mat_name)
+        if mat is None:
+            mat = _ensure_bv_material(mat_name, sample)
+            _MATERIAL_CACHE[mat_name] = mat
+
         _assign_material(obj, mat)
     except Exception:
         LOG.exception("Material assignment failed for obj=%s member=%s", getattr(obj, "name", "?"), member)
@@ -101,12 +129,14 @@ def _material_ctx_view(ctx: Any, *, house_name: str) -> dict:
             signed=False,
         ) & 0x7FFFFFFF
 
-    return {
-        "seed": int(seed.base),
+    seed_val = getattr(seed, "base", seed)
 
-        # MVP role → material
+    return {
+        "seed": int(seed_val),
+
+        # v3 roles (members-first)
         "material_id_default_by_role": {
-            # frame
+            # frame / timber
             "PRIMARY_POST": "timber.oak",
             "HALL_POST": "timber.oak",
             "EAVES_PLATE_N": "timber.oak",
@@ -114,14 +144,22 @@ def _material_ctx_view(ctx: Any, *, house_name: str) -> dict:
             "EAVES_PLATE_E": "timber.oak",
             "EAVES_PLATE_W": "timber.oak",
 
-            # braces / diagonal timber
-            "BRACE": "timber.spruce",
+            # openings
+            "OPENING_JAMB_L": "timber.oak",
+            "OPENING_JAMB_R": "timber.oak",
+            "OPENING_LINTEL": "timber.oak",
+            "OPENING_SILL": "timber.oak",
 
-            # infill (future: these roles must exist in infills module)
+            # braces / diagonal timber
+            "BRACE_DIAG": "timber.spruce",
+
+            # infill cells (mvp)
+            "INFILL_CELL": "mortar.lime_weak",
+
+            # legacy aliases (keep, so old artifacts don’t break)
+            "BRACE": "timber.spruce",
             "INFILL_BRICK": "brick.historic_mid",
             "INFILL_MORTAR": "mortar.lime_weak",
-
-            # opening frames
             "OPENING_FRAME": "timber.oak",
 
             # if ever modeled as members
@@ -129,7 +167,6 @@ def _material_ctx_view(ctx: Any, *, house_name: str) -> dict:
             "IRON": "metal.wrought_iron",
         },
 
-        # MVP role → surface
         "surface_default_by_role": {
             "PRIMARY_POST": {"condition": "aged", "finish": "planed"},
             "HALL_POST": {"condition": "aged", "finish": "planed"},
@@ -137,9 +174,20 @@ def _material_ctx_view(ctx: Any, *, house_name: str) -> dict:
             "EAVES_PLATE_S": {"condition": "aged", "finish": "planed"},
             "EAVES_PLATE_E": {"condition": "aged", "finish": "planed"},
             "EAVES_PLATE_W": {"condition": "aged", "finish": "planed"},
+
+            "OPENING_JAMB_L": {"condition": "aged", "finish": "planed"},
+            "OPENING_JAMB_R": {"condition": "aged", "finish": "planed"},
+            "OPENING_LINTEL": {"condition": "aged", "finish": "planed"},
+            "OPENING_SILL": {"condition": "aged", "finish": "planed"},
+
+            "BRACE_DIAG": {"condition": "aged", "finish": "sawn"},
+            "INFILL_CELL": {"condition": "weathered", "finish": "whitewashed"},
+
+            # legacy aliases
             "BRACE": {"condition": "aged", "finish": "sawn"},
             "INFILL_BRICK": {"condition": "weathered", "finish": "whitewashed"},
             "INFILL_MORTAR": {"condition": "weathered", "finish": "whitewashed"},
+            "OPENING_FRAME": {"condition": "aged", "finish": "planed"},
         },
     }
 
