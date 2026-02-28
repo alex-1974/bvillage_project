@@ -21,7 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Tuple, Dict, List, Literal
 import hashlib
-import random
+from random import Random
 
 from .model import Context, Issue
 
@@ -87,8 +87,13 @@ def _stable_u32(seed: int, key: str) -> int:
     return int.from_bytes(h.digest()[:4], "little", signed=False)
 
 
-def rng_for(ctx: Context, key: str) -> random.Random:
-    return random.Random(_stable_u32(ctx.seed, key))
+def rng_for(ctx: Context, key: str) -> Random:
+    """
+    Deterministic RNG factory.
+
+    Requires ctx.seed to be a Seed object.
+    """
+    return Random(int(ctx.seed.derive(key)))
 
 
 # ----------------------------

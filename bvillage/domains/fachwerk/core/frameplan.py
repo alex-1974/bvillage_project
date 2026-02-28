@@ -30,6 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Tuple
+from random import Random
 
 from bvillage.core.geom_eps import EPS_MERGE
 from bvillage.core.model import StructurePlan
@@ -170,13 +171,18 @@ def _binder_u_from_grid(structure: StructurePlan) -> List[float]:
     out = [u for u in out if (u > -halfL + eps) and (u < +halfL - eps)]
     return out
 
-def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePolicy) -> FramePlan:
+def build_frameplan(
+    *,
+    structure: StructurePlan,
+    openings: Any,
+    policy: FramePolicy,
+    seed: int,
+) -> FramePlan:
     """
     Build frameplan artifact for the given structure and openings.
 
-    Returns
-    -------
-    FramePlan
+    Deterministic:
+      - Any micro-variation is controlled via the provided `seed`.
     """
     L = float(structure.footprint.length)
     W = float(structure.footprint.width)
@@ -189,22 +195,27 @@ def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePol
         width_type=policy.width_type,
     )
 
+    # 1) Base vertical axes (primary + opening anchors)
     vertical_axes = compute_vertical_axes(
         L=L,
         W=W,
         b_max=float(policy.b_max),
-       openings=list(openings_final),
+        openings=list(openings_final),
     )
-    
+
+    # 2) Binder axes from planner grid (optional)
     binder_u = _binder_u_from_grid(structure)
 
+    # 3) Secondary axis adjustment (Hallenhaus MVP), deterministic via `seed`
     vertical_axes = _adjust_secondary_axes_by_target(
         vertical_axes,
         target_width=float(policy.target_gefach_w),
         jitter=float(policy.target_gefach_jitter),
         binder_u=binder_u,
+        seed=int(seed),
     )
-    
+
+    # 4) Z axes
     z_axes, z_clusters, z_repair_log = compute_z_axes(
         z0=z0,
         H_e=H_e,
@@ -239,8 +250,10 @@ def _adjust_secondary_axes_by_target(
     target_width: float,
     jitter: float,
     binder_u: List[float],
+    seed: int,
     merge_tol: float = 1e-4,
 ) -> Dict[str, Dict[str, List[float]]]:
+
     """
     Hallenhaus MVP: make N/S wall bay segmentation respect binder axes.
 
@@ -251,9 +264,8 @@ def _adjust_secondary_axes_by_target(
 
     Then subdivide spans between anchors to approximate target_width.
     """
-
-    import random
-
+    rng = Random(seed)
+     
     def _merge_axis(vals: List[float]) -> List[float]:
         if not vals:
             return []
@@ -306,9 +318,8 @@ def _adjust_secondary_axes_by_target(
             for k in range(1, n):
                 pos = u0 + (span * k / n)
 
-                # keep jitter small; we’ll make this deterministic in the next step
                 if jitter > 0.0:
-                    pos += (random.random() - 0.5) * 2 * jitter
+                    pos += (rng.random() - 0.5) * 2.0 * jitter
 
                 adjusted.append(pos)
 

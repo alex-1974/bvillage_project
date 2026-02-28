@@ -102,7 +102,7 @@ def _material_ctx_view(ctx: Any, *, house_name: str) -> dict:
         ) & 0x7FFFFFFF
 
     return {
-        "seed": int(seed),
+        "seed": int(seed.base),
 
         # MVP role → material
         "material_id_default_by_role": {

@@ -299,21 +299,95 @@ def generate_structure(ctx: Context, *, dims: HallenhausDims = DEFAULT_DIMS) -> 
 # Domain hookup (fachwerk)
 # ============================================================
 
-def attach_frameplan(ctx: Context, structure: StructurePlan, openings: Any, pol: ResolvedPolicy) -> None:
+def _frame_policy_from_resolved(resolved_policy) -> FramePolicy:
     """
-    Planner must not derive hidden structural defaults.
-    FramePolicy comes from ResolvedPolicy.
+    Map ResolvedPolicy -> domain FramePolicy (fachwerk).
+    Keep this mapping explicit to avoid defaults creeping into the domain.
     """
-    policy = FramePolicy(
-        b_max=float(pol.fachwerk.b_max),
-        default_jamb_t=float(pol.fachwerk.default_jamb_t),
+    # Try common layout: resolved_policy.fachwerk.* (dataclass or namespace)
+    fw = getattr(resolved_policy, "fachwerk", resolved_policy)
+
+    def g(name: str, default):
+        v = getattr(fw, name, None)
+        return default if v is None else v
+
+    return FramePolicy(
+        b_max=float(g("b_max", 2.40)),
+        default_jamb_t=float(g("default_jamb_t", 0.20)),
+        horizontal_axes_style=list(g("horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])),
+
+        z_merge_tol=float(g("z_merge_tol", FramePolicy(b_max=0.0).z_merge_tol)),
+        z_band_min=float(g("z_band_min", 0.15)),
+        z_band_target_min=float(g("z_band_target_min", 0.25)),
+
+        width_type=g("width_type", "axis"),
+
+        profile_post_w=float(g("profile_post_w", 0.20)),
+        profile_post_d=float(g("profile_post_d", 0.20)),
+        profile_plate_w=float(g("profile_plate_w", 0.18)),
+        profile_plate_d=float(g("profile_plate_d", 0.18)),
+
+        profile_opening_jamb_w=float(g("profile_opening_jamb_w", 0.18)),
+        profile_opening_jamb_d=float(g("profile_opening_jamb_d", 0.18)),
+
+        profile_opening_lintel_gate_w=float(g("profile_opening_lintel_gate_w", 0.20)),
+        profile_opening_lintel_gate_d=float(g("profile_opening_lintel_gate_d", 0.20)),
+        profile_opening_lintel_window_w=float(g("profile_opening_lintel_window_w", 0.16)),
+        profile_opening_lintel_window_d=float(g("profile_opening_lintel_window_d", 0.18)),
+        profile_opening_sill_w=float(g("profile_opening_sill_w", 0.16)),
+        profile_opening_sill_d=float(g("profile_opening_sill_d", 0.18)),
+
+        braces_enable=bool(g("braces_enable", True)),
+        brace_profile_w=float(g("brace_profile_w", 0.12)),
+        brace_profile_d=float(g("brace_profile_d", 0.12)),
+        brace_min_cell_w=float(g("brace_min_cell_w", 0.80)),
+        brace_min_cell_h=float(g("brace_min_cell_h", 0.80)),
+
+        target_gefach_w=float(g("target_gefach_w", 1.35)),
+        target_gefach_jitter=float(g("target_gefach_jitter", 0.10)),
+    )
+    
+def attach_frameplan(ctx: Context, structure: StructurePlan, openings: OpeningsPlan, resolved):
+    # Map resolved policy → domain FramePolicy
+    fw = getattr(resolved, "fachwerk", resolved)  # supports either resolved.fachwerk.* or flat
+
+    frame_policy = FramePolicy(
+        b_max=float(getattr(fw, "b_max", 2.4)),
+        default_jamb_t=float(getattr(fw, "default_jamb_t", 0.20)),
+        horizontal_axes_style=list(getattr(fw, "horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])),
+        z_merge_tol=float(getattr(fw, "z_merge_tol", FramePolicy(b_max=0.0).z_merge_tol)),
+        z_band_min=float(getattr(fw, "z_band_min", 0.15)),
+        z_band_target_min=float(getattr(fw, "z_band_target_min", 0.25)),
+        width_type=getattr(fw, "width_type", "axis"),
+        profile_post_w=float(getattr(fw, "profile_post_w", 0.20)),
+        profile_post_d=float(getattr(fw, "profile_post_d", 0.20)),
+        profile_plate_w=float(getattr(fw, "profile_plate_w", 0.18)),
+        profile_plate_d=float(getattr(fw, "profile_plate_d", 0.18)),
+        profile_opening_jamb_w=float(getattr(fw, "profile_opening_jamb_w", 0.18)),
+        profile_opening_jamb_d=float(getattr(fw, "profile_opening_jamb_d", 0.18)),
+        profile_opening_lintel_gate_w=float(getattr(fw, "profile_opening_lintel_gate_w", 0.20)),
+        profile_opening_lintel_gate_d=float(getattr(fw, "profile_opening_lintel_gate_d", 0.20)),
+        profile_opening_lintel_window_w=float(getattr(fw, "profile_opening_lintel_window_w", 0.16)),
+        profile_opening_lintel_window_d=float(getattr(fw, "profile_opening_lintel_window_d", 0.18)),
+        profile_opening_sill_w=float(getattr(fw, "profile_opening_sill_w", 0.16)),
+        profile_opening_sill_d=float(getattr(fw, "profile_opening_sill_d", 0.18)),
+        braces_enable=bool(getattr(fw, "braces_enable", True)),
+        brace_profile_w=float(getattr(fw, "brace_profile_w", 0.12)),
+        brace_profile_d=float(getattr(fw, "brace_profile_d", 0.12)),
+        brace_min_cell_w=float(getattr(fw, "brace_min_cell_w", 0.80)),
+        brace_min_cell_h=float(getattr(fw, "brace_min_cell_h", 0.80)),
+        target_gefach_w=float(getattr(fw, "target_gefach_w", 1.35)),
+        target_gefach_jitter=float(getattr(fw, "target_gefach_jitter", 0.10)),
     )
 
     fp = build_frameplan(
         structure=structure,
         openings=openings,
-        policy=policy,
+        policy=frame_policy,
+        seed=int(ctx.seed.derive("fachwerk.frameplan.jitter")),
     )
+
+    fp_dict = frameplan_to_dict(fp)
 
     payload = frameplan_to_dict(fp)
 
@@ -340,22 +414,22 @@ def generate_house(ctx: Context):
     )
 
     # 1) Resolve policy stack (mandatory)
-    pol = resolve_policy_stack(ctx)
+    resolved = resolve_policy_stack(ctx)
 
     structure = generate_structure(ctx)
 
     # 2) Persist resolved policy for debugging + downstream consumers
-    _attach_resolved_policy_artifact(structure, pol)
+    _attach_resolved_policy_artifact(structure, resolved)
 
     # 3) Attach constraints-derived parameters early (independent of interior/openings)
-    _attach_constraints_artifact(ctx, structure, pol)
+    _attach_constraints_artifact(ctx, structure, resolved)
 
     # 4) Semantic planning
     interior = generate_interior(ctx, structure)
     openings = generate_openings(ctx, structure, interior)
 
     # 5) Domain frameplan (constructive truth) from resolved policy
-    attach_frameplan(ctx, structure, openings, pol)
+    attach_frameplan(ctx, structure, openings, resolved)
 
     logger.debug("Hallenhaus.generate_house() done")
     return structure, interior, openings
