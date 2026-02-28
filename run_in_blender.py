@@ -22,7 +22,7 @@ if PROJECT_ROOT not in sys.path:
 print("PROJECT_ROOT:", PROJECT_ROOT)
 print("sys.path[0:5] after:", sys.path[:5])
 
-# 2) Import bpy early so we can guard against double-run
+# 2) Import bpy early so we can use driver_namespace for in-session state
 try:
     import bpy
 except Exception as exc:
@@ -30,11 +30,11 @@ except Exception as exc:
     traceback.print_exc()
     raise
 
-# 3) Singleton guard: prevent double execution in same Blender session
-if bpy.app.driver_namespace.get("BVILLAGE_ALREADY_RAN"):
-    print("BVILLAGE: already ran once in this Blender session -> skipping.")
-    raise SystemExit(0)
-bpy.app.driver_namespace["BVILLAGE_ALREADY_RAN"] = True
+# 3) Allow re-run in the same Blender session (Scripting: Run Script)
+#    We keep a counter for diagnostics instead of blocking.
+ns = bpy.app.driver_namespace
+ns["BVILLAGE_RUNS"] = int(ns.get("BVILLAGE_RUNS", 0)) + 1
+print(f"BVILLAGE: run #{ns['BVILLAGE_RUNS']} (re-run enabled)")
 
 # 4) Try importing bvillage early with explicit diagnostics
 try:
@@ -46,13 +46,13 @@ except Exception as exc:
     traceback.print_exc()
     raise
 
-# Optional: hot-reload hygiene after sys.path is correct
+# 5) Hot-reload hygiene: drop bvillage modules so edits are picked up on rerun
 for name in list(sys.modules.keys()):
     if name == "bvillage" or name.startswith("bvillage."):
         del sys.modules[name]
 
 # ============================================================
-# Run pipeline (guarded)
+# Run pipeline (re-runnable)
 # ============================================================
 
 CLEAR_PREVIOUS = True
@@ -72,7 +72,7 @@ try:
     provider = get_house_type(TYPE_ID)
 
     ctx = Context(
-        seed=42,
+        seed=999,
         epoch_band="late_medieval",
         region="north",
         settlement_type="village",

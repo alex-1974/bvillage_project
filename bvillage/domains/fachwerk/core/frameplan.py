@@ -1,3 +1,5 @@
+# bvillage/domains/fachwerk/core/frameplan.py
+
 """
 bvillage.domains.fachwerk.core.frameplan
 =======================================
@@ -27,7 +29,8 @@ Notes
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
+from random import Random
 
 from bvillage.core.geom_eps import EPS_MERGE
 from bvillage.core.model import StructurePlan
@@ -62,7 +65,7 @@ class FramePolicy:
     # How to interpret opening width (axis vs clear)
     width_type: WidthType = "axis"
 
-    # --- NEW: members policy knobs ---
+    # --- members policy knobs ---
     profile_post_w: float = 0.20
     profile_post_d: float = 0.20
 
@@ -85,6 +88,10 @@ class FramePolicy:
     brace_min_cell_w: float = 0.80
     brace_min_cell_h: float = 0.80
     
+    # --- historical gefach targeting ---
+    target_gefach_w: float = 1.35
+    target_gefach_jitter: float = 0.10
+
     def __post_init__(self):
         if self.horizontal_axes_style is None:
             object.__setattr__(self, "horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])
@@ -95,9 +102,10 @@ class FramePlan:
     """
     Derived planning artifact for the Fachwerk frame build.
 
-    L/W: footprint dims
-    H_e: wall/eaves height
-    z0: ground base
+    Fields:
+    - L/W: footprint dims
+    - H_e: wall/eaves height
+    - z0: ground base
     """
     L: float
     W: float
@@ -113,9 +121,9 @@ class FramePlan:
 
     wall_tags: Dict[str, List[str]]
     front_wall: str
-    
+
     policy: Optional[FramePolicy] = None
-    
+
 
 def _infer_wall_height(structure: StructurePlan) -> Tuple[float, float]:
     """
@@ -142,14 +150,39 @@ def _infer_wall_height(structure: StructurePlan) -> Tuple[float, float]:
 
     return z0, H_e
 
+def _binder_u_from_grid(structure: StructurePlan) -> List[float]:
+    """
+    Convert grid axis_x (0..L) to wall-u coordinates (-L/2..+L/2).
+    Only meaningful for N/S walls.
+    """
+    L = float(structure.footprint.length)
+    halfL = 0.5 * L
 
-def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePolicy) -> FramePlan:
+    grid = getattr(structure, "grid", None)
+    axis_x = getattr(grid, "axis_x", None) if grid is not None else None
+    if not isinstance(axis_x, (list, tuple)) or len(axis_x) < 2:
+        return []
+
+    # convert x -> u
+    out = [float(x) - halfL for x in axis_x]
+
+    # drop endpoints (corners) because they're already in primary axes
+    eps = 1e-6
+    out = [u for u in out if (u > -halfL + eps) and (u < +halfL - eps)]
+    return out
+
+def build_frameplan(
+    *,
+    structure: StructurePlan,
+    openings: Any,
+    policy: FramePolicy,
+    seed: int,
+) -> FramePlan:
     """
     Build frameplan artifact for the given structure and openings.
 
-    Returns
-    -------
-    FramePlan
+    Deterministic:
+      - Any micro-variation is controlled via the provided `seed`.
     """
     L = float(structure.footprint.length)
     W = float(structure.footprint.width)
@@ -162,6 +195,7 @@ def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePol
         width_type=policy.width_type,
     )
 
+    # 1) Base vertical axes (primary + opening anchors)
     vertical_axes = compute_vertical_axes(
         L=L,
         W=W,
@@ -169,6 +203,19 @@ def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePol
         openings=list(openings_final),
     )
 
+    # 2) Binder axes from planner grid (optional)
+    binder_u = _binder_u_from_grid(structure)
+
+    # 3) Secondary axis adjustment (Hallenhaus MVP), deterministic via `seed`
+    vertical_axes = _adjust_secondary_axes_by_target(
+        vertical_axes,
+        target_width=float(policy.target_gefach_w),
+        jitter=float(policy.target_gefach_jitter),
+        binder_u=binder_u,
+        seed=int(seed),
+    )
+
+    # 4) Z axes
     z_axes, z_clusters, z_repair_log = compute_z_axes(
         z0=z0,
         H_e=H_e,
@@ -194,9 +241,98 @@ def build_frameplan(*, structure: StructurePlan, openings: Any, policy: FramePol
         z_repair_log=z_repair_log,
         wall_tags=wall_tags,
         front_wall=front_wall,
-        policy=policy, 
+        policy=policy,
     )
 
+def _adjust_secondary_axes_by_target(
+    axes: Dict[str, Dict[str, List[float]]],
+    *,
+    target_width: float,
+    jitter: float,
+    binder_u: List[float],
+    seed: int,
+    merge_tol: float = 1e-4,
+) -> Dict[str, Dict[str, List[float]]]:
+
+    """
+    Hallenhaus MVP: make N/S wall bay segmentation respect binder axes.
+
+    Anchors for segmentation on N/S:
+      - primary axes (usually corners)
+      - opening axes (opening edges)
+      - binder axes (grid axis_x mapped to u)
+
+    Then subdivide spans between anchors to approximate target_width.
+    """
+    rng = Random(seed)
+     
+    def _merge_axis(vals: List[float]) -> List[float]:
+        if not vals:
+            return []
+        vals = sorted(vals)
+        out = [vals[0]]
+        for v in vals[1:]:
+            if abs(v - out[-1]) <= merge_tol:
+                continue
+            out.append(v)
+        return out
+
+    new_axes: Dict[str, Dict[str, List[float]]] = {}
+
+    for wall, data in axes.items():
+        primary = list(data.get("primary", []))
+        opening = list(data.get("opening", []))
+
+        # only adjust long walls
+        if wall not in ("N", "S"):
+            new_axes[wall] = data
+            continue
+
+        # anchors = primary + opening + binder
+        anchors = _merge_axis(primary + opening + list(binder_u))
+
+        # keep originals stable
+        adjusted = list(anchors)
+
+        for i in range(len(anchors) - 1):
+            u0 = anchors[i]
+            u1 = anchors[i + 1]
+            span = u1 - u0
+            if span <= target_width:
+                continue
+
+            # historically moderated subdivision per binder bay
+
+            # small bays → no additional post
+            if span <= 1.6:
+                continue
+
+            # medium binder bay → one middle post
+            elif span <= 2.8:
+                n = 2
+
+            # very large bay (rare in hallenhaus) → max two posts
+            else:
+                n = 3
+
+            for k in range(1, n):
+                pos = u0 + (span * k / n)
+
+                if jitter > 0.0:
+                    pos += (rng.random() - 0.5) * 2.0 * jitter
+
+                adjusted.append(pos)
+
+        adjusted = _merge_axis(adjusted)
+
+        new_axes[wall] = {
+            "primary": primary,
+            "opening": opening,
+            "secondary": sorted(set(adjusted) - set(primary) - set(opening)),
+            "all": adjusted,
+        }
+
+    return new_axes
 
 def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
     """
@@ -338,45 +474,58 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     return True
         return False
 
-    # 4) Infills as members (cells), derived from axes but stored as structural truth
+    # 4) Infill cells as members (rectangles between consecutive u & z axes)
     infills: List[Dict[str, Any]] = []
-    if isinstance(fp.z_axes, list) and len(fp.z_axes) >= 2:
-        for wall in ("N", "S", "E", "W"):
-            w = fp.vertical_axes.get(wall, {})
-            u_all = w.get("all") or []
-            if not isinstance(u_all, list) or len(u_all) < 2:
-                continue
+    for wall in ("N", "S", "E", "W"):
+        w = fp.vertical_axes.get(wall, {})
+        u_all = w.get("all") or []
+        if not isinstance(u_all, list) or len(u_all) < 2:
+            continue
 
-            for i in range(len(u_all) - 1):
-                u0 = float(u_all[i])
-                u1 = float(u_all[i + 1])
+        for i in range(len(u_all) - 1):
+            u0 = float(u_all[i])
+            u1 = float(u_all[i + 1])
 
-                for j in range(len(fp.z_axes) - 1):
-                    z0c = float(fp.z_axes[j])
-                    z1c = float(fp.z_axes[j + 1])
+            for j in range(len(fp.z_axes) - 1):
+                z0c = float(fp.z_axes[j])
+                z1c = float(fp.z_axes[j + 1])
 
-                    if _cell_hits_opening(wall, u0, u1, z0c, z1c):
-                        continue
+                # avoid infill cells that intersect openings
+                if _cell_hits_opening(wall, u0, u1, z0c, z1c):
+                    continue
 
-                    infills.append(
-                        {
-                            "role": "INFILL_CELL",
-                            "wall": wall,
-                            "u0": u0,
-                            "u1": u1,
-                            "z0": z0c,
-                            "z1": z1c,
-                            "material": "infill_default",
-                        }
-                    )
+                infills.append(
+                    {
+                        "role": "INFILL_CELL",
+                        "wall": wall,
+                        "u0": u0,
+                        "u1": u1,
+                        "z0": z0c,
+                        "z1": z1c,
+                        "material": "infill_default",
+                    }
+                )
 
-    # 5) Braces as members (policy-driven): X-braces in sufficiently large clear cells
+    # 5) Braces as members (policy-driven): historically moderated (Hallenhaus-friendly)
+    #
+    # Contract-safe:
+    # - still emits only role="BRACE_DIAG" with u0,u1,z0,z1,profile
+    # - avoids the "X wallpaper" by using sparse single diagonals
+    # - biases braces toward gables (E/W) and corners; long walls calmer
     braces: List[Dict[str, Any]] = []
     if pol.braces_enable and isinstance(fp.z_axes, list) and len(fp.z_axes) >= 2:
         brace_w = float(pol.brace_profile_w)
         brace_d = float(pol.brace_profile_d)
         min_cell_w = float(pol.brace_min_cell_w)
         min_cell_h = float(pol.brace_min_cell_h)
+
+        # choose a brace band: mid -> plate, approximates typical knee/upper bracing
+        eps = 1e-6
+        try:
+            z_plate = max(z for z in fp.z_axes if float(z) < float(fp.H_e) - eps)
+        except Exception:
+            z_plate = float(fp.H_e)
+        z_mid = float(fp.z_axes[1])  # safe: len(z_axes) >= 2
 
         for wall in ("N", "S", "E", "W"):
             w = fp.vertical_axes.get(wall, {})
@@ -390,36 +539,34 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 if (u1 - u0) < min_cell_w:
                     continue
 
-                for j in range(len(fp.z_axes) - 1):
-                    z0c = float(fp.z_axes[j])
-                    z1c = float(fp.z_axes[j + 1])
-                    if (z1c - z0c) < min_cell_h:
-                        continue
+                # calmer long walls: brace only every 2nd bay
+                if wall in ("N", "S") and (i % 2 == 1):
+                    continue
 
-                    if _cell_hits_opening(wall, u0, u1, z0c, z1c):
-                        continue
+                z0c = z_mid
+                z1c = float(z_plate)
+                if (z1c - z0c) < min_cell_h:
+                    continue
 
-                    # X brace = two diagonals
-                    braces.append(
-                        {
-                            "role": "BRACE_DIAG",
-                            "wall": wall,
-                            "u0": u0, "z0": z0c,
-                            "u1": u1, "z1": z1c,
-                            "profile": {"w": brace_w, "d": brace_d},
-                            "kind": "X",
-                        }
-                    )
-                    braces.append(
-                        {
-                            "role": "BRACE_DIAG",
-                            "wall": wall,
-                            "u0": u0, "z0": z1c,
-                            "u1": u1, "z1": z0c,
-                            "profile": {"w": brace_w, "d": brace_d},
-                            "kind": "X",
-                        }
-                    )
+                if _cell_hits_opening(wall, u0, u1, z0c, z1c):
+                    continue
+
+                # alternate direction for visual + structural variety
+                if (i % 2) == 0:
+                    a_u0, a_z0, a_u1, a_z1 = u0, z0c, u1, z1c
+                else:
+                    a_u0, a_z0, a_u1, a_z1 = u1, z0c, u0, z1c
+
+                braces.append(
+                    {
+                        "role": "BRACE_DIAG",
+                        "wall": wall,
+                        "u0": float(a_u0), "z0": float(a_z0),
+                        "u1": float(a_u1), "z1": float(a_z1),
+                        "profile": {"w": brace_w, "d": brace_d},
+                        "kind": "single",
+                    }
+                )
 
     return {
         "schema_version": 3,
@@ -442,7 +589,6 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
         ],
         "axes_u": fp.vertical_axes,
         "axes_z": fp.z_axes,
-        "z_repair_log": list(fp.z_repair_log),
         "wall_tags": fp.wall_tags,
         "front_wall": fp.front_wall,
         "members": {
@@ -451,156 +597,87 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
             "braces": braces,
             "infills": infills,
         },
+        "z_clusters": fp.z_clusters,
+        "z_repair_log": fp.z_repair_log,
     }
-
-def _flatten_numeric(x: Any) -> List[float]:
-    """Collect all numeric values from nested lists/dicts, return sorted unique floats."""
-    vals: List[float] = []
-
-    def _collect(v: Any) -> None:
-        if v is None:
-            return
-        if isinstance(v, (int, float)):
-            vals.append(float(v))
-            return
-        if isinstance(v, str):
-            try:
-                vals.append(float(v))
-            except Exception:
-                return
-            return
-        if isinstance(v, (list, tuple)):
-            for it in v:
-                _collect(it)
-            return
-        if isinstance(v, dict):
-            for it in v.values():
-                _collect(it)
-            return
-
-    _collect(x)
-    return sorted(set(vals))
 
 
 def normalize_frameplan_dict(fp: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Normalize/enrich a frameplan dict to a canonical schema.
+    Normalize frameplan dict for downstream builders.
 
-    Adds:
-      - fp["basis"]         : x_min,x_max,center_x,halfW
-      - fp["axes_u_flat"]   : {wall: [u...]}  (sorted unique)
-      - fp["axes_z_flat"]   : [z...]
-      - fp["openings_norm"] : openings with guaranteed u0/u1/z0/z1 keys
-
-    Keeps original keys untouched.
+    Ensures required keys exist and have correct types.
+    Applies lightweight coercions only (no structural inference).
     """
-    dims = fp.get("dims") or {}
-    L = dims.get("L")
-    W = dims.get("W")
-    if L is None or W is None:
-        raise ValueError("frameplan dict missing dims.L/dims.W")
+    if not isinstance(fp, dict):
+        raise TypeError("frameplan must be a dict")
 
-    Lf = float(L)
-    Wf = float(W)
+    out = dict(fp)
 
-    fp.setdefault("basis", {
-        "x_min": 0.0,
-        "x_max": Lf,
-        "center_x": 0.5 * Lf,
-        "halfW": 0.5 * Wf,
-    })
+    # schema_version is mandatory in v3
+    sv = out.get("schema_version", 0)
+    try:
+        sv_i = int(sv)
+    except Exception:
+        sv_i = 0
+    out["schema_version"] = sv_i
 
-    # axes_z_flat
-    fp["axes_z_flat"] = _flatten_numeric(fp.get("axes_z"))
+    # Ensure axes keys exist
+    if "axes_u" not in out:
+        out["axes_u"] = {}
+    if "axes_z" not in out:
+        out["axes_z"] = []
 
-    # axes_u_flat per wall
-    axes_u = fp.get("axes_u") or {}
-    axes_u_flat: Dict[str, List[float]] = {}
-    for wall in ("N", "S", "E", "W"):
-        w = axes_u.get(wall)
-        if w is None:
-            axes_u_flat[wall] = []
-            continue
-        # Prefer canonical w["all"] if present (your current schema provides this)
-        if isinstance(w, dict) and "all" in w:
-            axes_u_flat[wall] = _flatten_numeric(w.get("all"))
-        else:
-            axes_u_flat[wall] = _flatten_numeric(w)
+    # Ensure members dict exists and contains lists
+    members = out.get("members")
+    if not isinstance(members, dict):
+        members = {}
+    out["members"] = members
 
-    fp["axes_u_flat"] = axes_u_flat
+    for k in ("posts", "rails", "braces", "infills"):
+        v = members.get(k)
+        if not isinstance(v, list):
+            members[k] = []
 
-    # openings_norm
-    openings = fp.get("openings") or []
-    if isinstance(openings, dict):
-        openings_list = list(openings.values())
-    elif isinstance(openings, list):
-        openings_list = openings
-    else:
-        openings_list = []
-
-    openings_norm = []
-    for op in openings_list:
-        if not isinstance(op, dict):
-            continue
-        wall = op.get("wall")
-        if wall is None:
-            continue
-
-        u0 = op.get("u0")
-        u1 = op.get("u1")
-        if u0 is None or u1 is None:
-            ur = op.get("u")
-            if isinstance(ur, (list, tuple)) and len(ur) == 2:
-                u0, u1 = ur[0], ur[1]
-
-        z0 = op.get("z0")
-        z1 = op.get("z1")
-        if z0 is None or z1 is None:
-            zr = op.get("z")
-            if isinstance(zr, (list, tuple)) and len(zr) == 2:
-                z0, z1 = zr[0], zr[1]
-
-        if u0 is None or u1 is None or z0 is None or z1 is None:
-            continue
-
-        o2 = dict(op)
-        o2["u0"] = float(u0)
-        o2["u1"] = float(u1)
-        o2["z0"] = float(z0)
-        o2["z1"] = float(z1)
-        openings_norm.append(o2)
-
-    fp["openings_norm"] = openings_norm
-    return fp
+    # Basis is optional (builder computes from house anyway)
+    return out
 
 
 def frameplan_report(fp: FramePlan) -> str:
-    """Human-readable planner report."""
+    """
+    Pretty report for logs / console.
+
+    Keep stable-ish formatting (golden logs).
+    """
     lines: List[str] = []
     lines.append("========== PLANNER REPORT ==========")
     lines.append(f"[Dims] L={fp.L:.3f} W={fp.W:.3f} H_e={fp.H_e:.3f} z0={fp.z0:.3f}")
-    lines.append("[Z Axes] " + ", ".join(f"{z:.3f}" for z in fp.z_axes))
+    lines.append("[Z Axes] " + ", ".join(f"{float(z):.3f}" for z in fp.z_axes))
+
+    lines.append(f"[Openings Final] n={len(fp.openings_final)}")
+    for o in fp.openings_final:
+        lines.append(
+            f"  {o.name} {o.typ:<6} wall={o.wall} "
+            f"u=[{o.u0:+.3f},{o.u1:+.3f}] (axis={o.width_axis:.3f} clear={o.width_clear:.3f}) "
+            f"z=[{o.z0:.3f},{o.z1:.3f}]"
+        )
+
+    lines.append("[Axes Summary]")
+    for wall in ("N", "S", "E", "W"):
+        w = fp.vertical_axes.get(wall, {})
+        primary = w.get("primary", []) or []
+        opening = w.get("opening", []) or []
+        secondary = w.get("secondary", []) or []
+        all_u = w.get("all", []) or []
+        lines.append(
+            f"  Wall {wall}: primary={len(primary)} opening={len(opening)} secondary={len(secondary)} all={len(all_u)}"
+        )
+
+    lines.append(f"[Front Wall] {fp.front_wall}")
 
     if fp.z_repair_log:
         lines.append("[Z Repair Log]")
         for msg in fp.z_repair_log:
             lines.append(f"  - {msg}")
 
-    lines.append(f"[Openings Final] n={len(fp.openings_final)}")
-    for o in fp.openings_final:
-        lines.append(
-            f"  {o.name:>4} {o.typ:<6} wall={o.wall} "
-            f"u_axis=[{o.u0:+.3f},{o.u1:+.3f}] (axis={o.width_axis:.3f} clear={o.width_clear:.3f}) "
-            f"z=[{o.z0:.3f},{o.z1:.3f}]"
-        )
-
-    lines.append("[Axes Summary]")
-    for wall in ("N", "S", "E", "W"):
-        w = fp.vertical_axes[wall]
-        lines.append(
-            f"  Wall {wall}: primary={len(w['primary'])} opening={len(w['opening'])} "
-            f"secondary={len(w['secondary'])} all={len(w['all'])}"
-        )
-
-    lines.append(f"[Front Wall] {fp.front_wall}")
     return "\n".join(lines)

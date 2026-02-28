@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Tuple, Literal
+from bvillage.core.seed import Seed
 
 SchemaVersion = Literal["1.0"]
 Severity = Literal["HARD", "SOFT", "SUGGEST"]
@@ -17,7 +18,7 @@ Range2 = Tuple[float, float]
 @dataclass(frozen=True)
 class Context:
     schema_version: SchemaVersion = "1.0"
-    seed: int = 0
+    seed: Seed = Seed(0)
 
     region: str = "unknown"
     epoch_band: EpochBand = "E2"
