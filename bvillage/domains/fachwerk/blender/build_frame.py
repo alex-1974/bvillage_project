@@ -245,8 +245,8 @@ def _require_house_keys(house: dict[str, Any]) -> None:
     house.setdefault("z_plate", 2.2)
     house.setdefault("roof_pitch_deg", 45.0)
     house.setdefault("roof_overhang", 0.35)
-    house.setdefault("profile_post", (0.20, 0.20))
-    house.setdefault("profile_plate", (0.18, 0.18))
+    house.setdefault("post_section", (0.20, 0.20))
+    house.setdefault("plate_section", (0.18, 0.18))
 
 
 def _log_build_header(house_name: str, house: dict[str, Any]) -> None:
@@ -340,8 +340,8 @@ def _coerce_house(ctx: Any, structure: Any) -> dict[str, Any]:
                 "z_plate": 2.2,
                 "roof_pitch_deg": 45.0,
                 "roof_overhang": 0.35,
-                "profile_post": (0.20, 0.20),
-                "profile_plate": (0.18, 0.18),
+                "post_section": (0.20, 0.20),
+                "plate_section": (0.18, 0.18),
             }
 
     raise SchemaError(
@@ -437,7 +437,7 @@ def _build_primary_posts_from_members(fp: dict[str, Any], house: dict[str, Any],
         if str(mm.get("role")) != "PRIMARY_POST":
             continue
         p0, p1 = _map_post_member(mm, house=house)
-        obj = _add_beam(col_frame, name=_member_name(mm, fallback="Post"), p0=p0, p1=p1, profile=mm.get("profile") or house.get("profile_post"))
+        obj = _add_beam(col_frame, name=_member_name(mm, fallback="Post"), p0=p0, p1=p1, profile=mm.get("profile") or house.get("post_section"))
         _assign_member_material(obj, mm, ctx_view)
         built += 1
     return built
@@ -452,7 +452,7 @@ def _build_plates_from_members(fp: dict[str, Any], house: dict[str, Any], col_fr
         if not role.startswith("EAVES_PLATE_"):
             continue
         p0, p1 = _map_rail_member(m, house=house)
-        obj = _add_beam(col_frame, name=_member_name(m, fallback="Plate"), p0=p0, p1=p1, profile=m.get("profile") or house.get("profile_plate"))
+        obj = _add_beam(col_frame, name=_member_name(m, fallback="Plate"), p0=p0, p1=p1, profile=m.get("profile") or house.get("plate_section"))
         _assign_member_material(obj, m, ctx_view)
         built += 1
     return built
@@ -491,8 +491,8 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
             "z0": z0,
             "z1": z1,
             # allow profile override if present on house
-            "profile": {"w": float(house.get("profile_post", (0.20, 0.20))[0]),
-                        "d": float(house.get("profile_post", (0.20, 0.20))[1])},
+            "profile": {"w": float(house.get("post_section", (0.20, 0.20))[0]),
+                        "d": float(house.get("post_section", (0.20, 0.20))[1])},
         }
         p0 = Vector((float(x), 0.0, z0))
         p1 = Vector((float(x), 0.0, z1))
@@ -501,7 +501,7 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
             name=mm["id"],
             p0=p0,
             p1=p1,
-            profile=mm.get("profile") or house.get("profile_post"),
+            profile=mm.get("profile") or house.get("post_section"),
         )
         _assign_member_material(obj, mm, ctx_view)
         built += 1

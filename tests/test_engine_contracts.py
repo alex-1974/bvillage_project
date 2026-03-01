@@ -129,7 +129,7 @@ def test_contract_axes_z_contains_bounds_and_opening_edges():
     z_axes, _, _ = compute_z_axes(
         z0=0.1,
         H_e=2.7,
-        horizontal_axes_style=[0.1, 0.9, 1.6, 2.2, 2.7],
+        style_z_levels=[0.1, 0.9, 1.6, 2.2, 2.7],
         z_merge_tol=1e-6,
         z_band_min=0.15,
         z_band_target_min=0.25,

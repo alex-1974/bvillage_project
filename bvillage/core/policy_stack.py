@@ -37,7 +37,7 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
 
     This is the ONLY place where:
     - binder_max
-    - target_gefach_w
+    - target_gefach_width
     - typological parameters
 
     are derived.
@@ -67,15 +67,15 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
 
         # ---- Cultural target gefach width (aesthetic rhythm) ----
         # Long walls in Hallenhaus typically 1.20–1.50 m
-        target_gefach_w = 1.35 + 0.10 * (wealth - 0.5)
-        target_gefach_w = max(1.20, min(1.50, target_gefach_w))
+        target_gefach_width = 1.35 + 0.10 * (wealth - 0.5)
+        target_gefach_width = max(1.20, min(1.50, target_gefach_width))
 
         target_gefach_jitter = 0.08
 
     else:
         # Generic fallback for other Fachwerk types
         binder_max = 1.65
-        target_gefach_w = 1.45
+        target_gefach_width = 1.45
         target_gefach_jitter = 0.12
 
     fachwerk = FachwerkPolicySpec(
@@ -105,7 +105,7 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
         constraints["gefach_width_target"] = ConstraintSpec(
             hard=RangeHardSpec(0.0, binder_max),
             soft=RangeSoftSpec(
-                ideal=(target_gefach_w - 0.10, target_gefach_w + 0.10),
+                ideal=(target_gefach_width - 0.10, target_gefach_width + 0.10),
                 allowed=(1.10, binder_max),
                 weight=3.0,
             ),

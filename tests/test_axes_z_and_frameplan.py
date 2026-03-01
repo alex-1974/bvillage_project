@@ -31,7 +31,7 @@ def test_compute_z_axes_contains_bounds_and_opening_edges():
     z_axes, z_clusters, z_log = compute_z_axes(
         z0=0.0,
         H_e=2.58,
-        horizontal_axes_style=[0.0, 0.9, 1.6, 2.2, 2.58],
+        style_z_levels=[0.0, 0.9, 1.6, 2.2, 2.58],
         z_merge_tol=1e-6,
         z_band_min=0.15,
         z_band_target_min=0.25,

@@ -55,7 +55,7 @@ class FramePolicy:
     """
     binder_max: float
     default_jamb_thickness: float = 0.20
-    horizontal_axes_style: List[float] = None  # type: ignore[assignment]
+    style_z_levels: List[float] = None  # type: ignore[assignment]
 
     # z-axis post-processing parameters (merge, min band thickness, etc.)
     z_merge_tol: float = EPS_MERGE
@@ -66,35 +66,35 @@ class FramePolicy:
     width_type: WidthType = "axis"
 
     # --- members policy knobs ---
-    profile_post_w: float = 0.20
-    profile_post_d: float = 0.20
+    post_section_width: float = 0.20
+    post_section_depth: float = 0.20
 
-    profile_plate_w: float = 0.18
-    profile_plate_d: float = 0.18
+    plate_section_width: float = 0.18
+    plate_section_depth: float = 0.18
 
-    profile_opening_jamb_w: float = 0.18
-    profile_opening_jamb_d: float = 0.18
+    opening_jamb_width: float = 0.18
+    opening_jamb_depth: float = 0.18
 
-    profile_opening_lintel_gate_w: float = 0.20
-    profile_opening_lintel_gate_d: float = 0.20
-    profile_opening_lintel_window_w: float = 0.16
-    profile_opening_lintel_window_d: float = 0.18
-    profile_opening_sill_w: float = 0.16
-    profile_opening_sill_d: float = 0.18
+    gate_lintel_width: float = 0.20
+    gate_lintel_depth: float = 0.20
+    window_lintel_width: float = 0.16
+    window_lintel_depth: float = 0.18
+    window_sill_width: float = 0.16
+    window_sill_depth: float = 0.18
 
     braces_enable: bool = True
-    brace_profile_w: float = 0.12
-    brace_profile_d: float = 0.12
-    brace_min_cell_w: float = 0.80
-    brace_min_cell_h: float = 0.80
+    brace_section_width: float = 0.12
+    brace_section_depth: float = 0.12
+    brace_min_cell_width: float = 0.80
+    brace_min_cell_height: float = 0.80
     
     # --- historical gefach targeting ---
-    target_gefach_w: float = 1.35
+    target_gefach_width: float = 1.35
     target_gefach_jitter: float = 0.10
 
     def __post_init__(self):
-        if self.horizontal_axes_style is None:
-            object.__setattr__(self, "horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])
+        if self.style_z_levels is None:
+            object.__setattr__(self, "style_z_levels", [0.0, 0.9, 1.6, 2.2])
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,7 +209,7 @@ def build_frameplan(
     # 3) Secondary axis adjustment (Hallenhaus MVP), deterministic via `seed`
     vertical_axes = _adjust_secondary_axes_by_target(
         vertical_axes,
-        target_width=float(policy.target_gefach_w),
+        target_width=float(policy.target_gefach_width),
         jitter=float(policy.target_gefach_jitter),
         binder_u=binder_u,
         seed=int(seed),
@@ -219,7 +219,7 @@ def build_frameplan(
     z_axes, z_clusters, z_repair_log = compute_z_axes(
         z0=z0,
         H_e=H_e,
-        horizontal_axes_style=list(policy.horizontal_axes_style),
+        style_z_levels=list(policy.style_z_levels),
         z_merge_tol=float(policy.z_merge_tol),
         z_band_min=float(policy.z_band_min),
         z_band_target_min=float(policy.z_band_target_min),
@@ -361,7 +361,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "u": float(u),
                     "z0": float(fp.z0),
                     "z1": float(fp.H_e),
-                    "profile": {"w": float(pol.profile_post_w), "d": float(pol.profile_post_d)},
+                    "profile": {"w": float(pol.post_section_width), "d": float(pol.post_section_depth)},
                     "material_id": "timber.oak",
                 }
             )
@@ -379,7 +379,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "u": float(o.u0),
                 "z0": float(o.z0),
                 "z1": float(o.z1),
-                "profile": {"w": float(pol.profile_opening_jamb_w), "d": float(pol.profile_opening_jamb_d)},
+                "profile": {"w": float(pol.opening_jamb_width), "d": float(pol.opening_jamb_depth)},
                 "opening": o.name,
                 "material_id": "timber.oak",
             }
@@ -391,7 +391,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "u": float(o.u1),
                 "z0": float(o.z0),
                 "z1": float(o.z1),
-                "profile": {"w": float(pol.profile_opening_jamb_w), "d": float(pol.profile_opening_jamb_d)},
+                "profile": {"w": float(pol.opening_jamb_width), "d": float(pol.opening_jamb_depth)},
                 "opening": o.name,
                 "material_id": "timber.oak",
             }
@@ -400,13 +400,13 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
         # lintel (gate vs window profile)
         if o.typ == "gate":
             lintel_prof = {
-                "w": float(pol.profile_opening_lintel_gate_w),
-                "d": float(pol.profile_opening_lintel_gate_d),
+                "w": float(pol.gate_lintel_width),
+                "d": float(pol.gate_lintel_depth),
             }
         else:
             lintel_prof = {
-                "w": float(pol.profile_opening_lintel_window_w),
-                "d": float(pol.profile_opening_lintel_window_d),
+                "w": float(pol.window_lintel_width),
+                "d": float(pol.window_lintel_depth),
             }
 
         opening_rails.append(
@@ -431,7 +431,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "u0": float(o.u0),
                     "u1": float(o.u1),
                     "z": float(o.z0),
-                    "profile": {"w": float(pol.profile_opening_sill_w), "d": float(pol.profile_opening_sill_d)},
+                    "profile": {"w": float(pol.window_sill_width), "d": float(pol.window_sill_depth)},
                     "opening": o.name,
                     "material_id": "timber.oak",
                 }
@@ -459,7 +459,7 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                     "u0": u0,
                     "u1": u1,
                     "z": float(z_plate),
-                    "profile": {"w": float(pol.profile_plate_w), "d": float(pol.profile_plate_d)},
+                    "profile": {"w": float(pol.plate_section_width), "d": float(pol.plate_section_depth)},
                     "material_id": "timber.oak",
                 }
             )
@@ -520,10 +520,10 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
     # - biases braces toward gables (E/W) and corners; long walls calmer
     braces: List[Dict[str, Any]] = []
     if pol.braces_enable and isinstance(fp.z_axes, list) and len(fp.z_axes) >= 2:
-        brace_w = float(pol.brace_profile_w)
-        brace_d = float(pol.brace_profile_d)
-        min_cell_w = float(pol.brace_min_cell_w)
-        min_cell_h = float(pol.brace_min_cell_h)
+        brace_w = float(pol.brace_section_width)
+        brace_d = float(pol.brace_section_depth)
+        min_cell_w = float(pol.brace_min_cell_width)
+        min_cell_h = float(pol.brace_min_cell_height)
 
         # choose a brace band: mid -> plate, approximates typical knee/upper bracing
         eps = 1e-6

@@ -30,7 +30,7 @@ def compute_z_axes(
     *,
     z0: float,
     H_e: float,
-    horizontal_axes_style: List[float],
+    style_z_levels: List[float],
     z_merge_tol: float,
     z_band_min: float,
     z_band_target_min: float,
@@ -45,7 +45,7 @@ def compute_z_axes(
     merge_tol = float(max(z_merge_tol, EPS_MERGE))
 
     cand: List[float] = []
-    cand.extend(float(x) for x in horizontal_axes_style)
+    cand.extend(float(x) for x in style_z_levels)
     for op in openings:
         cand.append(float(op.z0))
         cand.append(float(op.z1))
@@ -69,7 +69,7 @@ def compute_z_axes(
         return False
 
     def is_style_axis(z: float) -> bool:
-        for s in horizontal_axes_style:
+        for s in style_z_levels:
             if abs(float(s) - z) <= merge_tol:
                 return True
         return False
