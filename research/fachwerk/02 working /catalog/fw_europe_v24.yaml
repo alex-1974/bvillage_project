@@ -1,0 +1,3586 @@
+catalog_version: fw_europe_v0_5
+scope:
+  region: Europa
+  chrono_scope: "ca. 1100–1700"
+  coverage: "DE, FR, GB, CH, AT — fehlend: BE, NL, PL, CZ, NO, SE, DK, IT"
+  purpose: >
+    Liste realer Fachwerkbauten für gezielte Einzelrecherche.
+    Felder date, type, ev markieren Lücken. Bauform und Dimension
+    werden durch Nachrecherche ergänzt.
+
+schema:
+  ev: "E3=dendro/urkundlich gesichert | E2=bauhistorisch belegt | E1=sekundär"
+  date_method: "dendro | documentary | stylistic | unknown"
+  type: "topo_archetype — stadthaus, hallenhaus, tithe_barn, ..."
+
+entries:
+- chid: FW:AT:kaernten:millstatt:klosterscheune
+  title: Klosterscheune Millstatt
+  locality: Millstatt
+  admin: Kärnten
+  country: AT
+  date: "15th c."
+  date_method: Bundesdenkmalamt Österreich
+  type: klosterscheune
+  ev: E2
+  source: ""Bundesdenkmalamt Österreich""
+- chid: FW:CH:schwyz:schwyz:haus-bethlehem
+  title: Haus Bethlehem
+  locality: Schwyz
+  admin: Schwyz
+  country: CH
+  date: "1287"
+  date_method: dendrochronology
+  type: early_timber_frame
+  transition: true
+  structural_note: "Frühe Holzkonstruktion 1287; in der Literatur auch als frueher_staenderbau klassifiziert. Konstruktionstyp noch Forschungsfrage."
+  ev: E3
+  source: ""Kantonales Denkmalinventar Schwyz""
+- chid: FW:CH:bern:thun:hofspeicher
+  title: Historischer Hofspeicher Thun
+  locality: Thun
+  admin: Bern
+  country: CH
+  date: "15th c."
+  date_method: Kantonales Denkmalinventar
+  type: hofspeicher
+  ev: E2
+  source: ""Kanton Bern Denkmalpflege""
+- chid: FW:DE:BW:besigheim:wohnhaus#src:bf_bw:112171832718
+  title: Wohnhaus (Besigheim)
+  locality: Besigheim
+  admin: BW
+  country: DE
+  date: "1536 (d)"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:nordrhein-westfalen:freilichtmuseum-detmold:mittelalterliches-hallenhaus
+  title: Niederdeutsches Hallenhaus (Originalbau, umgesetzt in Detmold)
+  locality: Detmold (urspr. Standort dokumentiert)
+  admin: Nordrhein-Westfalen
+  country: DE
+  date: "um 1450"
+  type: niederdeutsches_hallenhaus
+  ev: E2
+- chid: FW:DE:BW:esslingen:webergasse-8
+  title: Webergasse 8
+  locality: Esslingen am Neckar
+  admin: BW
+  country: DE
+  date: "1266–1267"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:BW:esslingen:heugasse-10
+  title: Heugasse 10
+  locality: Esslingen am Neckar
+  admin: BW
+  country: DE
+  date: "1405"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:BW:esslingen-am-neckar:objekt-106206903214#src:bf_bw:106206903214
+  title: Wohnhaus an Stadtmauer (Esslingen a.N.)
+  locality: Esslingen am Neckar
+  admin: BW
+  country: DE
+  date: "1288–1289 (core); 1610 (roof); 1655 (gable)"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:gailenkirchen:waldenburger-strasse-13#src:bf_bw:115444271521
+  title: Wohnhaus Waldenburger Straße 13
+  locality: Gailenkirchen
+  admin: BW
+  country: DE
+  date: "1450–1451 (d)"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:goetzingen:thingstrasse-26#src:wikipedia:rathaus_goetzingen
+  title: Rathaus (Götzingen)
+  locality: Goetzingen
+  admin: BW
+  country: DE
+  date: "1612 (reported)"
+  date_method: reported_secondary
+  type: T2
+  transition: true
+  structural_note: "Typ T2 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E1
+
+- chid: FW:DE:BW:ingelfingen:schmiedgasse-15#src:bf_bw:181215409201
+  title: Wohnhaus Schmiedgasse 15
+  locality: Ingelfingen
+  admin: BW
+  country: DE
+  date: "1294/95 (d); Bauphase 1295 (d)"
+  date_method: "dendrochronology"
+  type: unknown
+  ev: E3
+- chid: FW:DE:BW:kenzingen:schwabentorstrasse-5#src:bf_bw:151940843520
+  title: Wohnhaus Schwabentorstraße 5
+  locality: Kenzingen
+  admin: BW
+  country: DE
+  date: "1300–1301 (d)"
+  date_method: "dendrochronology"
+  type: unknown
+  ev: E3
+- chid: FW:DE:BW:knittlingen:marktstrasse-26#src:wikipedia:marktstrasse_26_knittlingen
+  title: Marktstraße 26 (Knittlingen)
+  locality: Knittlingen
+  admin: BW
+  country: DE
+  date: "17. Jahrhundert (reported)"
+  date_method: reported_secondary
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E1
+- chid: FW:DE:BW:konstanz:neugasse-11
+  title: Neugasse 11
+  locality: Konstanz
+  admin: BW
+  country: DE
+  date: "1350"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:BW:konstanz:sigismundstrasse-10-12#src:bf_bw:149920321620
+  title: Wohnhäuser Zur Steige / Zur Salzscheibe
+  locality: Konstanz
+  admin: BW
+  country: DE
+  date: "1397–1398; 1620–1621"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:HE:limburg:roemer-2-4-6
+  title: Römer 2–4–6
+  locality: Limburg an der Lahn
+  admin: HE
+  country: DE
+  date: "1289"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:niedersachsen:lueneburg:am-stintmarkt-speicher
+  title: Alter Speicher am Stintmarkt
+  locality: Lüneburg
+  admin: "NI"
+  country: DE
+  date: "15th c."
+  date_method: Stadtarchiv Lüneburg / Denkmalverzeichnis
+  type: stadtspeicher
+  ev: E2
+  source: ""Stadt Lüneburg Denkmalverzeichnis""
+- chid: FW:DE:baden-wuerttemberg:maulbronn:zehntscheune-klosterhof
+  title: Zehntscheune Kloster Maulbronn
+  locality: Maulbronn
+  admin: "BW"
+  country: DE
+  date: "ca. 1480"
+  type: zehntscheune
+  ev: E2
+- chid: FW:DE:BW:mosbach:harnischgasse-13#src:wikipedia:haus_kickelhain
+  title: Haus Kickelhain (Mosbach)
+  locality: Mosbach
+  admin: BW
+  country: DE
+  date: "1590–1591 (reported)"
+  date_method: reported_secondary
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E1
+- chid: FW:DE:BW:mosbach:hauptstrasse-42#src:wikipedia:salzhaus_mosbach
+  title: Salzhaus (Mosbach)
+  locality: Mosbach
+  admin: BW
+  country: DE
+  date: "1424–1425 (reported)"
+  date_method: reported_secondary
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E1
+- chid: FW:DE:ST:quedlinburg:hoelle-11
+  title: Hölle 11
+  locality: Quedlinburg
+  admin: ST
+  country: DE
+  date: "1215–1301"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:ST:quedlinburg:breite-str-12-13
+  title: Breite Straße 12/13
+  locality: Quedlinburg
+  admin: ST
+  country: DE
+  date: "1330"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:ST:quedlinburg:wordgasse-3
+  title: Wordgasse 3
+  locality: Quedlinburg
+  admin: ST
+  country: DE
+  date: "1346–1347"
+  date_method: "dendrochronology"
+  type: staenderbau
+  transition: true
+  structural_note: "Ständerbaukonstruktion; Vorstufe oder Parallelentwicklung zum Fachwerk"
+  ev: E3
+- chid: FW:DE:ST:quedlinburg:reichenstrasse-5
+  title: Reichenstraße 5
+  locality: Quedlinburg
+  admin: ST
+  country: DE
+  date: "1358"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:ST:quedlinburg:breite-str-14
+  title: Breite Straße 14
+  locality: Quedlinburg
+  admin: ST
+  country: DE
+  date: "1398"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:sachsen-anhalt:quedlinburg:wordgasse-3
+  title: Wordgasse 3
+  locality: Quedlinburg
+  admin: "ST"
+  country: DE
+  date: "1347 (dendro)"
+  date_method: dendrochronology (Bauforschung Quedlinburg)
+  type: stadthaus
+  ev: E3
+  source: ""Bauforschung Quedlinburg""
+- chid: FW:DE:BW:reutlingen:kanzleistrasse-24#src:bf_bw:261318029181
+  title: Fachwerkhaus Kanzleistraße 24
+  locality: Reutlingen
+  admin: BW
+  country: DE
+  date: "1266–1267 (core); 1490 (extension)"
+  date_method: "dendrochronology"
+  type: T2
+  transition: true
+  structural_note: "Typ T2 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:rottweil:wohnhaus#src:bf_bw:200352016519
+  title: Wohnhaus Rottweil
+  locality: Rottweil
+  admin: BW
+  country: DE
+  date: "1435–1458 (d)"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:thueringen:schmalkalden:fachwerkhaus-hope
+  title: Fachwerkhaus Hope (Altstadt)
+  locality: Schmalkalden
+  admin: "TH"
+  country: DE
+  date: "um 1400"
+  type: stadthaus
+  ev: E2
+- chid: FW:DE:BW:schwaebisch-hall:hirschgraben-7#src:bf_bw:291211419219
+  title: Wohnhaus Hirschgraben 7
+  locality: Schwaebisch Hall
+  admin: BW
+  country: DE
+  date: "1410–1411"
+  date_method: "dendrochronology"
+  type: T3
+  transition: true
+  structural_note: "Typ T3 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:schwaebisch-hall:lange-strasse-2#src:bf_bw:251318029182
+  title: Wohnhaus Lange Straße 2
+  locality: Schwaebisch Hall
+  admin: BW
+  country: DE
+  date: "1422–1427"
+  date_method: "dendrochronology"
+  type: T3
+  transition: true
+  structural_note: "Typ T3 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:schwaebisch-hall:pfarrgasse-9#src:bf_bw:271316039168
+  title: Wohnhaus Pfarrgasse 9
+  locality: Schwaebisch Hall
+  admin: BW
+  country: DE
+  date: "1337 (d) – Gerüst/Dach"
+  date_method: "dendrochronology"
+  type: unknown
+  ev: E3
+- chid: FW:DE:BW:stuttgart:filderhauptstrasse-16#src:bf_bw:195486396011
+  title: Wohnhaus Filderhauptstraße 16
+  locality: Stuttgart
+  admin: BW
+  country: DE
+  date: "1450–1451 (d)"
+  date_method: "dendrochronology"
+  type: T2
+  transition: true
+  structural_note: "Typ T2 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:tuebingen:kronenstrasse-7#src:bf_bw:171221359376
+  title: Fachwerkhaus Kronenstraße 7
+  locality: Tuebingen
+  admin: BW
+  country: DE
+  date: "1478–1480"
+  date_method: "dendrochronology"
+  type: T5
+  transition: true
+  structural_note: "Typ T5 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:baden-wuerttemberg:bebenhausen:zehntscheune
+  title: Zehntscheune Kloster Bebenhausen
+  locality: Tübingen-Bebenhausen
+  admin: "BW"
+  country: DE
+  date: "late 14th / 15th c."
+  date_method: Landesdenkmalamt BW / Klosterinventar
+  type: zehntscheune
+  ev: E2
+  source: ""Landesdenkmalamt Baden-Württemberg""
+- chid: FW:DE:BW:ulm:fischergasse-15
+  title: Fischergasse 15
+  locality: Ulm
+  admin: BW
+  country: DE
+  date: "1449–1450"
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E3
+- chid: FW:DE:BW:ulm:buechsengasse-14#src:bf_bw:130251334018
+  title: Wohnhaus Büchsengasse 14
+  locality: Ulm
+  admin: BW
+  country: DE
+  date: "'1439'"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:ulmschiefes-haus#src:bf_bw:175871991620
+  title: Fachwerkhaus (
+  locality: Ulm
+  admin: BW
+  country: DE
+  date: "1442–1443 (d)"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:BW:ulm:fischergasse-3#src:bf_bw:170003236818
+  title: Wohnhaus Fischergasse 3
+  locality: Ulm
+  admin: BW
+  country: DE
+  date: "1470–1471 (d)"
+  date_method: "dendrochronology"
+  type: T1
+  transition: true
+  structural_note: "Typ T1 (früher Ständerbau); genaue konstruktive Einordnung noch offen"
+  ev: E3
+- chid: FW:DE:NI:wilsede:wilsede-2
+  title: Wilsede 2
+  locality: Wilsede (Lüneburger Heide)
+  admin: NI
+  country: DE
+  date: "um 1540 (Kern spätmittelalterlich geprägt)"
+  date_method: bauhistorisch
+  type: niederdeutsches_hallenhaus
+  ev: E2
+- chid: FW:DE:niedersachsen:wingenrode:wohnstallhaus-um1400
+  title: Wohnstallhaus Wingerode
+  locality: Wingerode
+  admin: "NI"
+  country: DE
+  date: "um 1400"
+  date_method: bauhistorische Untersuchung (regional publiziert)
+  type: wohnstallhaus
+  ev: E2
+- chid: FW:DE:NI:wingenrode:wohnstallhaus-um-1480
+  title: Wohnstallhaus Wingerode (dokumentierter Altbaukern)
+  locality: Wingerode (Eichsfeld)
+  admin: "NI"
+  country: DE
+  date: "um 1480"
+  type: niederdeutsches_hallenhaus
+  ev: E2
+- chid: FW:FR:45:beaugency:28-place-du-martroi#src:pop_inv:IA45000143
+  title: Maison à pan de bois (Beaugency)
+  locality: Beaugency
+  admin: '45'
+  country: FR
+  date: "1475–1525"
+  date_method: inventaire_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:bourgogne:beaune:maison-medievale
+  title: Maison médiévale Beaune
+  locality: Beaune
+  admin: Bourgogne-Franche-Comté
+  country: FR
+  date: "14th / 15th c."
+  date_method: Inventaire général du patrimoine
+  type: maison_colombage
+  ev: E2
+  source: ""Inventaire Général du Patrimoine""
+- chid: FW:FR:01:bourg-en-bresse:1-rue-du-palais#src:pop_mh:PA00116339
+  title: Maison à pans de bois (Bourg-en-Bresse)
+  locality: Bourg-en-Bresse
+  admin: '01'
+  country: FR
+  date: "1401–1500"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:18:bourges:7-9-rue-jean-girard#src:pop_mh:PA00096708
+  title: Maisons à pans de bois (Bourges)
+  locality: Bourges
+  admin: '18'
+  country: FR
+  date: "1487–1520"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:01:chalamont:rue-de-l-hopital#src:pop_mh:PA00116359
+  title: Maison à pan de bois (Chalamont)
+  locality: Chalamont
+  admin: '01'
+  country: FR
+  date: "1401–1500"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:alsace:colmar:maison-pfister
+  title: Maison Pfister
+  locality: Colmar
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "1537 (out-of-scope if strict 1200–1500)"
+  date_method: well-attested public descriptions (tourism/heritage)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://www.easyvoyage.co.uk/news/article-8818"; "https://www.flickr.com/photos/franck-chilli/6314800567""
+- chid: FW:FR:alsace:colmar:rue-des-marchands:7
+  title: Immeuble à colombage, 7 rue des Marchands
+  locality: Colmar
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "environ 1500 (edge case: around 1500)"
+  date_method: heritage inventory-style listing (secondary)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://www.archi-wiki.org/Cat%C3%A9gorie%3ARue_des_Marchands_%28Colmar%29""
+- chid: FW:FR:41:courmemin:10-rue-francois-ier#src:pop_mh:PA41000025
+  title: Maison à pans de bois (Courmemin)
+  locality: Courmemin
+  admin: '41'
+  country: FR
+  date: "1475–1525"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:bretagne:dinan:maisons-1-3-rue-de-lapport:IA22132624
+  title: Maisons à pan de bois, 1–3 rue de l'Apport
+  locality: Dinan
+  admin: Bretagne
+  country: FR
+  date: "15e s. (for nos. 1 and 3; ensemble 15e–17e)"
+  date_method: Inventaire du patrimoine (patrimoine.bzh / Gertrude)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://patrimoine.bzh/gertrude-diffusion/dossier/IA22132624""
+- chid: FW:FR:bretagne:dinan:1-3-rue-de-lapport:IA22132624
+  title: Maisons à pan de bois, 1–3 rue de l'Apport
+  locality: Dinan
+  admin: Bretagne
+  country: FR
+  date: "15e s. (nos. 1 & 3; ensemble 15e–17e)"
+  date_method: Inventaire du patrimoine (patrimoine.bzh / Gertrude)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://patrimoine.bzh/gertrude-diffusion/dossier/IA22132624""
+- chid: FW:FR:28:epernon:5-place-du-change-et-7#src:pop_mh:PA00097103
+  title: Maison à pan de bois (Epernon)
+  locality: Epernon
+  admin: '28'
+  country: FR
+  date: "1475–1525"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:hauts-de-france:oisen:guignecourt:grange-dimiere
+  title: Grange dimière (Guignecourt, place de l'Église)
+  locality: Guignecourt
+  admin: Hauts-de-France (Oise)
+  country: FR
+  date: "1492 (dendro); 15th c. main phase"
+  date_method: dendrochronologie (POP notice)
+  type: grange_aux_dimes
+  ev: E3
+  source: ""POP Mérimée PA60000092""
+- chid: FW:FR:hauts-de-france:oise:guignecourt:grange-dimiere
+  title: Grange dimière de Guignecourt
+  locality: Guignecourt
+  admin: Hauts-de-France
+  country: FR
+  date: "1492 (dendro)"
+  date_method: dendrochronology (POP Mérimée)
+  type: grange_aux_dimes
+  ev: E3
+  source: ""POP Mérimée PA60000092""
+- chid: FW:FR:60:haute-epine:25-27-rue-du-grand-bout#src:pop_mh:PA00132913
+  title: Maison à pan de bois (Haute-Epine)
+  locality: Haute-Epine
+  admin: '60'
+  country: FR
+  date: "1510–1520"
+  date_method: "dendrochronology"
+  type: unknown
+  ev: E3
+- chid: FW:FR:alsace:hunawihr:maison-alsacienne
+  title: Maison alsacienne (Hunawihr)
+  locality: Hunawihr
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "15th c."
+  date_method: POP Mérimée inventory
+  type: maison_colombage
+  ev: E2
+  source: ""POP Mérimée database""
+- chid: FW:FR:81:labruguiere:17-rue-camille-doucet#src:pop_inv:IA81011802
+  title: Maison en pan de bois (Labruguière)
+  locality: Labruguière
+  admin: '81'
+  country: FR
+  date: "1475–1525"
+  date_method: inventaire_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:02:liesse-notre-dame:7-9-rue-du-general-de-gaulle#src:pop_mh:PA02000003
+  title: Maison en pan de bois (Liesse-Notre-Dame)
+  locality: Liesse-Notre-Dame
+  admin: '02'
+  country: FR
+  date: "1475–1525"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:ile-de-france:essonne:longpont:grange-aux-dimes
+  title: Grange aux dîmes du prieuré de Longpont
+  locality: Longpont-sur-Orge (priory complex)
+  admin: Île-de-France (Essonne)
+  country: FR
+  date: "14th–15th c."
+  date_method: POP notice (dating by form/plan and structural evidence)
+  type: grange_aux_dimes
+  ev: E2
+  source: ""POP Mérimée IA91000037""
+- chid: FW:FR:normandie:calvados:manoir-de-la-haule:grange
+  title: Grange du Manoir de la Haule
+  locality: Manoir de la Haule (site)
+  admin: Normandie (Calvados)
+  country: FR
+  date: "1491"
+  date_method: POP notice (dated grange; three-aisled barn)
+  type: manorial_grange
+  ev: E2
+  source: ""POP Mérimée PA00099288""
+- chid: FW:FR:41:montrichard:67-rue-nationale#src:pop_mh:PA00098519
+  title: Deux maisons en bois du 15e siècle (Montrichard)
+  locality: Montrichard
+  admin: '41'
+  country: FR
+  date: "1401–1500"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:centrevaldeloire:orleans:25-rue-de-la-poterne
+  title: Maison en pan de bois, 25 rue de la Poterne
+  locality: Orléans
+  admin: Centre-Val de Loire
+  country: FR
+  date: "fin 14e s."
+  date_method: peer-reviewed (Bulletin Monumental / Persée)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://www.persee.fr/doc/bulmo_0007-473x_2013_num_171_2_9592""
+- chid: FW:FR:iledefrance:paris:rue-francois-miron:11-13
+  title: Half-timbered houses on rue François-Miron
+  locality: Paris
+  admin: Île-de-France
+  country: FR
+  date: "15e–16e s. (sources disagree: early-15th vs 16th)"
+  date_method: secondary heritage sources; dating conflict noted
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://www.unjourdeplusaparis.com/en/paris-insolite/plus-vieilles-maisons-paris"; "https://en.maraisvisites.com/houses-medieval-marais-rue-francois-miron.htm""
+- chid: FW:FR:bretagne:rennes:maison-ty-koz:rue-saint-guillaume
+  title: Maison Ty Koz (also 'Maison Du Guesclin')
+  locality: Rennes
+  admin: Bretagne
+  country: FR
+  date: "1505 (edge case: just after 1500)"
+  date_method: scholarly/heritage discussion (OpenEdition; local heritage)
+  type: stadthaus_pan_de_bois
+  ev: E2
+  source: ""https://journals.openedition.org/abpo/4226"; "https://www.tourisme-rennes.com/decouvrir-rennes/histoire/plus-belles-maisons-pan-de-bois/""
+- chid: FW:FR:31:rieux-volvestre:place-de-lastic#src:pop_mh:PA00094438
+  title: Maison à pans de bois (Rieux-Volvestre)
+  locality: Rieux-Volvestre
+  admin: '31'
+  country: FR
+  date: "1401–1500"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:normandie:rouen:maison-des-quatre-fils-aymon:185-eau-de-robec
+  title: House of the Four Sons Aymon (timber-framed house)
+  locality: Rouen
+  admin: Normandie
+  country: FR
+  date: "c. 1475"
+  date_method: Rouen Tourism description (named building + dated)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://en.visiterouen.com/heritages/history/5-timber-framed-houses-in-rouen/""
+- chid: FW:FR:normandie:rouen:185-rue-eau-de-robec:maison-quatre-fils-aymon
+  title: House of the Four Sons Aymon (timber-framed house)
+  locality: Rouen
+  admin: Normandie
+  country: FR
+  date: "c. 1475"
+  date_method: Rouen tourism/heritage description (named building + dated)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://en.visiterouen.com/heritages/history/5-timber-framed-houses-in-rouen/""
+- chid: FW:FR:normandie:rouen:maison-des-quatre-fils-aymon
+  title: Maison des Quatre Fils Aymon
+  locality: Rouen
+  admin: Normandie
+  country: FR
+  date: "c. 1475"
+  type: stadthaus_colombage
+  ev: E2
+- chid: FW:FR:NOR:rouen:maison-1445
+  title: Maison des Quatre Fils Aymon
+  locality: Rouen
+  admin: Normandie
+  country: FR
+  date: "um 1445"
+  type: maison_colombage
+  ev: E2
+
+- chid: FW:FR:alsace:strasbourg:maison-kammerzell
+  title: Maison Kammerzell
+  locality: Strasbourg
+  admin: Alsace
+  country: FR
+  date: "1467 (Kern 15. Jh.)"
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+- chid: FW:FR:alsace:strasbourg:maison-kammerzell:PA00085098
+  title: Maison Kammerzell
+  locality: Strasbourg
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "1467 (stone ground floor); 1589 (upper timber-framed storeys)"
+  date_method: Monuments historiques (Base POP/Mérimée)
+  type: stadthaus_colombage
+  ev: E2
+  source: ""https://www.pop.culture.gouv.fr/notice/merimee/PA00085098"; "https://www.visit.alsace/223009050-la-maison-kammerzell/""
+- chid: FW:FR:alsace:strasbourg:maison-des-tanneurs
+  title: Maison des Tanneurs
+  locality: Strasbourg
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "1572 (post-1500, included as structural reference)"
+  type: stadthaus_colombage
+  ev: E2
+- chid: FW:FR:alsace:selestat:maison-waldner
+  title: Maison Waldner de Freundstein
+  locality: Sélestat
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "um 1520 (edge case)"
+  type: stadthaus_colombage
+  ev: E2
+- chid: FW:FR:63:thiers:21-rue-de-la-coutellerie#src:pop_mh:PA00092436
+  title: Maison dite de l'Homme des Bois (Thiers)
+  locality: Thiers
+  admin: '63'
+  country: FR
+  date: "1450–1500"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:37:tours:1-rue-docteur-hermary-place-foire-le-roi#src:pop_inv:IA00112011
+  title: Maison en pan de bois (Tours)
+  locality: Tours
+  admin: '37'
+  country: FR
+  date: "1475–1500"
+  date_method: inventaire_pop
+  type: unknown
+  ev: E2
+- chid: FW:FR:27:vernon:rue-saint-sauveur-rue-carnot#src:pop_mh:PA00099622
+  title: Maison du Temps Jadis (Vernon)
+  locality: Vernon
+  admin: '27'
+  country: FR
+  date: "1401–1500"
+  date_method: mh_pop
+  type: unknown
+  ev: E2
+- chid: FW:GB:eastsussex:alfriston:clergy-house
+  title: Alfriston Clergy House
+  locality: Alfriston
+  admin: East Sussex
+  country: GB
+  date: "oaks felled 1399–1407"
+  date_method: National Trust (dendrochronology stated)
+  type: wealden_hall_house
+  ev: E3
+  source: ""https://www.nationaltrust.org.uk/visit/sussex/alfriston-clergy-house/the-history-of-alfriston-clergy-house""
+- chid: FW:GB:lincolnshire:gainsborough:old-hall
+  title: Gainsborough Old Hall
+  locality: Gainsborough
+  admin: Lincolnshire
+  country: GB
+  date: "1471–1484"
+  date_method: English Heritage (history page)
+  type: manor_house
+  ev: E2
+  source: ""https://www.english-heritage.org.uk/visit/places/gainsborough-old-hall/history/""
+- chid: FW:GB:lincolnshire:gainsborough:old-hall-barn
+  title: Barn at Gainsborough Old Hall
+  locality: Gainsborough
+  admin: Lincolnshire
+  country: GB
+  date: "late 15th c."
+  date_method: English Heritage site history
+  type: manorial_barn
+  ev: E2
+  source: ""English Heritage – Gainsborough Old Hall""
+- chid: FW:GB:suffolk:lavenham:little-hall
+  title: Little Hall
+  locality: Lavenham
+  admin: Suffolk
+  country: GB
+  date: "14th century hall house"
+  date_method: site history (museum/owner)
+  type: hall_house
+  transition: true
+  structural_note: "Englisches hall house; box-frame Konstruktion, aber am Übergang zur entwickelten Fachwerkarchitektur"
+  ev: E2
+  source: ""https://www.littlehall.org.uk/"; "https://www.visitsuffolk.com/attraction_activity/little-hall-lavenham""
+- chid: FW:GB:suffolk:lavenham:guildhall
+  title: Lavenham Guildhall
+  locality: Lavenham
+  admin: Suffolk
+  country: GB
+  date: "medieval timber-framed guildhall (late medieval core; exact year not in cited page)"
+  date_method: National Trust
+  type: gildehaus
+  ev: E2
+  source: ""https://www.nationaltrust.org.uk/visit/suffolk/lavenham-guildhall""
+- chid: FW:GB:somerset:norton-st-philip:george-inn
+  title: The George Inn
+  locality: Norton St Philip
+  admin: Somerset
+  country: GB
+  date: "14th–15th century (upper floors added in 15th per general reference)"
+  date_method: general reference (Wikipedia) + operator site
+  type: inn
+  ev: E2
+  source: ""https://en.wikipedia.org/wiki/The_George_Inn%2C_Norton_St_Philip"; "https://butcombe.com/the-george-inn-somerset/""
+- chid: FW:GB:kent:smarden:smarden-bell-house
+  title: The Bell House, Smarden
+  locality: Smarden
+  admin: Kent
+  country: GB
+  date: "c.1400"
+  type: hall_house
+  transition: true
+  structural_note: "Englisches hall house; box-frame Konstruktion, aber am Übergang zur entwickelten Fachwerkarchitektur"
+  ev: E2
+- chid: FW:GB:warwickshire:stratford-upon-avon:harvard-house:1298524
+  title: Harvard House (Historic England listing: timber-framed, earlier core)
+  locality: Stratford-upon-Avon
+  admin: Warwickshire
+  country: GB
+  date: "C15 core; front dated 1596 (out-of-scope if strict 1500)"
+  date_method: Historic England list entry
+  type: townhouse
+  ev: E2
+  source: ""https://historicengland.org.uk/listing/the-list/list-entry/1298524""
+- chid: FW:GB:herefordshire:weobley:weobley-hall-house
+  title: Weobley Hall House
+  locality: Weobley
+  admin: Herefordshire
+  country: GB
+  date: "14th century"
+  type: hall_house
+  transition: true
+  structural_note: "Englisches hall house; box-frame Konstruktion, aber am Übergang zur entwickelten Fachwerkarchitektur"
+  ev: E2
+- chid: FW:GB:northyorkshire:york:the-shambles:36:MYO4556
+  title: 36 The Shambles (timber-framed house)
+  locality: York
+  admin: North Yorkshire (City of York)
+  country: GB
+  date: "late 14th century; additions late 15th century"
+  date_method: York Historic Environment Record (HER)
+  type: urban_house
+  ev: E2
+  source: ""https://her.york.gov.uk/Monument/MYO4556""
+- chid: FW:GB:northyorkshire:york:merchant-adventurers-hall
+  title: Merchant Adventurers' Hall
+  locality: York
+  admin: North Yorkshire
+  country: GB
+  date: "1357"
+  date_method: documentary + dendro support
+  type: gildehalle
+  ev: E3
+  source: ""Historic England / official hall history""
+- chid: FW:GB:northyorkshire:york:barley-hall
+  title: Barley Hall
+  locality: York
+  admin: North Yorkshire
+  country: GB
+  date: "c.1360"
+  date_method: York Archaeological Trust
+  type: townhouse
+  ev: E2
+  source: ""York Archaeological Trust""
+- chid: FW:GB:cheshire:congleton:little-moreton-hall
+  title: Little Moreton Hall
+  locality: near Congleton
+  admin: Cheshire
+  country: GB
+  date: "c.1504–c.1610 (edge case: starts just after 1500)"
+  date_method: general reference (Wikipedia)
+  type: moated_manor_house
+  ev: E2
+  source: ""https://en.wikipedia.org/wiki/Little_Moreton_Hall""
+- chid: FW:CH:uri:altdorf:speicher
+  title: Historischer Speicher Altdorf
+  locality: Altdorf
+  admin: Uri
+  country: CH
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: hofspeicher
+  ev: E2
+  source: "Altdorf — kantonales Denkmalinventar Uri, Speicher dokumentiert"
+
+- chid: FW:CH:bern:burgdorf:stadthaus
+  title: Fachwerkhaus Burgdorf (Altstadt)
+  locality: Burgdorf
+  admin: Bern
+  country: CH
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus
+  ev: E2
+  source: "Burgdorf Altstadt — kantonales Denkmalinventar Bern"
+
+- chid: FW:CH:bern:langnau:mittelalterlicher-speicher
+  title: Speicher Langnau (Ständerbau)
+  locality: Langnau
+  admin: Bern
+  country: CH
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: hofspeicher
+  ev: E2
+  source: "Speicher Langnau — Berner Heimatschutz, Ständerbau dokumentiert"
+
+- chid: FW:CH:st-gallen:wattwil:mittelalterlicher-speicher
+  title: Mittelalterlicher Speicher Wattwil
+  locality: Wattwil
+  admin: St. Gallen
+  country: CH
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: hofspeicher
+  ev: E2
+  source: "Wattwil — kantonales Denkmalinventar St. Gallen"
+
+- chid: FW:CH:zug:zug:haus-zur-sul
+  title: Haus zur Sul
+  locality: Zug
+  admin: Zug
+  country: CH
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus
+  ev: E2
+  source: "Haus zur Sul, Zug — Kantonales Denkmalamt Zug, Altstadt Zug"
+
+- chid: FW:CH:zuerich:zuerich:haus-zum-loch
+  title: Haus zum Loch
+  locality: Zürich
+  admin: Zürich
+  country: CH
+  date: "14./15. Jh. (Holzoberbau)"
+  type: stadthaus
+  ev: E2
+  source: "Haus zum Loch, Zürich — kantonales Denkmalinventar Zürich, mittelalterlicher Stadthauskern"
+
+- chid: FW:DE:hessen:alsfeld:neunhaeuser
+  title: Neunhäuser (Marktplatz)
+  locality: Alsfeld
+  admin: Hessen
+  country: DE
+  date: "15. Jh."
+  date_method: "dendrochronology"
+  type: stadthaus
+  ev: E2
+  source: "Markt 2, Alsfeld; Deutsche Stiftung Denkmalschutz"
+
+- chid: FW:DE:BY:bad-windsheim:spaetmittelalterliche-scheune
+  title: Spätmittelalterliche Scheune Bad Windsheim
+  locality: Bad Windsheim
+  admin: BY
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: landscheune
+  ev: E2
+  source: "Fränkisches Freilandmuseum Bad Windsheim — spätmittelalterliche Scheune im Bestand"
+
+- chid: FW:DE:baden-wuerttemberg:bebenhausen:klosterscheune
+  title: Klosterscheune Bebenhausen (Holztragwerk)
+  locality: Bebenhausen
+  admin: "BW"
+  country: DE
+  date: "14./15. Jh."
+  type: klosterscheune
+  ev: E2
+  source: "Klosterscheune Bebenhausen, Kasernenhof 10 — Dendro: 1314/15, 1422/23, 1471/72; Deutsche Stiftung Denkmalschutz"
+
+- chid: FW:DE:baden-wuerttemberg:beuren:scheune-15jh
+  title: Spätmittelalterliche Scheune Beuren (Originalstandort)
+  locality: Beuren
+  admin: "BW"
+  country: DE
+  date: "15. Jh."
+  type: hallenscheune
+  ev: E2
+  source: "Freilichtmuseum Beuren — spätmittelalterliche Scheune, Originalstandort dokumentiert"
+
+- chid: FW:DE:BW:blaubeuren:klosterhofscheune
+  title: Klosterhofscheune Blaubeuren
+  locality: Blaubeuren
+  admin: BW
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: hallenscheune
+  ev: E2
+  source: "Kloster Blaubeuren, Wirtschaftshof — Fachwerkscheune dokumentiert"
+
+- chid: FW:DE:NI:cloppenburg:vierenstaenderhaus-museum
+  title: Vierständerhaus (Museumsbeleg)
+  locality: Cloppenburg
+  admin: NI
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: niederdeutsches_hallenhaus
+  ev: E2
+  source: "Museumsdorf Cloppenburg — dokumentierter Originalbestand"
+
+- chid: FW:DE:NI:altenbruch:st-nicolai-langhaus
+  title: St.-Nicolai-Kirche (Fachwerk-Langhaus)
+  locality: Cuxhaven-Altenbruch
+  admin: NI
+  country: DE
+  date: "15. Jh. (Langhaus in Fachwerk)"
+  date_method: bauhistorisch
+  type: fachwerkkirche
+  ev: E2
+  source: "St.-Nicolai-Kirche Cuxhaven-Altenbruch, Fachwerklanghaus dokumentiert"
+
+- chid: FW:DE:niedersachsen:ebergötzen:hofanlage-14jh
+  title: Hofanlage Ebergötzen (Fachwerkbestand)
+  locality: Ebergötzen
+  admin: "NI"
+  country: DE
+  date: "14./15. Jh."
+  type: niederdeutsches_hallenhaus
+  ev: E2
+  source: "Freilichtmuseum Ebergötzen — Hofanlage dokumentiert"
+
+- chid: FW:DE:niedersachsen:ebergotzen:hallenhaus
+  title: Niederdeutsches Hallenhaus Ebergötzen
+  locality: Ebergötzen
+  admin: "NI"
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: niederdeutsches_hallenhaus
+  ev: E2
+  source: "Freilichtmuseum Ebergötzen"
+
+- chid: FW:DE:NI:einbeck:tiedexer-strasse-15
+  title: Tiedexer Straße 15
+  locality: Einbeck
+  admin: NI
+  country: DE
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: stadthaus
+  ev: E2
+  source: "Tiedexer Straße 15, Einbeck — in Denkmalverzeichnis Niedersachsen gelistet"
+
+- chid: FW:DE:niedersachsen:einbeck:tille-haus
+  title: Tille-Haus
+  locality: Einbeck
+  admin: "NI"
+  country: DE
+  date: "ca. 1500 (Grenzfall)"
+  date_method: bauhistorisch
+  type: stadthaus
+  ev: E2
+  source: "Tille-Haus Einbeck — Stadtinventar Einbeck"
+
+- chid: FW:DE:baden-wuerttemberg:esslingen:schwörhaus
+  title: Schwörhaus Esslingen
+  locality: Esslingen
+  admin: "BW"
+  country: DE
+  date: "15. Jh."
+  type: stadthaus
+  ev: E2
+  source: "Schwörhaus Esslingen — Denkmalverzeichnis BW"
+
+- chid: FW:DE:nordrhein-westfalen:hattingen:fachwerkensemble
+  title: Mittelalterliche Fachwerkhäuser Hattingen
+  locality: Hattingen
+  admin: Nordrhein-Westfalen
+  country: DE
+  date: "14./15. Jh."
+  type: stadthaus
+  ev: E2
+  source: "Altstadt Hattingen — gut dokumentierter mittelalterlicher Fachwerksbestand"
+
+- chid: FW:DE:TH:kleinbrembach:dorfkirche
+  title: Dorfkirche Kleinbrembach (Fachwerkkern)
+  locality: Kleinbrembach
+  admin: TH
+  country: DE
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: dorfkirche_fachwerk
+  ev: E2
+  source: "Dorfkirche Kleinbrembach — Thüringer Landesamt für Denkmalpflege"
+
+- chid: FW:DE:thueringen:kleinbrembach:kirche-langhaus
+  title: Dorfkirche Kleinbrembach (Fachwerklanghaus)
+  locality: Kleinbrembach
+  admin: "TH"
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: sakralbau_holz
+  ev: E2
+  source: "Dorfkirche Kleinbrembach, Thüringen"
+
+- chid: FW:DE:niedersachsen:lueneburg:alter-speicher
+  title: Alter Speicher (Lüneburg, Fachwerkaufsatz)
+  locality: Lüneburg
+  admin: "NI"
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadtspeicher
+  ev: E2
+  source: "Alter Speicher Lüneburg — Denkmalverzeichnis Lüneburg"
+
+- chid: FW:DE:BW:maulbronn:wirtschaftsscheune
+  title: Wirtschaftsscheune Maulbronn
+  locality: Maulbronn
+  admin: BW
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: klosterscheune
+  ev: E2
+  source: "Kloster Maulbronn UNESCO-Welterbe — Wirtschaftshof dokumentiert; Einzelgebäude ohne spez. Datierung"
+
+- chid: FW:DE:baden-wuerttemberg:maulbronn:klosterspeicher
+  title: Klosterspeicher Maulbronn (Holztragwerk)
+  locality: Maulbronn
+  admin: "BW"
+  country: DE
+  date: "14./15. Jh."
+  type: klosterspeicher
+  ev: E2
+  source: "Kloster Maulbronn UNESCO-Welterbe — Klosterspeicher dokumentiert"
+
+- chid: FW:DE:bayern:memmingen:stadtspeicher
+  title: Stadtspeicher Memmingen (Holztragwerk)
+  locality: Memmingen
+  admin: "BY"
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadtspeicher
+  ev: E2
+  source: "Stadtspeicher Memmingen — Stadtarchiv Memmingen, historisches Stadtbauinventar"
+
+- chid: FW:DE:schleswig-holstein:molfsee:hallenhaus
+  title: Niederdeutsches Hallenhaus (Originalbau, Molfsee)
+  locality: Molfsee (urspr. Standort dokumentiert)
+  admin: Schleswig-Holstein
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: niederdeutsches_hallenhaus
+  ev: E2
+  source: "Freilichtmuseum Molfsee — niederdeutsches Hallenhaus, Originalstandort dokumentiert"
+
+- chid: FW:DE:sachsen-anhalt:quedlinburg:hohmannspeicher
+  title: Hohmannspeicher
+  locality: Quedlinburg
+  admin: "ST"
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadtspeicher
+  ev: E2
+  source: "Hohmannspeicher Quedlinburg — Denkmalliste SA"
+
+- chid: FW:DE:sachsen-anhalt:quedlinburg:wordgasse-speicher
+  title: Speicher Wordgasse (Hinterhofspeicher)
+  locality: Quedlinburg
+  admin: "ST"
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadtspeicher
+  ev: E2
+  source: "Speicher Wordgasse Quedlinburg"
+
+- chid: FW:DE:sachsen-anhalt:querfurt:zehntscheune
+  title: Zehntscheune Querfurt
+  locality: Querfurt
+  admin: "ST"
+  country: DE
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: zehntscheune
+  ev: E2
+  source: "Zehntscheune Querfurt — Denkmalpflege Sachsen-Anhalt"
+
+- chid: FW:DE:ST:querfurt:zehntscheune
+  title: Zehntscheune Querfurt
+  locality: Querfurt
+  admin: "ST"
+  country: DE
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: zehntscheune
+  ev: E2
+  source: "Zehntscheune Querfurt — Denkmalverzeichnis SA"
+
+- chid: FW:DE:baden-wuerttemberg:reichenau:wirtschaftsgebaeude
+  title: Klosterwirtschaftsgebäude Reichenau (Holztragwerk)
+  locality: Reichenau
+  admin: "BW"
+  country: DE
+  date: "14./15. Jh."
+  type: klosterwirtschaft
+  ev: E2
+  source: "Klosterinsel Reichenau UNESCO-Welterbe — Wirtschaftsgebäude mit Fachwerkanteilen dokumentiert"
+
+- chid: FW:DE:BW:bebenhausen:klosterscheune
+  title: Klosterscheune Bebenhausen
+  locality: Tübingen-Bebenhausen
+  admin: "BW"
+  country: DE
+  date: "14./15. Jh."
+  type: klosterscheune
+  ev: E2
+  source: "Klosterscheune Bebenhausen — Dendro 1314/15, 1422/23, 1471/72"
+
+- chid: FW:DE:niedersachsen:wingenrode:wohnstallhaus
+  title: Wohnstallhaus Wingerode
+  locality: Wingerode
+  admin: "NI"
+  country: DE
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: niederdeutsches_hallenhaus
+  ev: E2
+  source: "Wohnstallhaus Wingerode (Eichsfeld) — in Baudenkmallisten Thüringen/Sachsen-Anhalt erfasst"
+
+- chid: FW:FR:anjou:angers:maison-14jh
+  title: Maison à pans de bois (Angers)
+  locality: Angers
+  admin: Pays de la Loire
+  country: FR
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Angers — mittelalterliche Fachwerkhäuser in Altstadt, Inventaire Patrimoine Pays de la Loire"
+
+- chid: FW:FR:normandie:beuvron-en-auge:maison-medievale
+  title: Maison médiévale Beuvron-en-Auge
+  locality: Beuvron-en-Auge
+  admin: Normandie
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: maison_colombage
+  ev: E2
+  source: "Beuvron-en-Auge — "Plus beaux villages", Ortsbild aus erhaltenen mittelalterlichen Fachwerkhäusern"
+
+- chid: FW:FR:normandie:caen:maison-15jh
+  title: Maison à colombage (Caen)
+  locality: Caen
+  admin: Normandie
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Caen — erhaltene Colombage-Häuser in Altstadt, nach Kriegsschäden wenige verblieben"
+
+- chid: FW:FR:bourgogne:cluny:maison-medievale
+  title: Maison médiévale Cluny
+  locality: Cluny
+  admin: Bourgogne-Franche-Comté
+  country: FR
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus
+  ev: E2
+  source: "Cluny — mittelalterliche Fachwerkhäuser im Ortsbild, Centre des monuments nationaux"
+
+- chid: FW:FR:bourgogne:cluny:grange
+  title: Grange de Cluny (mittelalterlicher Bestand)
+  locality: Cluny
+  admin: Bourgogne-Franche-Comté
+  country: FR
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: klostergrange
+  ev: E2
+  source: "Cluny — Granges de l'abbaye documentiert"
+
+- chid: FW:FR:alsace:colmar:maison-adolph
+  title: Maison Adolph
+  locality: Colmar
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "14. Jh. Kern (stark überformt)"
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Maison Adolph, Colmar — Monuments Historiques, ältestes erhaltenes Bürgerhaus Colmars"
+
+- chid: FW:FR:bourgogne:dijon:maison-14jh
+  title: Maison à pans de bois (Dijon)
+  locality: Dijon
+  admin: Bourgogne
+  country: FR
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Dijon — mehrere erhaltene Fachwerkhäuser in Altstadt, DRAC Bourgogne"
+
+- chid: FW:FR:bretagne:dinan:maison-14jh
+  title: Maison à pans de bois (Dinan)
+  locality: Dinan
+  admin: Bretagne
+  country: FR
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Dinan — gut erhaltene mittelalterliche Fachwerkstadt, DRAC Bretagne"
+
+- chid: FW:FR:normandie:douvres-la-delivrande:grange
+  title: Grange dîmière (Normandie)
+  locality: Douvres-la-Délivrande
+  admin: Normandie
+  country: FR
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: grange
+  ev: E2
+  source: "Grange dîmière Douvres-la-Délivrande — in Inventaire Patrimoine Normandie erfasst"
+
+- chid: FW:FR:alsace:haguenau:maison-ancienne-douane
+  title: Ancienne Douane (timber-framed sections)
+  locality: Haguenau
+  admin: Grand Est (Alsace)
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus
+  ev: E2
+  source: "Ancienne Douane Haguenau — historisches Zollgebäude, Denkmalregister Alsace"
+
+- chid: FW:FR:normandie:honfleur:maison-14jh
+  title: Maison à colombage (Honfleur)
+  locality: Honfleur
+  admin: Normandie
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Honfleur — Altstadt mit erhaltenen Colombage-Bauten, Monuments Historiques"
+
+- chid: FW:FR:normandie:honfleur:maison-sainte-catherine
+  title: Maison Sainte-Catherine
+  locality: Honfleur
+  admin: Normandie
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus
+  ev: E2
+  source: "Honfleur — Église Sainte-Catherine und umgebende Maisons sind Monuments Historiques"
+
+- chid: FW:FR:normandie:lisieux:maison-14jh
+  title: Maison à colombage (Lisieux)
+  locality: Lisieux
+  admin: Normandie
+  country: FR
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Lisieux — mehrere erhaltene Maisons colombage, Monuments Historiques Calvados"
+
+- chid: FW:FR:lorraine:metz:maison-14jh
+  title: Maison à pans de bois (Metz)
+  locality: Metz
+  admin: Lorraine
+  country: FR
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Metz — Pans-de-bois-Häuser in Altstadt, DRAC Grand Est"
+
+- chid: FW:FR:alsace:obernaie:maison-colombage-14jh
+  title: Maison à colombage (Obernai)
+  locality: Obernai
+  admin: Alsace
+  country: FR
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Obernai — Denkmalregister Alsace"
+
+- chid: FW:FR:franchecomte:pesmes:maison-15jh
+  title: Maison à pans de bois (Pesmes)
+  locality: Pesmes
+  admin: Franche-Comté
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Pesmes — "Plus beaux villages de France", mittelalterlicher Fachwerkkern dokumentiert"
+
+- chid: FW:FR:bretagne:rennes:rue-du-chapitre
+  title: Maison à pans de bois (Rue du Chapitre)
+  locality: Rennes
+  admin: Bretagne
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Rue du Chapitre, Rennes — erhaltene mittelalterliche Fachwerkzeile, DRAC Bretagne"
+
+- chid: FW:FR:alsace:riquewihr:maison-14jh
+  title: Maison à colombage (Riquewihr)
+  locality: Riquewihr
+  admin: Alsace
+  country: FR
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Riquewihr — Ortsbild aus spätmittelalterlichen Colombage-Bauten, Service des bâtiments de France"
+
+- chid: FW:FR:normandie:rouen:maison-juifs
+  title: Maison des Juifs (Rouen)
+  locality: Rouen
+  admin: Normandie
+  country: FR
+  date: "14. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Rouen — mittelalterliche Maison colombage in der Altstadt dokumentiert"
+
+- chid: FW:FR:normandie:rouen:maison-medievale
+  title: Maison médiévale Rouen (rue Eau-de-Robec)
+  locality: Rouen
+  admin: Normandie
+  country: FR
+  date: "14./15. Jh."
+  type: maison_colombage
+  ev: E2
+  source: "Rouen — mittelalterliche Colombage-Häuser, Monuments Historiques Seine-Maritime"
+
+- chid: FW:FR:perigord:sarlat:maison-bois-14jh
+  title: Maison à pans de bois (Sarlat)
+  locality: Sarlat
+  admin: Nouvelle-Aquitaine
+  country: FR
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Sarlat — mittelalterliche colombage-Elemente, Monuments Historiques Dordogne"
+
+- chid: FW:FR:alsace:strasbourg:rue-des-juifs
+  title: Maison à colombage (Straßburg)
+  locality: Strasbourg
+  admin: Alsace
+  country: FR
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Rue des Juifs, Strasbourg — mittelalterliche Colombage-Häuser, DRAC Alsace"
+
+- chid: FW:FR:champagne:troyes:maison-de-loutil-et-de-la-pensee-ouvriere
+  title: Maison de l'Outil et de la Pensée Ouvrière
+  locality: Troyes
+  admin: Champagne
+  country: FR
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Maison de l'Outil et de la Pensée Ouvrière, Troyes — Monuments Historiques"
+
+- chid: FW:FR:champagne:troyes:rue-emile-zola-14jh
+  title: Maison à pans de bois (Rue Émile Zola)
+  locality: Troyes
+  admin: Champagne
+  country: FR
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: stadthaus_colombage
+  ev: E2
+  source: "Rue Émile Zola, Troyes — mittelalterliche Fachwerkzeile, DRAC Champagne"
+
+- chid: FW:GB:suffolk:ipswich:ancient-house
+  title: The Ancient House (Ipswich)
+  locality: Ipswich
+  admin: Suffolk
+  country: GB
+  date: "15. Jh."
+  date_method: bauhistorisch
+  type: merchant_house
+  ev: E2
+  source: "The Ancient House, Ipswich — Historic England Grade I, 15./16. Jh."
+
+- chid: FW:GB:suffolk:lavenham:crooked-house
+  title: The Crooked House (Lavenham)
+  locality: Lavenham
+  admin: Suffolk
+  country: GB
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: hall_house
+  transition: true
+  structural_note: "Englisches hall house; box-frame Konstruktion, aber am Übergang zur entwickelten Fachwerkarchitektur"
+  ev: E2
+  source: "The Crooked House, Lavenham — Historic England Grade II*, dokumentiert"
+
+- chid: FW:GB:cheshire:nantwich:hall-house
+  title: Medieval Hall House Nantwich
+  locality: Nantwich
+  admin: Cheshire
+  country: GB
+  date: "14./15. Jh."
+  date_method: bauhistorisch
+  type: hall_house
+  transition: true
+  structural_note: "Englisches hall house; box-frame Konstruktion, aber am Übergang zur entwickelten Fachwerkarchitektur"
+  ev: E2
+  source: "Nantwich — medieval hall house documented in NHLE"
+
+- chid: FW:GB:essex:coggeshall:paycockes-house
+  title: Paycocke's House and Garden
+  locality: Coggeshall
+  admin: Essex
+  country: GB
+  date: "ca. 1500"
+  date_method: bauhistorisch
+  type: merchant_house
+  ev: E2
+  source: "National Trust; https://www.nationaltrust.org.uk/visit/essex-bedfordshire-hertfordshire/paycockes-house-and-garden"
+
+
+
+
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.11 — Norddeutschland: NI / NRW / SH / HH
+# Forschungsstand: 2026-02-28
+# Quellen: LWL-Freilichtmuseum Detmold, Museumsdorf Cloppenburg,
+#          Freilichtmuseum Molfsee, IG Baupflege Nordfriesland,
+#          Wikipedia (Gulfhaus, Hallenhaus), NWZ Online 2023
+# ════════════════════════════════════════════════════════════════════════════
+
+# ── NRW / LWL-Freilichtmuseum Detmold ────────────────────────────────────
+
+- chid: "FW:DE:NRW:lippe:lippischer-meierhof-haupthaus"
+  title: "Lippischer Meierhof – Haupthaus (Hof Meier Barthold)"
+  locality: "Leese-Wittigenhöfen / LWL-Freilichtmuseum Detmold"
+  admin: "NRW"
+  country: "DE"
+  date: "1570"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  subtype: "zweiständer"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Leese-Wittigenhöfen, Landkreis Lippe (Hof Meier Barthold / Führing)"
+  source: >
+    LWL-Freilichtmuseum Detmold; Josef Schepers: Der Lippische Meierhof im
+    Westfälischen Freilichtmuseum Detmold, 1982 (Schriften des Westfälischen
+    Freilichtmuseums, Nr. 1; ISBN 3-923432-81-X)
+  notes: >
+    Zweiständerbau mit Kopfbändern an den Hauptständern. Erbaut 1570,
+    erweitert 1706/07. Flett mit offener Feuerstelle (Rauchhaus). Frühester
+    gesicherter Hallenhaus-Beleg in Lippe. Zustand um 1800.
+
+- chid: "FW:DE:NRW:lippe:lippischer-meierhof-leibzucht"
+  title: "Lippischer Meierhof – Leibzucht (Altenteilerhaus)"
+  locality: "Oettern-Bremke / LWL-Freilichtmuseum Detmold"
+  admin: "NRW"
+  country: "DE"
+  date: "1619"
+  date_method: "bauhistorisch"
+  type: "altenteilerhaus_fachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Oettern-Bremke, Landkreis Lippe (Hof Böltke)"
+  source: "LWL-Freilichtmuseum Detmold; kdwupper.de Besuchsbericht"
+  notes: "Nebengebäude des Lippischen Meierhofes. Zustand um 1800."
+
+- chid: "FW:DE:NRW:lippe:lippischer-meierhof-speicher"
+  title: "Lippischer Meierhof – Speicher"
+  locality: "Brosen / LWL-Freilichtmuseum Detmold"
+  admin: "NRW"
+  country: "DE"
+  date: "1575"
+  date_method: "bauhistorisch"
+  type: "hofspeicher"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Brosen, Landkreis Lippe (Hof Krüger)"
+  source: "LWL-Freilichtmuseum Detmold; zeilenabstand.net Besuchsbericht 2022"
+  notes: "Profilierte Knaggen. Gehört zum Lippischen Meierhof-Ensemble."
+
+- chid: "FW:DE:NRW:hameln-pyrmont:meierhof-zeddies"
+  title: "Meierhof Zeddies"
+  locality: "Grohnde / LWL-Freilichtmuseum Detmold"
+  admin: "NRW"
+  country: "DE"
+  date: "1731"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Grohnde, Landkreis Hameln-Pyrmont"
+  source: "LWL-Freilichtmuseum Detmold; zeilenabstand.net Besuchsbericht 2022"
+  notes: "Gefache aus Backstein in Mustern vermauert. Paderborner Dorf."
+
+- chid: "FW:DE:NRW:hoexter:dorfbauernhaus-golucke"
+  title: "Dorfbauernhaus Golücke"
+  locality: "Amelunxen / LWL-Freilichtmuseum Detmold"
+  admin: "NRW"
+  country: "DE"
+  date: "1767"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Amelunxen, Kreis Höxter"
+  source: "LWL-Freilichtmuseum Detmold; zeilenabstand.net Besuchsbericht 2022"
+  notes: "Backsteingefache in Mustern. Paderborner Dorf."
+
+- chid: "FW:DE:NRW:osnabrueck:osnabruecker-hof-haupthaus"
+  title: "Osnabrücker Wiehengebirgshof – Haupthaus"
+  locality: "LWL-Freilichtmuseum Detmold"
+  admin: "NRW"
+  country: "DE"
+  date: "um 1800"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E1"
+  provenance: "transloziert"
+  provenance_origin: "Wiehengebirge, Kreis Osnabrück"
+  source: "LWL-Freilichtmuseum Detmold (Eröffnungsbestand 1971)"
+  notes: >
+    Eines der acht Gebäude des Osnabrücker Wiehengebirgshofes.
+    Eröffnungsbestand 1971. Dargestellte Zeit um 1800.
+
+# ── NI / Museumsdorf Cloppenburg ─────────────────────────────────────────
+
+- chid: "FW:DE:NI:cloppenburg:koterei-ahrens"
+  title: "Köterei Ahrens – Haupthaus"
+  locality: "Westerstede / Museumsdorf Cloppenburg"
+  admin: "NI"
+  country: "DE"
+  date: "1566"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  subtype: "zweiständer"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Westerstede, Landkreis Ammerland"
+  source: >
+    Museumsdorf Cloppenburg (depot-blog 2020: „Köterei Ahrens");
+    Wiederaufbau im Museum 2009
+  notes: >
+    Balkengerüst 1566, bauhistorisch gesichert. Zweiständerbauweise.
+    Ältester gesicherter Hallenhaus-Beleg im Museumsdorf Cloppenburg.
+
+- chid: "FW:DE:NI:diepholz:speicher-donstorf"
+  title: "Speicher vom Hof Helmsmüller (Donstorf)"
+  locality: "Donstorf / Museumsdorf Cloppenburg"
+  admin: "NI"
+  country: "DE"
+  date: "um 1480"
+  date_method: "bauhistorisch"
+  type: "hofspeicher"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Donstorf, Landkreis Diepholz"
+  source: "Museumsdorf Cloppenburg (depot-blog 2020: „Speicher aus Donstorf")"
+  notes: >
+    Ältestes Gebäude im Museumsdorf Cloppenburg. Diagonale Verstrebungen im
+    Außenfachwerk, Lehmdach unter Stroh. Spätmittelalterliche
+    Konstruktionsmerkmale.
+
+- chid: "FW:DE:NI:vechta:hof-hoffmann"
+  title: "Hof Hoffmann"
+  locality: "Goldenstedt / Museumsdorf Cloppenburg"
+  admin: "NI"
+  country: "DE"
+  date: "1705"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  subtype: "zweiständer"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Goldenstedt, Landkreis Vechta"
+  source: "Museumsdorf Cloppenburg"
+  notes: >
+    Zweiständerbauweise, 1705 erbaut, 1835/40 verlängert. Krüppelwalm mit
+    Bretterdreieck, typisch für das nördliche Weser-Ems-Gebiet.
+    Rauchhaus ohne Schornstein.
+
+- chid: "FW:DE:NI:cloppenburg:quatmannshof"
+  title: "Quatmannshof"
+  locality: "Elsten / Museumsdorf Cloppenburg"
+  admin: "NI"
+  country: "DE"
+  date: "1803–1806"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  subtype: "zweiständer"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Elsten, Landkreis Cloppenburg"
+  source: "Museumsdorf Cloppenburg"
+  notes: >
+    45 m langes Zweiständerhaus mit Kübbungen (nicht tragenden Seitenabseiten).
+    Original 1803–1806 erbaut; 1945 verbrannt; Wiederaufbau im Museum 1962.
+
+- chid: "FW:DE:NI:harburg:hallenhaus-schwinde"
+  title: "Niederdeutsches Hallenhaus (Schwinde)"
+  locality: "Schwinde (Ortsteil Drage), Winsener Elbmarsch"
+  admin: "NI"
+  country: "DE"
+  date: "1494/95"
+  date_method: "dendrochronology"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E3"
+  provenance: "in_situ"
+  source: >
+    Wikipedia: Hallenhaus (Dendrodatierung Winsener Elbmarsch);
+    Landkreis Harburg, Denkmalverzeichnis
+  notes: >
+    Gilt als ältestes in Deutschland erhaltenes Niederdeutsches Hallenhaus.
+    Genaue Adresse und Katasterangaben noch zu verifizieren.
+  needs_verification: true
+
+# ── NI / Ostfriesland — Gulfhaus ──────────────────────────────────────────
+
+- chid: "FW:DE:NI:aurich:gulfhof-rieken"
+  title: "Gulfhof Rieken"
+  locality: "Westerende-Kirchloog, Gemeinde Ihlow"
+  admin: "NI"
+  country: "DE"
+  date: "1568"
+  date_method: "dendrochronology"
+  type: "gulfhaus"
+  ev: "E3"
+  provenance: "in_situ"
+  source: >
+    NWZ Online, 22.07.2023 (Dendrodatierung 2018, Dr. Sonja König,
+    Ostfriesische Landschaft / Landesamt für Denkmalpflege);
+    Wikipedia: Gulfhaus
+  notes: >
+    Ältester bekannter Gulfhof Ostfrieslands. Wirtschaftsteil
+    dendrochronologisch 1568 datiert. Seit 2024 umgebaut zur Kinderkrippe.
+    Gerüst stand vermutlich immer an dieser Stelle (in-situ).
+
+- chid: "FW:DE:NI:aurich:gulfscheune-woquard"
+  title: "Gulfscheune (Woquard)"
+  locality: "Woquard, Gemeinde Krummhörn"
+  admin: "NI"
+  country: "DE"
+  date: "1579"
+  date_method: "dendrochronology"
+  type: "gulfscheune"
+  ev: "E3"
+  provenance: "in_situ"
+  source: "Wikipedia: Gulfhaus (Dendrodatierung Krummhörn)"
+  notes: >
+    Frühester durch Dendrochronologie belegter Gulfbau in Deutschland.
+    Reine Scheunenstruktur ohne Wohnteil.
+
+# ── HH in situ ────────────────────────────────────────────────────────────
+
+- chid: "FW:DE:HH:volksdorf:spiekerhus"
+  title: "Spiekerhus"
+  locality: "Hamburg-Volksdorf"
+  admin: "HH"
+  country: "DE"
+  date: "1624"
+  date_method: "dendrochronology"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E3"
+  provenance: "in_situ"
+  source: >
+    Museumsdorf Volksdorf; kulturkarte.de;
+    Sanierung 2010/11 (Architekt Jan Ihns); Bodendenkmalschutz 2010
+  notes: >
+    Ältestes erhaltenes landwirtschaftliches Gebäude mit Wohntrakt am
+    Originalstandort auf der Hamburger Geest. Reetgedeckt.
+
+# ── SH / Freilichtmuseum Molfsee ─────────────────────────────────────────
+
+- chid: "FW:DE:SH:ostholstein:pfarrhaus-grube"
+  title: "Pfarrhaus von St. Jürgen (Haus aus Grube)"
+  locality: "Grube / Freilichtmuseum Molfsee"
+  admin: "SH"
+  country: "DE"
+  date: "1569"
+  date_method: "inschrift"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E3"
+  provenance: "transloziert"
+  provenance_origin: "Grube, Kreis Ostholstein"
+  source: >
+    Freilichtmuseum Molfsee – Landesmuseum für Volkskunde (Wikipedia);
+    Alfred Kamphausen: Das Schleswig-Holsteinische Freilichtmuseum. Häuser
+    und Hausgeschichten. Neumünster 1989
+  notes: >
+    Ältestes datiertes Bauernhaus Schleswig-Holsteins. Türsturz-Inschrift: 1569,
+    Wohnung von Pastor Jeremias Stricker.
+
+- chid: "FW:DE:SH:steinburg:haus-herzhorn"
+  title: "Haus aus Herzhorn (Haus Heydenreich)"
+  locality: "Herzhorn / Freilichtmuseum Molfsee"
+  admin: "SH"
+  country: "DE"
+  date: "1697"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Herzhorn, Kreis Steinburg"
+  source: "Freilichtmuseum Molfsee; zeilenabstand.net Besuchsbericht 2021"
+  notes: >
+    Prächtig ausgestattetes Hallenhaus mit repräsentativem Sommerhaus-Anbau
+    von 1711.
+
+- chid: "FW:DE:SH:dithmarschen:haus-lehe"
+  title: "Haus aus Lehe (Hof Schmielau)"
+  locality: "Lehe / Freilichtmuseum Molfsee"
+  admin: "SH"
+  country: "DE"
+  date: "1781"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Lehe, Dithmarschen"
+  source: "Freilichtmuseum Molfsee; zeilenabstand.net Besuchsbericht 2021"
+  notes: >
+    Süddithmarscher Hallenhaus mit Trennwand zwischen Wohnbereich und Stall
+    (regionale Sonderform). Eines der aufwendigsten Häuser in Dithmarschen.
+    Größtes Gebäude im Museum.
+
+- chid: "FW:DE:SH:rendsburg-eckernfoerde:haus-grossharrie"
+  title: "Haus aus Großharrie"
+  locality: "Großharrie / Freilichtmuseum Molfsee"
+  admin: "SH"
+  country: "DE"
+  date: "1817"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Großharrie, Kreis Rendsburg-Eckernförde"
+  source: "Freilichtmuseum Molfsee; zeilenabstand.net Besuchsbericht 2021"
+  notes: >
+    Haupthaus der Hofanlage aus Bordesholm. Zugehörig: Backhaus,
+    Schweinestall, Altenteilerhaus aus Negenharrie.
+
+- chid: "FW:DE:SH:ploen:haus-barsbek"
+  title: "Haus aus Barsbek"
+  locality: "Barsbek / Freilichtmuseum Molfsee"
+  admin: "SH"
+  country: "DE"
+  date: "1797"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Barsbek, Kreis Plön (Probstei)"
+  source: "Freilichtmuseum Molfsee; zeilenabstand.net Besuchsbericht 2021"
+  notes: "Niederdeutsches Hallenhaus aus der Probstei."
+
+- chid: "FW:DE:SH:schleswig-flensburg:haus-suederbrarup"
+  title: "Haus aus Süderbrarup"
+  locality: "Süderbrarup / Freilichtmuseum Molfsee"
+  admin: "SH"
+  country: "DE"
+  date: "1797"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Süderbrarup, Kreis Schleswig-Flensburg (Angeln)"
+  source: "Freilichtmuseum Molfsee; zeilenabstand.net Besuchsbericht 2021"
+  notes: "Niederdeutsches Hallenhaus aus Angeln."
+
+# ── SH / Haubarg — Eiderstedt ─────────────────────────────────────────────
+
+- chid: "FW:DE:SH:nordfriesland:haubarg-katharinenhof"
+  title: "Haubarg Katharinenhof (Kühl'scher Haubarg)"
+  locality: "Katharinenheerd / Altaugustenkoog"
+  admin: "SH"
+  country: "DE"
+  date: "1587"
+  date_method: "dendrochronology"
+  type: "haubarg"
+  ev: "E3"
+  provenance: "in_situ"
+  source: >
+    IG Baupflege Nordfriesland & Dithmarschen e.V.
+    (igbaupflege.de/de/lexikon/bauernhaustypen/haubarg.php);
+    Dendrodatierung 2018
+  notes: >
+    Ältester dendrochronologisch datierter Haubarg. Vierkantgerüst 1587.
+    Holländer brachten den Typ nach Nordfriesland (Vorbild: Stelphof/Stolp in
+    Nordholland, Einpolderungen 1612–1620). Hochrähm-Innenständerkonstruktion.
+
+- chid: "FW:DE:SH:nordfriesland:roter-haubarg-witzwort"
+  title: "Roter Haubarg"
+  locality: "Adolfskoog, Witzwort"
+  admin: "SH"
+  country: "DE"
+  date: "1665"
+  date_method: "bauhistorisch"
+  type: "haubarg"
+  ev: "E2"
+  provenance: "in_situ"
+  source: "IG Baupflege Nordfriesland & Dithmarschen e.V."
+  notes: >
+    Bekanntester erhaltener Haubarg Eiderstedts. Erbaut 1665.
+
+- chid: "FW:DE:SH:nordfriesland:haubarg-pohnswarft"
+  title: "Haubarg Pohnswarft"
+  locality: "Süderfriedrichskoog"
+  admin: "SH"
+  country: "DE"
+  date: "nach 1648"
+  date_method: "bauhistorisch"
+  type: "haubarg"
+  ev: "E2"
+  provenance: "in_situ"
+  source: "IG Baupflege Nordfriesland & Dithmarschen e.V."
+  notes: "Früher Nachkriegsbau nach dem Dreißigjährigen Krieg."
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.12 — Mecklenburg-Vorpommern (MV)
+# Forschungsstand: 2026-02-28
+# Quellen: Freilichtmuseum Schwerin-Mueß (Wikipedia, museen.de),
+#          Freilichtmuseum Klockenhagen (Wikipedia, frankkoebsch.wordpress.com),
+#          Landesamt für Kultur und Denkmalpflege MV (kulturwerte-mv.de)
+# ════════════════════════════════════════════════════════════════════════════
+
+# ── Freilichtmuseum Schwerin-Mueß (in situ) ──────────────────────────────
+
+- chid: "FW:DE:MV:schwerin:muess-buednerei"
+  title: "Büdnerei (Mueß)"
+  locality: "Schwerin-Mueß / Freilichtmuseum für Volkskunde"
+  admin: "MV"
+  country: "DE"
+  date: "kurz nach 1648"
+  date_method: "bauhistorisch"
+  type: "buednerei_fachwerk"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Wikipedia: Freilichtmuseum Schwerin-Mueß; Freilichtmuseum Schwerin-Mueß
+    (Kleiner Museumsführer, Thomas Helms Verlag, ISBN 978-3-940207-36-4)
+  notes: >
+    Mittelpunkt des Museums. Früheste datierte Bausubstanz auf dem Gelände.
+    Büdnerei = kleines Häuslersanwesen ohne vollständige Hofstellenrechte.
+    Freilichtmuseum Mueß entstand aus dem alten Dorfkern, Gebäude überwiegend
+    in situ. Dorfentwicklung 17. Jh. bis frühes 20. Jh. dokumentiert.
+
+- chid: "FW:DE:MV:schwerin:muess-hallenhaus"
+  title: "Niederdeutsches Hallenhaus (Mueß)"
+  locality: "Schwerin-Mueß / Freilichtmuseum für Volkskunde"
+  admin: "MV"
+  country: "DE"
+  date: "Mitte 18. Jh."
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    museen.de; Freilichtmuseum für Volkskunde Schwerin-Mueß (Museumsseite);
+    Kleiner Museumsführer, Thomas Helms Verlag, ISBN 978-3-940207-36-4
+  notes: >
+    Besonderer Anziehungspunkt des Museums. Hofanlage mit Scheune.
+    Charakteristisches mecklenburgisches Hallenhaus, in situ am historischen
+    Standort erhalten. Mitte 18. Jh., dargestellter Zustand 19. Jh.
+
+# ── Freilichtmuseum Klockenhagen ──────────────────────────────────────────
+
+- chid: "FW:DE:MV:vorpommern-ruegen:bauernhaus-klockenhagen"
+  title: "Bauernhaus Klockenhagen"
+  locality: "Klockenhagen, Landkreis Vorpommern-Rügen"
+  admin: "MV"
+  country: "DE"
+  date: "um 1700"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Freilichtmuseum Klockenhagen (frankkoebsch.wordpress.com 2019:
+    „Erleben Sie das alte Mecklenburg"); Freilichtmuseum Klockenhagen
+    (Ausstellungstext / Gebäudeinfo)
+  notes: >
+    Um 1700 erbaut, 1800 erweitert. Bis 1976 vom ehemaligen Besitzer
+    Heinrich Peters bewohnt. Danach museal eingerichtet, unveränderter
+    Zustand. Typisches Niederdeutsches Hallenhaus: Längsdiele, Luchten
+    (Seitenabseiten), Herdraum, Stallungen. Reetgedeckt.
+
+- chid: "FW:DE:MV:ludwigslust-parchim:haus-strassen"
+  title: "Haus Strassen (Wohnhaus / Museumsrestaurant „Up dei Däl")"
+  locality: "Strassen (Gorlosen) / Freilichtmuseum Klockenhagen"
+  admin: "MV"
+  country: "DE"
+  date: "1671"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Strassen, Ortsteil von Gorlosen, Landkreis Ludwigslust-Parchim"
+  source: >
+    Wikipedia: Freilichtmuseum Klockenhagen; Freilichtmuseum Klockenhagen
+    (Museumsrestaurant „Up dei Däl")
+  notes: >
+    1671 in Strassen erbaut. 1980 im Museum wiedererrichtet. Heute
+    Museumsrestaurant. Ältestes gesichertes Gebäude im Freilichtmuseum
+    Klockenhagen.
+
+- chid: "FW:DE:MV:vorpommern-ruegen:fachwerkkirche-dargelutz"
+  title: "Fachwerkkirche aus Dargelütz"
+  locality: "Dargelütz (Parchim) / Freilichtmuseum Klockenhagen"
+  admin: "MV"
+  country: "DE"
+  date: "18. Jh."
+  date_method: "bauhistorisch"
+  type: "dorfkirche_fachwerk"
+  ev: "E1"
+  provenance: "transloziert"
+  provenance_origin: "Dargelütz bei Parchim, Landkreis Ludwigslust-Parchim"
+  source: "Wikipedia: Freilichtmuseum Klockenhagen"
+  notes: >
+    Fachwerkkirche. Einziges Sakralgebäude des Museums. Wird für Gottesdienste,
+    Trauungen und Konzerte genutzt. Gehört zur Propstei Ribnitz der
+    Evangelisch-Lutherischen Landeskirche Mecklenburgs.
+
+# ── In situ — Schwerin Stadtfachwerk ─────────────────────────────────────
+
+- chid: "FW:DE:MV:schwerin:puschkinstrasse-36"
+  title: "Fachwerkhaus Puschkinstraße 36"
+  locality: "Schwerin, Puschkinstraße 36 / Domhof"
+  admin: "MV"
+  country: "DE"
+  date: "Ende 16. Jh."
+  date_method: "bauhistorisch"
+  type: "stadthaus_fachwerk"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Landesamt für Kultur und Denkmalpflege MV, „Denkmal des Monats" (2007):
+    kulturwerte-mv.de/Landesdenkmalpflege/Denkmal-des-Monats/2007-08-
+    Fachwerk-aus-dem-16-Jhd-in-der-Schweriner-Puschkinstrasse-36/
+  notes: >
+    Eines der ältesten erhaltenen Fachwerkgebäude Schwerins. Ständergeschossbau,
+    Ende 16. Jh. Kernelement: Wohnhaus mit Erdgeschoss als Lager.
+    Umbau um 1630 und im späten 18. Jh. Teil des ehemaligen Domhofs.
+    Dendrochronologie noch nicht abgeschlossen (Stand 2007). Benachbarter
+    Kemladen erste Hälfte 17. Jh. (bauhistorisch). Verwandt mit Domhof 4/5
+    (Inschrift 1574, Sitz des Landesamtes für Kultur und Denkmalpflege).
+  needs_verification: true
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.13 — NRW Ergänzung: LVR-Freilichtmuseum Kommern
+# Forschungsstand: 2026-02-28
+# Quellen: LVR-Freilichtmuseum Kommern (kommern.lvr.de, Wikipedia,
+#          LVR-ADR/AHF-Tagung 2023 denkmalpflege.lvr.de)
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:NRW:rhein-erft:dorfschulzenhaus-antoniter"
+  title: "Dorfschulzenhaus der Herrschaft des Kölner Antoniterklosters"
+  locality: "unbekannt (Eifel) / LVR-Freilichtmuseum Kommern"
+  admin: "NRW"
+  country: "DE"
+  date: "1511"
+  date_method: "bauhistorisch"
+  type: "bauernhaus_fachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Eifel (genaue Herkunftsgemeinde nicht belegt)"
+  source: >
+    rambow.de (2025): „Geschichte erleben im LVR-Freilichtmuseum Kommern";
+    LVR-Freilichtmuseum Kommern allgemein (kommern.lvr.de)
+  notes: >
+    Ältestes rekonstruiertes Haus im LVR-Freilichtmuseum Kommern. Wohnsitz des
+    Dorfschulzen unter der Grundherrschaft des Kölner Antoniterklosters.
+    Datierung bauhistorisch (Inschrift oder Archivbeleg, Methode nicht explizit
+    angegeben). Region: nördliche Eifel/Eifel-Vorland. Genaue Herkunftsgemeinde
+    aus vorliegenden Quellen nicht ableitbar.
+  needs_verification: true
+
+- chid: "FW:DE:NRW:rhein-kreis-neuss:heyerhof-korschenbroich"
+  title: "Heyerhof (Hallenhaus)"
+  locality: "Korschenbroich, Rhein-Kreis Neuss / LVR-Freilichtmuseum Kommern, Baugruppe Niederrhein"
+  admin: "NRW"
+  country: "DE"
+  date: "1647"
+  date_method: "bauhistorisch"
+  type: "niederdeutsches_hallenhaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Korschenbroich, Rhein-Kreis Neuss (Niederrhein)"
+  source: >
+    LVR-Amt für Denkmalpflege im Rheinland (denkmalpflege.lvr.de):
+    Tagung AHF/LVR-ADR „Haus – Konstruktion – Landschaft" 2023,
+    Foto-Beschriftung: „Heyerhof aus Korschenbroich (Rhein-Kreis Neuss)
+    im LVR-Freilichtmuseum Kommern, Hallenhaus von 1647";
+    LVR-Freilichtmuseum Kommern: „(H)aus alt mach neu!" (2023)
+  notes: >
+    Niederrheinisches Hallenhaus. Herrschaftlicher Pachthof, 1762 durch
+    Zahlungsverzug des Pächters Adolff Sitter historisch dokumentiert
+    (Inventarverzeichnis). Konstruktionsdatum 1647 durch AHF/LVR-ADR-Tagung
+    2023 bestätigt, wo drei frühe Kommern-Gebäude erstmals dendrochronologisch
+    untersucht wurden — ob 1647 dendro oder bauhistorisch, ist aus dieser
+    Quelle nicht eindeutig ableitbar. Zeitschnitt der Ausstellung: 1762.
+
+- chid: "FW:DE:NRW:oberbergisch:haus-kalsbach"
+  title: "Haus aus Kalsbach"
+  locality: "Kalsbach (Oberbergisches Land) / LVR-Freilichtmuseum Kommern, Baugruppe Bergisches Land"
+  admin: "NRW"
+  country: "DE"
+  date: "1667"
+  date_method: "bauhistorisch"
+  type: "wohnstallhaus_fachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Kalsbach, Oberbergisches Land"
+  source: >
+    rlp-tourismus.com (Infosystem LVR-Freilichtmuseum Kommern):
+    „Das Haus aus Kalsbach im Oberbergischen wurde beispielsweise 1667 in
+    Geschoss-Bauweise errichtet und diente einer mittelmäßig wohlhabenden
+    Bauernfamilie als Wohnhaus, Stall und Wirtschaftsgebäude."
+  notes: >
+    Bergisches Wohn-Stall-Haus in Geschossbauweise. Mittlere Wohlstandsklasse.
+    Typisch für das Bergische Land: Wohnstallhaus mit separater Scheune.
+    Fachwerk, Geschossbauweise (Stockwerkbau). Keine Dendrodatierung belegt.
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.14 — BY: Fränkisches Freilandmuseum Bad Windsheim
+# Forschungsstand: 2026-02-28
+# Quelle: Wikipedia-Gebäudeliste (de.wikipedia.org/wiki/Liste_der_Gebäude_
+#         im_Fränkischen_Freilandmuseum_Bad_Windsheim),
+#         Bedal/Kotter/May/Partheymüller: Häuser aus Franken, 7. Aufl. 2019
+# Scope: Fachwerkgebäude und Holzbau, datiert, Errichtung vor 1700
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:BY:neustadt-aisch:patrizierhaus-bad-windsheim"
+  title: "Patrizierhaus (Gasthaus Zum Hirschen)"
+  locality: "Bad Windsheim (in situ)"
+  admin: "BY"
+  country: "DE"
+  date: "1358"
+  date_method: "urkundlich"
+  type: "stadthaus_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wikipedia: Liste der Gebäude im Fränkischen Freilandmuseum Bad Windsheim,
+    Nr. 116: „Das Gebäude wurde 1358 erbaut und 1764 erweitert.
+    Bis 1809 diente das Gebäude als Wohnhaus führender [Bürger]."
+  notes: >
+    Patrizierhaus der ehemaligen Reichsstadt Windsheim, am Originalstandort
+    nördlich des Bauhofs. Ältestes datiertes Wohngebäude im Museumsbereich.
+    1764 erweitert. Teil der Baugruppe Stadt. Erweiterung von 1764 in
+    Fachwerkbauweise ist gut belegt; für das Kerngebäude 1358 ist Fachwerkbau
+    plausibel, jedoch nicht explizit bestätigt — Datierung urkundlich.
+  needs_verification: true
+
+- chid: "FW:DE:BY:neustadt-aisch:handwerkerhaus-bad-windsheim"
+  title: "Handwerkerhaus"
+  locality: "Bad Windsheim (in situ)"
+  admin: "BY"
+  country: "DE"
+  date: "1421"
+  date_end: "1423"
+  date_method: "urkundlich"
+  type: "stadthaus_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wikipedia: Liste der Gebäude im Fränkischen Freilandmuseum Bad Windsheim,
+    Nr. 120: „Das Gebäude wurde ursprünglich 1421–23 errichtet."
+  notes: >
+    Handwerkerhaus der ehemaligen Reichsstadt Windsheim. Am Originalstandort
+    im Bauhofgelände. Konstruktionsdatum 1421–23 urkundlich gesichert.
+    Fachwerkkonstruktion wahrscheinlich, aus Quellen nicht explizit bestätigt.
+  needs_verification: true
+
+- chid: "FW:DE:BY:neustadt-aisch:bauhofstadel-bad-windsheim"
+  title: "Bauhofstadel der Reichsstadt Windsheim"
+  locality: "Bad Windsheim (in situ)"
+  admin: "BY"
+  country: "DE"
+  date: "1441"
+  date_end: "1443"
+  date_method: "dendro"
+  type: "wirtschaftsbau_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wikipedia: Liste der Gebäude im Fränkischen Freilandmuseum Bad Windsheim,
+    Nr. 113: „Das Gebäude wurde 1441–43 errichtet [...] dendrochronologisch
+    über die verwendeten Bauhölzer auf Einschlagdaten von 1441 bis 1444
+    datiert. [...] eines der größten erhaltenen Holzbauwerke Süddeutschlands
+    aus dem 15. Jahrhundert."
+  notes: >
+    Lagerhaus und Werkstatt der Reichsstadt Windsheim. Einer der wenigen
+    erhaltenen spätmittelalterlichen Bauhöfe Süddeutschlands. Am Originalplatz
+    in der Altstadt Bad Windsheim. Vollwalmdach mit Biberschwanz-Doppeldeckung,
+    ca. 1000 Stämme Bauholz. Dendrodatum 1441–44, Baufertigstellung 1443.
+    Sanierung 1992–1997.
+
+- chid: "FW:DE:BY:ansbach:schafscheune-virnsberg"
+  title: "Schafscheune aus Virnsberg"
+  locality: "Virnsberg, Lkr. Ansbach / Fränkisches Freilandmuseum Bad Windsheim, Baugruppe Mittelalter"
+  admin: "BY"
+  country: "DE"
+  date: "1507"
+  date_method: "inschrift"
+  type: "wirtschaftsbau_fachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Virnsberg, Landkreis Ansbach"
+  source: >
+    Fränkisches Freilandmuseum Bad Windsheim (freilandmuseum.de):
+    „Schafscheune aus Virnsberg (Kreis Ansbach), erbaut 1507, [...]
+    eine der ältesten, noch ins Mittelalter gehörenden Schafscheuern."
+  notes: >
+    Älteste erhaltene Schafscheune in Franken. Heute Archäologie-Museum
+    (Zweigmuseum der Archäologischen Staatssammlung München). Holzrahmenbau,
+    Datierung 1507 durch Inschrift. Denkmalschutznummer nicht vermerkt,
+    aber in Baugruppe Mittelalter aufgenommen.
+
+- chid: "FW:DE:BY:neustadt-aisch:wagenschupfen-bad-windsheim"
+  title: "Großer Wagenschupfen"
+  locality: "Bad Windsheim (in situ)"
+  admin: "BY"
+  country: "DE"
+  date: "1564"
+  date_method: "urkundlich"
+  type: "wirtschaftsbau_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wikipedia: Liste der Gebäude im Fränkischen Freilandmuseum Bad Windsheim,
+    Nr. 114: „Das Gebäude wurde 1564 erbaut."
+  notes: >
+    Wagenschupfen des Reichsstädtischen Bauhofs. Am Originalstandort. Teil
+    des erhaltenen Bauhof-Ensembles (Nr. 113+114). Konstruktionstyp aus
+    Quellen nicht explizit bestätigt.
+  needs_verification: true
+
+- chid: "FW:DE:BY:eichstaett:bauernhaus-gungolding"
+  title: "Bauernhaus aus Gungolding"
+  locality: "Gungolding, Lkr. Eichstätt / Fränkisches Freilandmuseum Bad Windsheim, Baugruppe Altmühlfranken"
+  admin: "BY"
+  country: "DE"
+  date: "1564"
+  date_method: "urkundlich"
+  type: "bauernhaus_fachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Gungolding, Landkreis Eichstätt"
+  source: >
+    Wikipedia: Liste der Gebäude im Fränkischen Freilandmuseum Bad Windsheim,
+    Nr. 81: „Das Gebäude wurde ursprünglich 1564 errichtet und 1736 umgebaut."
+  notes: >
+    Altmühlfränkisches Bauernhaus. Charakteristisch: Scheune überragt das
+    Wohnhaus an Größe, typisch für den Altmühlraum. Erstbau 1564, Umbau 1736.
+    Datierung urkundlich.
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.15 — TH: Thüringer Freilichtmuseum Hohenfelden
+# Forschungsstand: 2026-02-28
+# Quellen: freilichtmuseum-hohenfelden.de (Gebäudeseiten),
+#          Thüringen Staatskanzlei Medieninformation (Feb 2025),
+#          weimarer-land.travel (Ausbau), Wikipedia, urlaubsland-thueringen.de
+# Scope: Fachwerkgebäude und Mischkonstruktionen, datiert, Errichtung vor 1800
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:TH:kyffhaeuserkreis:wohnhaus-abtsbessingen"
+  title: "Wohnhaus aus Abtsbessingen"
+  locality: "Abtsbessingen, Kyffhäuserkreis / Thüringer Freilichtmuseum Hohenfelden, Baugruppe Nordthüringen"
+  admin: "TH"
+  country: "DE"
+  date: "1550"
+  date_method: "bauhistorisch"
+  type: "wohnstallhaus_mischbau"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Abtsbessingen, Kyffhäuserkreis"
+  source: >
+    Thüringen Staatskanzlei (thueringen.de), Medieninformation Feb 2025:
+    „Es wurde 1550 in Abtsbessingen im Kyffhäuserkreis erbaut, indem ein
+    Fachwerkobergeschoss auf eine Lehmwellerwand gesetzt wurde."
+    Weimarer Land Tourismus (weimarer-land.travel): „ältestes ländliche
+    Wohnhaus des Freistaates"; freilichtmuseum-hohenfelden.de: Bestätigung
+  notes: >
+    Ältestes noch erhaltenes ländliches Wohnhaus Thüringens laut Museumangabe.
+    Konstruktion: Fachwerkobergeschoss auf Lehmwellererdgeschoss (Lehmbauweise,
+    nicht reiner Fachwerkbau). Strohdach mit Grassodenfirst. Schaufassade mit
+    Andreaskreuzen und Feuerböcken. Wiederaufbau in Hohenfelden begonnen
+    ca. 2019/2020, Eröffnung nach Fertigstellung. Datierungsmethode nicht
+    explizit angegeben — bauhistorisch (Gefügeanalyse) wahrscheinlich.
+  needs_verification: true
+
+- chid: "FW:DE:TH:weimarer-land:haus-hoyer-guegleben"
+  title: "Haus Hoyer (Güglebener Hof)"
+  locality: "Gügleben (zwischen Arnstadt und Erfurt) / Thüringer Freilichtmuseum Hohenfelden"
+  admin: "TH"
+  country: "DE"
+  date: "1604"
+  date_method: "inschrift"
+  type: "wohnstallhaus_fachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Gügleben, Landkreis Gotha (zw. Arnstadt und Erfurt)"
+  source: >
+    freilichtmuseum-hohenfelden.de (Gebäudeseite Güglebener Hof):
+    „Die Erbauer des Wohnstallhauses stellten im Jahr 1604 ihren Wohlstand
+    zur Schau, indem sie das Fachwerk auf repräsentative Weise mit reichen
+    Schmuckformen ausgestalten ließen."
+    Wikipedia (Thüringer Freilichtmuseum Hohenfelden): „das älteste [Gebäude]
+    aus dem Jahr 1604"
+  notes: >
+    Ältestes Gebäude im bestehenden Museumsbestand (Stand vor Erweiterung).
+    Schmuckfachwerk, bewusste Wohlstandsdemonstration durch reiche Ornamentik.
+    Bewohner: mehrere Generationen der Familien Näther und Hoyer; letzter
+    Bewohner zog 1966 aus. Datierung durch Inschrift am Gebäude.
+    Angrenzende Scheune aus Wüllersleben heute Museumspädagogisches Zentrum.
+
+- chid: "FW:DE:TH:weimarer-land:utzberger-hof"
+  title: "Wohnstallhaus (Utzberger Hof)"
+  locality: "Utzberg, Lkr. Weimarer Land / Thüringer Freilichtmuseum Hohenfelden"
+  admin: "TH"
+  country: "DE"
+  date: "1683"
+  date_method: "bauhistorisch"
+  type: "wohnstallhaus_lehmfachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Utzberg, Landkreis Weimarer Land"
+  source: >
+    urlaubsland-thueringen.de (Freilichtmuseum Hohenfelden):
+    „Utzberger Hof ein Wohnstallhaus von 1683 mit bis zu 50 Zentimeter
+    dicken, aus Lehm gestampften Wänden"
+  notes: >
+    Massivlehmbau (Stampflehm / Lehmweller), keine konventionelle
+    Fachwerkfüllung. Wandstärke bis 50 cm. Für den Katalog als
+    Lehmfachwerk-Mischkonstruktion klassifiziert; strukturell abweichend
+    vom reinen Fachwerktyp.
+
+- chid: "FW:DE:TH:saale-orla:umgebindehaus-langenbuch"
+  title: "Umgebindehaus aus Langenbuch"
+  locality: "Langenbuch, Saale-Orla-Kreis / Thüringer Freilichtmuseum Hohenfelden"
+  admin: "TH"
+  country: "DE"
+  date: "1685"
+  date_method: "bauhistorisch"
+  type: "umgebindehaus"
+  ev: "E2"
+  provenance: "transloziert"
+  provenance_origin: "Langenbuch bei Saale-Orla-Kreis"
+  source: >
+    freilichtmuseum-hohenfelden.de (Gebäudeseite Umgebindehaus):
+    „Das Umgebindehaus Langenbuch wurde 1685 in der Nähe des Ortes Langenbuch
+    (Saale-Orla-Kreis) als Wohnhaus zu einem dort befindlichen Eisenhammer
+    errichtet. Die Wände des Hauses bestehen aus dicken Bohlen, die an den
+    Ecken miteinander verbunden sind."
+  notes: >
+    Östlichstes Umgebindehaus-Exemplar im Katalog — Grenzbereich zum
+    sächsischen Verbreitungsgebiet. Bohlenständerbau mit Umgebinde (nicht
+    Blockbau im engeren Sinne). Wohnhaus eines Eisenhammer-Betriebs. Stube
+    mit reich gegliederter Decke, Becherkachelkachelofen. Steinerne Küche
+    mit Schlot über Dach. Wiederaufbau in Hohenfelden 2010–2014; Eröffnung
+    21. Juni 2014. Zeitschnitt der Einrichtung: um 1810.
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.16 — SN: Oberlausitz Umgebindehäuser (In-situ-Bestand)
+# Forschungsstand: 2026-02-28
+# Quellen: stiftung-umgebindehaus.de (Dendroforschung Menzel/Noky),
+#          Deutsche Stiftung Denkmalschutz (Seifhennersdorf),
+#          ostsachsen.de, oberlausitz.holiday, kulturdenkmalhaus.de
+# Scope: älteste erhaltene und dokumentierte Umgebindehäuser, In-situ
+# Hinweis: Umgebindehaus = Hybridtyp (Blockstube + Umgebinde + Fachwerkobergeschoss)
+#          Wird hier als eigenständiger Typ geführt, kein reiner Fachwerk-Eintrag.
+#          Architektonisch: FW-UMG in ARCH_TAXONOMY.md.
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:SN:goerlitz:umgebindehaus-dittlsdorf-bauteil"
+  title: "Umgebindehaus Dittlsdorf (ältester Bauteilnachweis)"
+  locality: "Dittlsdorf, Landkreis Görlitz"
+  admin: "SN"
+  country: "DE"
+  date: "1525"
+  date_method: "dendro"
+  type: "umgebindehaus"
+  ev: "E3"
+  provenance: "teilweise_erhalten"
+  source: >
+    stiftung-umgebindehaus.de (Dendroforschung):
+    „Eine Überraschung war die durchgeführte Untersuchung durch Wieland Menzel
+    und Thomas Noky an einem Gebäude in Dittlsdorf. Es ist der bisher älteste
+    ermittelte Bauteilnachweis eines Umgebindehauses von 1525.
+    Einige Gebäudereste sind heute museal eingelagert."
+  notes: >
+    Ältester dendrochronologisch gesicherter Bauteilnachweis eines
+    Umgebindehauses weltweit. Gebäude selbst nicht mehr vollständig erhalten;
+    Bauelemente museal eingelagert (Standort nicht spezifiziert).
+    Dendrochronologen: Wieland Menzel und Thomas Noky (Landesamt für
+    Denkmalpflege Dresden). EV E3 wegen unvollständiger Erhaltung.
+
+- chid: "FW:DE:SN:goerlitz:umgebindehaus-schwarzbach-1567"
+  title: "Umgebindehaus Schwarzbach (Freilichtmuseum)"
+  locality: "Schwarzbach, Lkr. Görlitz / Freilichtmuseum (Standort nicht spezifiziert)"
+  admin: "SN"
+  country: "DE"
+  date: "1567"
+  date_method: "unbekannt"
+  type: "umgebindehaus"
+  ev: "E2"
+  provenance: "transloziert"
+  source: >
+    stiftung-umgebindehaus.de: „Die ältesten bekannten und erhaltenen
+    Umgebindehäuser befinden sich in Schwarzbach (Freilichtmuseum) von 1567"
+    Mehrfach bestätigt: kulturdenkmalhaus.de, heimatbild.de
+  notes: >
+    Ältestes vollständig erhaltenes Umgebindehaus laut Stiftung Umgebindehaus
+    (nach Dittlsdorf-Bauteilnachweis). In einem Freilichtmuseum erhalten —
+    genaues Museum und Datierungsmethode aus verfügbaren Quellen nicht
+    ermittelbar. Benötigt Verifikation durch Stiftung Umgebindehaus oder
+    Sächsisches Landesamt für Denkmalpflege.
+  needs_verification: true
+
+- chid: "FW:DE:SN:goerlitz:umgebindehaus-ebersbach-oststrasse"
+  title: "Umgebindehaus Ebersbach, Oststraße 30 (\"Hugenottenhaus\")"
+  locality: "Ebersbach-Neugersdorf, Oststraße 30, Landkreis Görlitz"
+  admin: "SN"
+  country: "DE"
+  date: "1602"
+  date_method: "inschrift"
+  type: "umgebindehaus"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    ostsachsen.de: „Das älteste Umgebindehaus der Oberlausitz ist das
+    sogenannte Hugenottenhaus in Ebersbach. Es wurde im Jahre 1602 erbaut."
+    oberlausitz.holiday: „Das älteste vollständig erhaltene Umgebindehaus
+    (Baujahr 1603) befindet sich in Ebersbach-Neugersdorf, Oststraße 30."
+    (Quellenabweichung 1602/1603 — wahrscheinlich Jahrringfällung vs. Fertigstellung)
+  notes: >
+    Volkstümlich „Hugenottenhaus" (Benennung historisch nicht gesichert —
+    Hugenotteneinwanderung in Oberlausitz erst ab 1685). Ältestes vollständig
+    erhaltenes und bewohntes/nutzbares Umgebindehaus. Kennzeichen: Rauchhut
+    am Dach, hölzerne Kreuzstreben an der Fassade. Datierung 1602 vs. 1603
+    in verschiedenen Quellen — Verifikation durch Ortsbücher Ebersbach-
+    Neugersdorf empfohlen. In-situ.
+
+- chid: "FW:DE:SN:goerlitz:umgebindehaus-seifhennersdorf-weisseweg"
+  title: "Umgebindehaus Seifhennersdorf, Weißeweg 23"
+  locality: "Seifhennersdorf, Weißeweg 23, Landkreis Görlitz"
+  admin: "SN"
+  country: "DE"
+  date: "1613"
+  date_method: "dendro"
+  type: "umgebindehaus"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Deutsche Stiftung Denkmalschutz (denkmalschutz.de):
+    „Das Umgebindehaus in Seifhennersdorf wurde nach dem Ergebnis einer
+    dendrochronologischen Untersuchung im Jahr 1613 errichtet. Aus dieser Zeit
+    stammen am heutigen Haus Teile des Obergeschosses und das Dachtragwerk.
+    Damit ist es das drittälteste datierte Umgebindehaus der Oberlausitz und
+    der älteste nachgewiesene Stockwerkbau."
+    stiftung-umgebindehaus.de: Datum 1612 genannt (Jahrringfällung vs.
+    Bauabschluss — Dendro-Datum 1613 aus DSD zuverlässiger)
+  notes: >
+    Dendrodatum 1613 durch Deutsche Stiftung Denkmalschutz bestätigt.
+    Drittältestes datiertes Umgebindehaus (nach Schwarzbach 1567 und Ebersbach
+    1602/03). Ältester nachgewiesener Stockwerkbau (Geschossbau) des Typs.
+    Konstruktion: Teile des Obergeschosses und Dachtragwerk original 1613 —
+    Blockstube und Umgebinde bei späterer Hausverlängerung erneuert.
+    Förderung durch Deutsche Stiftung Denkmalschutz. In-situ.
+
+- chid: "FW:DE:SN:bautzen:fachwerkscheune-graenze-kamenz"
+  title: "Fachwerkscheune Gränze bei Kamenz"
+  locality: "Gränze (bei Kamenz), Landkreis Bautzen"
+  admin: "SN"
+  country: "DE"
+  date: "1568"
+  date_method: "unbekannt"
+  type: "wirtschaftsbau_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    stiftung-umgebindehaus.de: „Die älteste erhaltene Fachwerkscheune steht
+    in Gränze bei Kamenz von 1568."
+  notes: >
+    Älteste bekannte Fachwerkscheune der Oberlausitz. Datierungsmethode
+    nicht angegeben — möglicherweise Inschrift oder archivalisch.
+    In-situ. Gränze ist ein Ortsteil im Landkreis Bautzen.
+    Datierungsverifikation empfohlen.
+  needs_verification: true
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.17 — BB: Oderbruch / Freilichtmuseum Altranft
+# Forschungsstand: 2026-02-28
+# Quellen: Deutsche Stiftung Denkmalschutz (denkmalschutz.de),
+#          Denkmaltopographie BB Bd. 9.1 (Rohowski/Senst 2006),
+#          Wikipedia (Herrenhaus Altranft, Altranft, Architektur Mark Brandenburg)
+# Scope: alle Fachwerkbauten (Wohn-, Wirtschafts-, Sakral-, Adelsbau, Speicher, Grubenhütten, ...)
+# Hinweis: Herrenhaus Altranft und Fachwerkkirche Altranft als Scope-Nachträge
+#          in v0.18 separat eingetragen (Scope umfasst alle Fachwerkbauten).
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:BB:maerkisch-oderland:kossaetenhaus-altranft"
+  title: "Kossätenhaus Altranft (Märkisches Mittelflurhaus)"
+  locality: "Altranft (Ortsteil Bad Freienwalde/Oder), Dorfanger / Oderbruch Museum Altranft"
+  admin: "BB"
+  country: "DE"
+  date: "1698"
+  date_method: "urkundlich"
+  type: "mittelflurhaus_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Deutsche Stiftung Denkmalschutz (denkmalschutz.de, Kossätenhaus):
+    „Das Fachwerkhaus am Dorfanger, im Zentrum von Altranft, wurde
+    nachweislich 1698 und damit vor der Trockenlegung des Feuchtgebietes
+    erbaut." „gilt heute als das älteste Haus im Landkreis Märkisch-Oderland"
+    „das einzige nachweisliche Beispiel eines ländlichen Wohn- und
+    Wirtschaftsgebäudes dieser Zeit"
+    Denkmaltopographie BB Bd. 9.1, S. 247–249 (Rohowski/Senst 2006)
+  notes: >
+    Einziges erhaltenes vorfriderizianisches ländliches Fachwerkhaus im
+    Oderbruch — alle anderen wurden durch Überschwemmungen vernichtet.
+    Gebaut vor der systematischen Trockenlegung und Neusiedlung des
+    Oderbruchs (ab 1747 unter Friedrich dem Großen). Typ: märkisches
+    Mittelflurhaus (eingeschossig, Satteldach, Giebel zur Straße, Eingang
+    auf der Giebelseite). Sockel aus Feldsteinen. Datierung „nachweislich"
+    — wahrscheinlich archivalisch (Katastereintrag), nicht dendrochronologisch.
+    In-situ am Dorfanger Altranft, Teil des Oderbruch Museums (ehem.
+    Freilichtmuseum Altranft). Gefördert durch Deutsche Stiftung Denkmalschutz.
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.18 — BB Nachträge: Altranft (Scope-Korrektur v0.17)
+# Scope-Korrektur: alle Fachwerkbauten, nicht nur Volksarchitektur.
+# Herrenhaus und Fachwerkkirche Altranft nachgetragen.
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:BB:maerkisch-oderland:herrenhaus-altranft"
+  title: "Herrenhaus Altranft (Gutsschloss)"
+  locality: "Altranft (Ortsteil Bad Freienwalde/Oder) / Oderbruch Museum Altranft"
+  admin: "BB"
+  country: "DE"
+  date: "1526"
+  date_method: "dendro"
+  type: "herrenhaus_fachwerk"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Wikipedia (Herrenhaus Altranft):
+    „Dendrochronologische Untersuchungen im nördlichen Bereich des
+    Herrenhauses ergaben Hölzer aus dem Jahr 1526."
+    „Die erste Erwähnung eines Adelssitzes an dieser Stelle stammt aus
+    dem Jahr 1375, im Landbuch Kaiser Karls."
+    Denkmaltopographie BB Bd. 9.1, S. 247–249 (Rohowski/Senst 2006)
+  notes: >
+    Dendrodatum 1526 für den nördlichen Kernbereich. Kernbau und
+    Tonnengewölbe bestätigen mittelalterliches Alter. 1670–1678 zum
+    barocken Schloss umgebaut (Wolf Friedrich von Bomsdorf). 1876:
+    Dreiflügelanlage angebaut. EV E2 wegen substanzieller barocker
+    Überformung — Fachwerkkernbau teilweise erhalten. Heute Oderbruch
+    Museum, Kultureinrichtung für regionale Selbstbeschreibung.
+    Erste urkundliche Erwähnung des Adelssitzes 1375.
+
+- chid: "FW:DE:BB:maerkisch-oderland:fachwerkkirche-altranft"
+  title: "Fachwerkkirche Altranft"
+  locality: "Altranft (Ortsteil Bad Freienwalde/Oder)"
+  admin: "BB"
+  country: "DE"
+  date: "1574"
+  date_method: "urkundlich"
+  type: "sakralbau_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wikipedia (Altranft):
+    „Die erste Kirche im Ort, ein Fachwerkbau, wurde im Jahr 1574 erbaut"
+    Oderbruch Museum Altranft: Kirche als Teil des Museumsensembles.
+  notes: >
+    Fachwerkkirche am Dorfanger, 18. Jahrhundert laut anderen Quellen
+    neu-/umgebaut — ursprünglicher Fachwerkbau 1574. Datierungsmethode
+    wahrscheinlich archivalisch. Teil des Museumsensembles Oderbruch
+    Museum Altranft. Detailangaben zur Konstruktion des bestehenden Baus
+    (Originalsubstanz vs. Erneuerung) verifikationspflichtig.
+  needs_verification: true
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.19 — BB: Brandenburg an der Havel (Stadtfachwerk)
+# Forschungsstand: 2026-02-28
+# Quellen: Fachaufsatz Joachim Müller "Der Fachwerkbau des 12. bis 17. Jh.
+#   in der Stadt Brandenburg an der Havel" (Mitt. DGAMN, Jahrbuch f. Haus-
+#   forschung, Heidelberg journals); Europäische Route der Backsteingotik
+#   (eurob.org); Wikipedia (Ordonnanzhaus, Brandenburg an der Havel)
+# Scope: alle Fachwerkbauten
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:BB:havel:baeckerstrasse-14-brandenburg-havel"
+  title: "Fachwerkhaus Bäckerstraße 14 (Ständerbau)"
+  locality: "Brandenburg an der Havel, Altstadt, Bäckerstraße 14"
+  admin: "BB"
+  country: "DE"
+  date: "1408"
+  date_method: "dendro"
+  type: "buergerhaus_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Europäische Route der Backsteingotik (eurob.org, Brandenburg an der Havel):
+    „Haus Bäckerstraße 14, einem gotischen Ständerbau von 1408, dem bislang
+    ältesten Fachwerkhaus des Bundeslandes [Brandenburg]."
+    Müller, Joachim: „Der Fachwerkbau des 12. bis 17. Jahrhunderts in der
+    Stadt Brandenburg an der Havel", Mitt. DGAMN / Jahrbuch für Hausforschung
+    (Heidelberg, journals.ub.uni-heidelberg.de): gotischer Ständerbau,
+    regelmäßige Wandständer (Abstand 1,6–1,7 m), durchgesteckte Decken-
+    balken mit Zapfenschloss, Sparrendreieck über dem Ständer, angeblattete
+    Kopfbänder. Straßenseitige Breite ca. 10 m, Tiefe ca. 9 m.
+  notes: >
+    Ältestes Fachwerkhaus des Bundeslandes Brandenburg (laut Backsteingotik-
+    Route). Gotischer Ständerbau — Dachbalken durch Ständer gesteckt
+    (archaischer als zeitgenössische Konstruktionen mit Überkämmung auf den
+    Rähm). Datierung (d) = Dendrodatum. In-situ in der Altstadt. Konstruktions-
+    typ: spätgotischer Ständerbau, typisch für nordostdeutschen Stadtfachwerk
+    des frühen 15. Jahrhunderts. Primärquelle Müller-Aufsatz für Konstruktions-
+    details, Sekundärquelle Backsteingotik-Route für Superlativ-Aussage.
+
+- chid: "FW:DE:BB:havel:altstaedt-fischerstr-11-12-brandenburg-havel"
+  title: "Fachwerkhaus Altstädtische Fischerstraße 11/12"
+  locality: "Brandenburg an der Havel, Altstadt, Altstädtische Fischerstraße 11/12"
+  admin: "BB"
+  country: "DE"
+  date: "1440"
+  date_method: "dendro"
+  type: "buergerhaus_fachwerk"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Müller, Joachim: „Der Fachwerkbau des 12. bis 17. Jahrhunderts in der
+    Stadt Brandenburg an der Havel", Mitt. DGAMN / Jahrbuch für Hausforschung
+    (Heidelberg): „Das Fachwerkhaus Altstädtische Fischerstraße 11/12 ...
+    stammt ... mit seinem in wesentlichen Teilen erhaltenen Fachwerkgerüst
+    aus dem Jahre 1440 (d). Es ist mit ca. 11 m straßenseitiger Breite und
+    knapp 10 m Tiefe etwas größer als das Haus in der Bäckerstraße ...
+    Auch hier findet man eine regelmäßige Folge von Wandständern (Abstand
+    1,6 bis 1,7 m), durchgesteckte Deckenbalken mit Zapfenschloss, Sparren-
+    dreieck jeweils über dem Ständer und angeblattete Kopfbänder."
+  notes: >
+    EV E2 — im 18. Jh. in zwei separate Einheiten geteilt, seither mehrfach
+    verändert. Fachwerkgerüst in wesentlichen Teilen erhalten. Konstruktions-
+    fortschritt gegenüber Bäckerstraße 14: Dachbalken nicht durch Ständer
+    gesteckt, sondern mit Überkämmung auf den Rähm gelegt. Gleiche Grund-
+    grammatik (Ständerbau, Kopfbänder, Sparrendreieck über dem Ständer).
+    Dendrodatum (d).
+
+- chid: "FW:DE:BB:havel:ordonnanzhaus-brandenburg-havel"
+  title: "Ordonnanzhaus (Patrizierhaus / Altstädtisches Rathaus-Komplex)"
+  locality: "Brandenburg an der Havel, Altstadt, Schusterstraße 6 / Altstädtischer Markt"
+  admin: "BB"
+  country: "DE"
+  date: "frühes 15. Jh."
+  date_method: "dendro"
+  type: "patrizierhaus_fachwerk_dachstuhl"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Wikipedia (Ordonnanzhaus): „Das Satteldach des Ordonnanzhauses wird von
+    einem großartigen Dachstuhl aus dem frühen 15. Jahrhundert (Dendro-
+    chronologie) getragen, der mit den Dachstühlen von St. Katharinen, dem
+    des Altstädtischen Rathauses und einigen anderen Objekten der Stadt als
+    herausragendes Beispiel mittelalterlicher Zimmermannskunst und Baulogistik
+    dient."
+    Europäische Route der Backsteingotik: Ordonnanzhaus als reiches Bürgerhaus
+    der Zeit um 1300, Ende 15. Jh. luxuriös umgebaut.
+  notes: >
+    Älteste Bauteile 14. Jahrhundert (Mauerwerk, Steinhausbau). Dachstuhl
+    dendrochronologisch auf frühes 15. Jahrhundert datiert — das ist der
+    einzige explizit belegte Dendrobefund. Kern-Typus: gotisches Steinhaus
+    (Steenhus) mit Fachwerkdachwerk, kein reiner Fachwerkbau. EV E2 wegen
+    Überlagerungen. Exaktes Dendrodatum nicht publiziert (nur „frühes 15. Jh.").
+    Gilt als eines der ältesten bürgerlichen Profangebäude der Mark Brandenburg.
+    Seit 2008 Dienstsitz des Brandenburger Oberbürgermeisters.
+  needs_verification: true
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.20 — BY Nachtrag + RP Einstieg
+# Forschungsstand: 2026-02-28
+# ════════════════════════════════════════════════════════════════════════════
+
+# --- BY: Templerhaus Amorbach (ältestes Fachwerkhaus Bayerns) ---------------
+
+- chid: "FW:DE:BY:miltenberg:templerhaus-amorbach"
+  title: "Templerhaus Amorbach (Rüdenhof / Festes Haus)"
+  locality: "Amorbach, Landkreis Miltenberg, Unterfranken"
+  admin: "BY"
+  country: "DE"
+  date: "1291"
+  date_method: "dendro"
+  type: "adelssitz_fachwerk_turmhaus"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wikipedia (Templerhaus Amorbach):
+    „Ein Umbau erfolgte 1291, bei dem der steinerne Unterbau teilweise
+    abgetragen und die beiden, dendrochronologisch auf dieses Jahr datierten
+    Fachwerkobergeschosse aufgesetzt wurden."
+    „Das Templerhaus ist damit das älteste erhaltene Fachwerkhaus in Bayern."
+    Bayerisches Landesamt für Denkmalpflege: baugeschichtliche Untersuchung
+    bei Sanierung 1981. Dachkonstruktion 2000/01 als Vorlage für
+    Rekonstruktion Bachritterburg Kanzach herangezogen.
+  notes: >
+    Eigentlicher Name: Rüdenhof, Burgmannshof der Familie Rüdt von Collenberg,
+    um 1250 als Wohnturm (Festes Haus) errichtet. Fachwerkobergeschosse dendro
+    1291. Steinerner Unterbau älter (um 1250). Typus: Wohnturm mit Fachwerkauf-
+    satz — Hybrid aus Stein und Fachwerk, für Adelssitze des Hochmittelalters
+    charakteristisch. Irrtümlich „Templerhaus" genannt (seit 19. Jh.). Stadt
+    Amorbach erwarb 1981, seitdem museum. Ältestes Fachwerkhaus Bayerns (nach
+    Landesamt f. Denkmalpflege). Vergleichbare Typen: Erbacher Templerhaus,
+    Götzenturm Hettigenbeuern, Ruine Mühlhäuser Schlösschen.
+
+# --- RP: Schulhaus Würrich (Roscheider Hof) ---------------------------------
+
+- chid: "FW:DE:RP:rhein-hunsrueck:schulhaus-wuerrich"
+  title: "Schulhaus aus Würrich (Freilichtmuseum Roscheider Hof)"
+  locality: "Würrich, Rhein-Hunsrück-Kreis / transloziert nach Konz (Roscheider Hof)"
+  admin: "RP"
+  country: "DE"
+  date: "1680"
+  date_method: "dendro"
+  type: "schulhaus_fachwerk"
+  ev: "E2"
+  provenance: "transloziert"
+  source: >
+    Freilichtmuseum Roscheider Hof (roscheiderhof.de, Objektbeschreibung):
+    „Der älteste Teil des Hauses ist das Erdgeschoß des Wohnteils ... Das
+    Holz des Fachwerks wurde im Frühjahr 1680 geschlagen und grün verbaut."
+    „Die dendrochronologische Analyse ergab, daß das Holz des ersten Stocks
+    des Wohnteils 1760 im Winter geschlagen und wiederum saftfrisch, also im
+    folgenden Frühjahr, verbaut wurde."
+    Wikipedia (Roscheider Hof): „Das Schulhaus aus Würrich ist das älteste
+    in das Museum translozierte Gebäude."
+  notes: >
+    Ältestes Gebäude im Freilichtmuseum Roscheider Hof. Erdgeschoss 1680
+    (dendro), Erweiterung auf zwei Stockwerke 1760 (dendro). Ursprünglich
+    einstöckig; im Hunsrück des 17. Jh. noch keine zweistöckigen Häuser
+    üblich. Funktion: Schule und Lehrerwohnung gleichzeitig — bis 1840
+    Unterricht in der Lehrerstube (70 Schüler). 1996 abgebaut, 2000 Richt-
+    fest im Museum, 2008 eröffnet. Vor Translozierung mit Schiefer verkleidet.
+    Im Museum im Zustand ca. 1830 eingerichtet. Typ: Hunsrücker Fachwerk,
+    zweiraumtiefer Grundriss mit Abweichung vom Standardschema (Stube statt
+    Küche am Hausgang). EV E2 wegen Translozierung und 1760-Umbau.
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.21 — RP: Bacharach, Mittelrheintal
+# Forschungsstand: 2026-02-28
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:RP:mainz-bingen:altes-haus-bacharach"
+  title: "Altes Haus Bacharach"
+  locality: "Bacharach, Oberstraße 61, Landkreis Mainz-Bingen / UNESCO-Welterbe Oberes Mittelrheintal"
+  admin: "RP"
+  country: "DE"
+  date: "1368–1391"
+  date_method: "dendro"
+  type: "buergerhaus_fachwerk"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Deutsche Stiftung Denkmalschutz (denkmalschutz.de):
+    „Im Kern bereits erbaut im Jahr 1368 [...] im Kern 1389 erbaut."
+    KuLaDig-RLP (kuladigrlp.net, Nov. 2025):
+    „Im Kern bereits erbaut im Jahr 1391, erhielt es seine heutige Gestalt
+    durch den Anbau des markanten Erkers im Jahr 1586."
+    Architekturbüro Jäckel (jaeckel-architekten.de):
+    „Im Kern 1389 erbaut und vielfach seinen Nutzern angepasst."
+    Bundespreis für Handwerk in der Denkmalpflege 2018 (2. Preis) für
+    Sanierung 2013–2015.
+  notes: >
+    Datierungsdiskrepanz in den Quellen: 1368, 1389, 1391 — wahrscheinlich
+    verschiedene Bauphasen oder verschiedene Befunde (dendro vs. archivalisch).
+    Bedarf Klärung über Primärquelle (Bauforschungsbericht Jäckel/LfDH).
+    Kernbau mit massiv gemauertem Erdgeschoss, Fachwerkobergeschoss und vier
+    Giebeln — typischer Mittelrhein-Typus mit Fachwerkaufsatz. Mehrere
+    Umbauphasen bis 1568 (Erker 1586). In-situ, heute Weinstube + Wohnhaus.
+    Victor Hugo besuchte Bacharach 1840 und erwähnte das Haus. Robert Stolz
+    komponierte hier 1932 seine Operette. Stadtbildprägendes Denkmal im
+    UNESCO-Welterbe. Sanierung 2013–2016 mit Unterstützung Deutsche Stiftung
+    Denkmalschutz. EV E2 wegen umfangreicher Umbauphasen bis 1586.
+  needs_verification: true
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.20 — RP: Rheinland-Pfalz
+# Forschungsstand: 2026-02-28
+# Quellen: wegezumholz.de (Fachwerk-Datenbank); Wikipedia Kobern-Gondorf;
+#   Rhein-Zeitung 25.7.2013 ("Hof St. Marien ... ältestes Fachwerkhaus im
+#   Land"); kulturdb.de (Datenbank Kulturgüter Region Trier);
+#   Europäische Route der Backsteingotik (eurob.org)
+# Scope: alle Fachwerkbauten
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:RP:mosel:haus-simonis-kobern-gondorf"
+  title: "Hof St. Marien (Haus Simonis / Abteihof)"
+  locality: "Kobern-Gondorf, Kirchstraße, Landkreis Mayen-Koblenz"
+  admin: "RP"
+  country: "DE"
+  date: "1320/21"
+  date_method: "dendro"
+  type: "klosterhof_fachwerk"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Wegezumholz.de (Fachwerk-Datenbank): „Das Haus Simonis, auch Abteihof
+    genannt, ist mit seiner dendrochronologisch nachgewiesenen Entstehung im
+    Jahr 1320 das älteste Fachwerkhaus in Rheinland-Pfalz. Es gehört einst
+    zur Abtei St. Marien in Trier."
+    Wikipedia Kobern-Gondorf / visitmosel.de: „Aus Untersuchungen des zum Bau
+    verwendeten Holzes lässt sich darauf schließen, dass dieses Haus bereits
+    in den Jahren 1320/21 erbaut wurde."
+    Rhein-Zeitung 25.7.2013: „Das Fällungsdatum für das beim Bau verwendete
+    Eichenholz wird auf 1320/21 geschätzt."
+  notes: >
+    Ältestes Fachwerkhaus in Rheinland-Pfalz (Superlativ in mehreren Quellen
+    übereinstimmend belegt). Typus: Klosterhof / Verwaltungsbau einer
+    Trierer Abtei, kein Wohnhaus. Gotisches Fachwerkhaus; ungewöhnliche
+    Raumgröße des Innenraums deutet auf Verwaltungs- oder Gerichtsbau.
+    Lage: Kirchstraße, Ortskern Kobern. Restaurierungsarbeiten 2013 unter
+    strenger Denkmalpflegeaufsicht. EV E2 wegen Restaurierung. Fällungsdatum
+    Eichenholz 1320/21 — Baujahr kurz danach.
+
+- chid: "FW:DE:RP:trier:domfreihof-sternstrasse"
+  title: "Fachwerkhaus Domfreihof/Sternstraße (ältestes Trierer Fachwerkhaus)"
+  locality: "Trier, Domfreihof / Ecke Sternstraße"
+  admin: "RP"
+  country: "DE"
+  date: "1475"
+  date_method: "dendro"
+  type: "buergerhaus_fachwerk"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Datenbank Kulturgüter Region Trier (kulturdb.de): „Angeblich ältestes
+    Fachwerkhaus in Trier, dendrochronologisch 1475 datiert. Der Bau bildet
+    das westliche Drittel eines ursprünglich bis zur Ecke Sternstraße /
+    Domfreihof reichenden, traufständigen Hauses, das heute nachträglich durch
+    drei Zwerchgiebel bereichert wird. In baukünstlerischer und konstruktiver
+    Hinsicht stellt das 1965 freigelegte Sichtfachwerk ein wichtiges Zeugnis
+    spätgotischer Zimmermannskunst dar. Kennzeichnendes Merkmal ist die sich
+    im Moselraum recht zögernd durchsetzende, erst nach 1500 für das mosel-
+    ländische Fachwerk verpflichtende Stockwerkbauweise."
+  notes: >
+    EV E2 — nachträglich um drei Zwerchgiebel ergänzt; Sichtfachwerk erst
+    1965 freigelegt. Dendrodatum 1475. Dokumentiert Übergangsphase vom
+    spätgotischen Ständerbau zur Stockwerkbauweise im Moselraum (Übergang
+    nach 1500 verpflichtend). Kulturdb-Eintrag auch zur Stadttopographie:
+    in der Keller-Südmauer erhaltener, überwölbter Stadtbach-Kanal aus
+    gleichzeitiger Entstehungsphase. Kategorie: Wohn- und Wirtschaftsgebäude,
+    Epoche Gotik.
+
+- chid: "FW:DE:RP:koblenz-horchheim:muefflingsgasse-1450"
+  title: "Fachwerkhaus Müfflingsgasse"
+  locality: "Koblenz-Horchheim, Müfflingsgasse"
+  admin: "RP"
+  country: "DE"
+  date: "1450"
+  date_method: "unbekannt"
+  type: "buergerhaus_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wegezumholz.de (Fachwerk-Datenbank): „Das Haus in der Müfflingsgasse
+    stammt aus dem Jahre 1450."
+  notes: >
+    Datierungsmethode nicht explizit angegeben; wahrscheinlich Dendro oder
+    Bauforschung. Koblenz-Horchheim (linksrheinischer Vorort Koblenz).
+    Einfachster Eintrag ohne Konstruktionsdetails — needs_verification.
+  needs_verification: true
+
+- chid: "FW:DE:RP:koblenz-lay:kaufungerstr-1470"
+  title: "Fachwerkhaus Kaufunger Straße (Schwebgiebel)"
+  locality: "Koblenz-Lay, Kaufunger Straße"
+  admin: "RP"
+  country: "DE"
+  date: "1470/71"
+  date_method: "dendro"
+  type: "buergerhaus_fachwerk"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wegezumholz.de (Fachwerk-Datenbank): „Fachwerkhaus aus dem Jahre 1470/71
+    mit charakteristischem Schwebgiebel."
+  notes: >
+    Schwebgiebel (Ausgekragter Giebel) — typisches Merkmal des spätgotischen
+    und frühneuzeitlichen Stadtfachwerks im Moselraum. Dendrodatum 1470/71
+    (Jahreszahl deutet auf dendrochronologische Präzision).
+    Koblenz-Lay (rechtsrheinischer Ortsteil).
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.21 — SL: Saarland
+# Forschungsstand: 2026-02-28
+# Quellen: literaturland-saar.de/orte/ottweiler; Tourismuswebsite Ottweiler
+# Hinweis: Saarland ist historisch Grenzland Lothringen/Pfalz — mittelalter-
+#   liches Fachwerk deutlich seltener als in benachbarten Bundesländern.
+#   Älteste bekannte Holzkonstruktion ist ein Wehrturm, kein Wohnhaus.
+# Scope: alle Fachwerkbauten
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:SL:ottweiler:wehrturm-zibbelkapp"
+  title: "Alter Wehrturm / Evangelische Kirche (\"Zibbelkapp\")"
+  locality: "Ottweiler, Marktplatz / Stadtbefestigung, Landkreis Neunkirchen"
+  admin: "SL"
+  country: "DE"
+  date: "ca. 1420er"
+  date_method: "unbekannt"
+  type: "wehrturm_holzkonstruktion"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Literaturland Saar (literaturland-saar.de/orte/ottweiler): „Dieser war
+    vermutlich in den 1420er Jahren errichtet worden, als Teil der Burganlage.
+    Er gilt als ‚älteste erhaltene Holzkonstruktion des Saarlandes' und dient
+    inzwischen als Glockenturm der evangelischen Kirche."
+  notes: >
+    Kein Fachwerkhaus im engen Sinne — Wehr- und Glockenturm mit Holz-
+    konstruktion. Gilt als älteste erhaltene Holzkonstruktion des Saarlandes.
+    Heute 48 m hoch, Wahrzeichen Ottweilers. Datierung (1420er Jahre)
+    erschlossen, Methode unbekannt. EV E2 wegen barocker Umnutzung als
+    Glockenturm (F. J. Stengel 1756). Saarland ist generell arm an datiertem
+    mittelalterlichem Fachwerk — dieser Eintrag markiert die Grenze des
+    web-zugänglich Dokumentierten.
+  needs_verification: true
+
+# ════════════════════════════════════════════════════════════════════════════
+# TRANCHE v0.22 — NI/ST: Weserbergland / Südniedersachsen / Braunschweig
+# Forschungsstand: 2026-02-28
+# Quellen: Arnhold/Kotyrba 2009 (Fachwerkarchitektur in Braunschweig);
+#   Denkmalpflege Niedersachsen; Wikipedia Ackerhof 2; Der Löwe 2021;
+#   Kotyrba.net; Goslar Tourismus; NLD Welterbe-Seite (Brusttuch)
+# Methode: Dendro-Netz-Ansatz — Einträge mit bekannten oder erschließbaren
+#   Datierungen, um Bauphasen-Cluster sichtbar zu machen.
+# Scope: alle Fachwerkbauten (Bürger, Kirche, Patriziat, Handwerk)
+# ════════════════════════════════════════════════════════════════════════════
+
+- chid: "FW:DE:NI:braunschweig:spohrhaus-1357"
+  title: "Spohrhaus (Geburtshaus Louis Spohr)"
+  locality: "Braunschweig, Magniviertel (genaue Adresse: Spohrplatz 7)"
+  admin: "NI"
+  country: "DE"
+  date: "1356/57"
+  date_method: "bauhistorisch"
+  type: "buergerhaus_staenderbau"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Arnhold/Kotyrba 2009, S. 16–17 (zitiert via Der Löwe 2021 und
+    Kotyrba.net): „Das älteste, allerdings undatierte noch stehende
+    Fachwerkhaus Braunschweigs ist das Spohrhaus (1357)."
+  notes: >
+    Ältestes erhaltenes Fachwerkhaus Braunschweigs — Ständerbau, typische
+    Form des 14. Jh. vor der Stockwerkbauweise. Bauhistorische Datierung
+    1356/57 ohne Dendrobestätigung (daher „bauhistorisch"). Das Gebäude
+    trägt den Namen des Komponisten Louis Spohr (1784–1859), der hier
+    geboren wurde — das Haus selbst ist aber über 400 Jahre älter als
+    Spohr. Ständerbauweise: durchgehende Wandständer über mehrere
+    Geschosse, charakteristisch für Braunschweig 14./frühes 15. Jh.
+    Braunschweig war einst größte Fachwerkstadt Norddeutschlands —
+    von ehemals ~2000 Fachwerkbauten überstanden nur ~100 die
+    Bombennacht vom 14./15. Oktober 1944.
+
+- chid: "FW:DE:NI:braunschweig:echternstrasse-8"
+  title: "Fachwerkhaus Echternstraße 8"
+  locality: "Braunschweig, Magniviertel, Echternstraße 8"
+  admin: "NI"
+  country: "DE"
+  date: "1391"
+  date_method: "bauhistorisch"
+  type: "buergerhaus_staenderbau"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Arnhold/Kotyrba 2009 (via Der Löwe 2021): Echternstraße 8 (1391) als
+    zweitältestes erhaltenes Fachwerkhaus Braunschweigs nach dem Spohrhaus.
+  notes: >
+    Zweites datiertes Fachwerkhaus Braunschweigs aus dem 14. Jh. Dendro-
+    datierung nicht erwähnt, Datierung wohl bauhistorisch. Zusammen mit
+    dem Spohrhaus belegt es die Kontinuität des Ständerbaus in Braunschweig
+    bis in die 1390er Jahre.
+
+- chid: "FW:DE:NI:braunschweig:ackerhof-2"
+  title: "Ackerhof 2 (Borchard Smedes hus)"
+  locality: "Braunschweig, Magniviertel, Ackerhof 2 / Langedammstraße"
+  admin: "NI"
+  country: "DE"
+  date: "1432"
+  date_method: "inschrift"
+  type: "buergerhaus_haendler_speicher"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Arnhold/Kotyrba 2009, S. 16–17; Elmar Arnhold 2004 (Gutachten,
+    zitiert in Wikipedia Ackerhof 2): „Es handelt sich meines Wissens um
+    das älteste durch Inschrift datierte Fachwerkgebäude im norddeutschen
+    Raum, möglicherweise sogar ganz Deutschlands." Inschrift: „Anno
+    d[omi]ni m cccc xxxii" (1432) auf Balken Nordseite. Häuserbuch
+    Braunschweig 1432: „Borchard Smedes hus."
+  notes: >
+    Ältestes durch Bauinschrift datiertes Fachwerkhaus Braunschweigs und
+    möglicherweise Norddeutschlands. Traufständig, zweigeschossig, ~11×12,5 m,
+    9 Gefache. Obergeschoss kragt 50 cm vor — wahrscheinlich als Speicher
+    genutzt (Seilzugwinden/Ladeluken rekonstruierbar). Im 18. Jh. stark
+    umgebaut; Dachwerk, Balkenlage und Teile der Rückwand mittelalterlich.
+    Datierungsmethode: Bauinschrift (nicht Dendro). Braunschweiger Inschriften
+    erstmals 1432 nachweisbar, dann 1435 (An der Alten Waage 2) und 1444
+    (Güldenstraße 2) — mögliches Cluster. EV E2 wegen Umbau 18. Jh.
+    und kriegsbedingter Substanzverluste.
+
+- chid: "FW:DE:NI:braunschweig:huneborstelsches-haus"
+  title: "Huneborstelsches Haus (Gildehaus am Burgplatz)"
+  locality: "Braunschweig, Burgplatz (ursprünglich Sackstraße)"
+  admin: "NI"
+  country: "DE"
+  date: "1524"
+  date_method: "urkundlich"
+  type: "patrizierhaus_kaufmann"
+  ev: "E3"
+  provenance: "teilweise_erhalten"
+  source: >
+    Kotyrba.net (Huneborstelsches Haus): „1524 ließ Friedrich Huneborstel,
+    ein angesehener Kaufmann, Ratsherr, Gerichtsherr und Kämmerer, dieses
+    Haus errichten." NLD-Webseite Brusttuch: Vergleiche zum Huneborstelschen
+    Haus als Referenzgebäude norddeutscher Fachwerkschnitzerei.
+  notes: >
+    Bedeutendstes erhaltenes Beispiel norddeutscher Fachwerkschnitzerei
+    der Renaissance. Figurenfries von Holzbildhauer Simon Stappen.
+    Provenance E3/teilweise_erhalten: Das Haus wurde ursprünglich in der
+    Sackstraße erbaut, aber abgerissen — Fassadenteile der Speichergeschosse
+    und Dachstuhl wurden 1905 für den Neubau des Gildehauses am Burgplatz
+    verwendet. Überlebte WWII durch Auslagerung nach Hessen. Vergleichsobjekt
+    zum Brusttuch in Goslar (1521/1526) — beide zeigen Übergang Spätgotik/
+    Renaissance in Norddeutschland, beide für Patrizier errichtet.
+
+- chid: "FW:DE:NI:goslar:brusttuch"
+  title: "Brusttuch (Patrizierhaus Thiling)"
+  locality: "Goslar, Marktstraße / Marktplatz, Altstadt (UNESCO-Welterbe)"
+  admin: "NI"
+  country: "DE"
+  date: "1521"
+  date_method: "urkundlich"
+  type: "patrizierhaus_kaufmann"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    NLD Niedersächsisches Landesamt für Denkmalpflege (denkmalpflege.
+    niedersachsen.de): „Der wohlhabende Patrizier Magister Johannes Thiling
+    ließ es 1526 errichten." [Hinweis: Goslar-Tourismus.de nennt 1521 als
+    Baudatum — Diskrepanz möglicherweise Baubeginn vs. Fertigstellung.]
+    NLD: „Das außergewöhnlich aufwändig beschnitzte Fachwerk über dem
+    steinernen Erdgeschoss ist ein einzigartiges Dokument vom Übergang
+    des Mittelalters in die Neuzeit."
+  notes: >
+    Datierungskonflikt: Goslar Tourismus nennt 1521, NLD-Seite nennt 1526
+    für Erbauer Johannes Thiling. Möglicherweise Baubeginn 1521 /
+    Fertigstellung 1526. Gebäude für Katalog mit 1521 (Baubeginn, häufiger
+    zitiertes Datum). Trapezförmiger Grundriss — „kaum ein rechter Winkel."
+    Reiches Schnitzprogramm: Mythologie, Tiere, Rätselszenen. Massives
+    Steinerdgeschoss + Fachwerkobergeschoss — typische Patrizier-Hybridform
+    in Goslar. UNESCO-Welterbe. Saniert 2009 mit Bundesförderprogramm
+    Welterbestätten. Vergleichsobjekt: Huneborstelsches Haus Braunschweig
+    (1524) — beide NLD-dokumentiert als Schlüsselwerke norddeutscher
+    Fachwerkschnitzerei der Renaissance.
+  needs_verification: true
+
+- chid: "FW:DE:NI:goslar:st-annenhaus"
+  title: "St. Annenhaus"
+  locality: "Goslar, Altstadt (UNESCO-Welterbe)"
+  admin: "NI"
+  country: "DE"
+  date: "1488"
+  date_method: "bauhistorisch"
+  type: "hospitalgebaeude_kloster"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Europe-for-travel.com (Goslar Altstadt-Karte): „St Annenhaus (15) —
+    das älteste vollständig erhaltene Fachwerkhaus in Goslar (1488). Es
+    gehörte zu einem 1494 gegründeten Kloster."
+  notes: >
+    Ältestes vollständig erhaltenes Fachwerkhaus in Goslar. Gehörte zu
+    einem Kloster, gegründet 1494 — das Haus ist also älter als die
+    urkundliche Klostergründung, könnte Vorgängerbau sein oder die
+    Gründungsdaten beziehen sich auf unterschiedliche Institutionen.
+    Datierung 1488 ohne explizite Nennung der Methode. Goslar hat ~1500
+    Fachwerkhäuser verschiedener Epochen als UNESCO-Welterbe.
+  needs_verification: true
+
+- chid: "FW:DE:NI:goettingen:holbornsches-haus"
+  title: "Holbornsches Haus (Stadtarchäologie Göttingen)"
+  locality: "Göttingen, Altstadt (Adresse nicht präzisiert)"
+  admin: "NI"
+  country: "DE"
+  date: "1266"
+  date_method: "bauhistorisch"
+  type: "buergerhaus_romanisch"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Göttingen Tourismus und Marketing (goettingen-tourismus.de):
+    „Das Holbornsche Haus ... wurde im Jahr 1266 im romanischen Baustil
+    erbaut und ist in Göttingen der einzige Profanbau dieser Art ...
+    das älteste Gebäude Göttingens."
+  notes: >
+    Ältestes erhaltenes Gebäude Göttingens. „Romanischer Baustil" deutet
+    auf frühe Übergangsform zwischen Steinbau und Fachwerk hin — ob es
+    sich um Vollholz-, Fachwerk- oder Steinbaukonstruktion handelt, ist
+    aus der vorliegenden Beschreibung nicht eindeutig. Kreuzgratgewölbe-
+    keller mit romanischer Säule im Untergeschoss (Steinbausubstanz).
+    „Fachwerkhaus" im Quelltext — muss als frühe Mischkonstruktion
+    verstanden werden. Heute Sitz der Stadtarchäologie. Datierung 1266:
+    Methode unklar (urkundlich? bauhistorisch?). Datierung ist Sekundärquelle
+    (Tourismuswebsite) — Primärquelle unklar.
+  needs_verification: true
+
+- chid: "FW:DE:NI:goettingen:junkernschaenke"
+  title: "Junkernschänke"
+  locality: "Göttingen, Barfüßerstraße, Altstadt"
+  admin: "NI"
+  country: "DE"
+  date: "1446"
+  date_method: "bauhistorisch"
+  type: "buergerhaus_gasthaus_gotisch"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Göttingen Tourismus und Marketing: „Im Jahr 1446 wurde das Gebäude
+    zunächst als gotisches Fachwerkhaus erbaut und von 1547 bis 1549 im
+    Stil der Renaissance umgebaut."
+  notes: >
+    Ursprünglicher Bau 1446 (gotisch), Umbau 1547–49 (Renaissance) mit
+    heutiger Schnitzfassade. Bibelmotive, Wappen, Tierkreiszeichen;
+    Erbauer auf Eckpfosten verewigt. Typischer Fall einer Gotik-Konstruktion
+    mit Renaissancekleid — konstruktiver Kern älter als Erscheinungsbild.
+    Datierung 1446: Methode unklar, möglicherweise urkundlich.
+    Heute Restaurant. EV E2 wegen Renaissance-Umbau.
+
+- chid: "FW:DE:NI:einbeck:ratsapotheke"
+  title: "Rats-Apotheke"
+  locality: "Einbeck, Marktplatz"
+  admin: "NI"
+  country: "DE"
+  date: "1540"
+  date_method: "bauhistorisch"
+  type: "apothekerhaus_mischkonstruktion"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Einbeck Tourismus (einbeck-tourismus.de): „Rats-Apotheke Im Jahr 1540
+    erbautes Fachwerkhaus. Bestehend aus zwei Hausteilen unterschiedlicher
+    Bauweisen, die unter einem Dachwerk vereint ... Stockwerkbauweise vorne,
+    Ständerbauweise an der Seite."
+  notes: >
+    Wichtiges Transitobjekt: vereint Ständerbauweise (Seite) und Stockwerk-
+    bauweise (Frontfassade) unter einem Dach. Gebaut unmittelbar nach dem
+    Großen Stadtbrand Einbecks (1540) — Teil der dichten Nachbrandphase
+    1540–1549. Die Mischkonstruktion zeigt den Übergang in situ:
+    Handwerker arbeiten 1540 noch in beiden Systemen parallel.
+    Gewölbekeller. Einbeck hatte vor dem Brand ~788 Häuser mit Brau-
+    berechtigung — eine der dichtest besiedelten Fachwerk-Brauerstädte
+    Norddeutschlands.
+
+- chid: "FW:DE:NI:einbeck:eickesches-haus"
+  title: "Eickesches Haus (Spätrenaissance)"
+  locality: "Einbeck, Fußgängerzone (Marktstraße)"
+  admin: "NI"
+  country: "DE"
+  date: "1612"
+  date_method: "inschrift"
+  type: "buergerhaus_spaetrenaissance"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Einbeck Tourismus: „Eickesches Haus Stattlichstes Bürgerhaus der
+    Spätrenaissance aus dem Jahr 1612 mit umfangreich erhaltenem
+    Bildprogramm. Seit 2001 Baudenkmal von nationaler und kultureller
+    Bedeutung." Fachwerk-App Einbeck: 42 Brüstungsplatten mit Christus,
+    Evangelisten, Fünf Sinne, Planetengottheiten, Sieben Freie Künste.
+  notes: >
+    Außerhalb des Hauptfensters 1150–1600 — aber wichtiges Schlussglied
+    der Einbecker Fachwerkentwicklung. Reichstes erhaltenes Schnitzprogramm
+    der Region: 51 Konsolen, 42 Brüstungsplatten, humanistisches Bildprogramm
+    (Reformation, Renaissance, Antike). Zeigt Endpunkt der norddeutschen
+    Renaisssance-Fachwerkschnitzerei. Baudenkmal nationaler Bedeutung 2001.
+    transition: true (Grenzfall Katalogzeitraum)
+
+# --- GÖTTINGEN ERGÄNZUNG ---
+
+- chid: "FW:DE:NI:goettingen:rote-strasse-25"
+  title: "Haus Rote Straße 25"
+  locality: "Göttingen, Rote Straße 25"
+  admin: "NI"
+  country: "DE"
+  date: "1276"
+  date_method: "dendro"
+  type: "buergerhaus_gotisch"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Kudaba – Kulturdatenbank: „Das Haus Rote Straße 25 in Göttingen
+    gehört mit dem Errichtungsjahr 1276 zu den ältesten noch erhaltenen
+    Fachwerkhäusern in Deutschland. Die exakte Datierung erfolgt aufgrund
+    von dendrochronologischen Untersuchungen." Monumente Online (2007):
+    „Eine gewisse Sensation bedeutete die Datierung des Fachwerkhauses
+    Rote Strasse 25 in Göttingen in das Jahr 1276, nicht allein wegen des
+    nochmals höheren Alters, sondern weil es schon damals traufenständig
+    erbaut worden ist. Damit scheint diese für das Mittelalter besondere
+    Bauweise im Harzraum und Leinetal von Anfang an üblich gewesen zu sein."
+    Landkreis Göttingen Tourismus: „Typisches gotisches Wohnhaus (1276),
+    ältestes Fachwerkhaus der Stadt."
+  notes: >
+    Ältestes dendrodatiertes Fachwerkhaus Göttingens und eines der ältesten
+    Deutschlands überhaupt. Dendrodatierung 1276 (Dachbalken mit Waldkante,
+    Labor nicht in Sekundärquellen genannt — Primärquelle ausstehend).
+    Traufständige Ausrichtung von Anfang an — für das Mittelalter in
+    Norddeutschland ungewöhnlich. Die Traufständigkeit im Leinetal und
+    Harzraum scheint eine regional frühe Norm zu sein, während im übrigen
+    Deutschland Giebelstellung dominierte. Knaggen als konstruktives
+    Schmuckelement erhalten. Vorkragendes zweites Obergeschoss.
+    Ersetzt den Eintrag FW:DE:NI:goettingen:holbornsches-haus als
+    ältestes Göttinger Objekt — Holbornsches Haus bleibt wegen romanischem
+    Gewölbekeller eigenständig (Steinbausubstanz, nicht reines Fachwerk).
+    needs_verification: false (Dendrodatierung in mehreren unabhängigen
+    Sekundärquellen übereinstimmend bestätigt).
+
+# --- HAMELN EINTRÄGE ---
+
+- chid: "FW:DE:NI:hameln:stiftsherrenhaus"
+  title: "Stiftsherrenhaus (Poppendiek-Haus)"
+  locality: "Hameln, Osterstraße 8"
+  admin: "NI"
+  country: "DE"
+  date: "1558"
+  date_method: "urkundlich"
+  type: "patrizierhaus_weserrenaissance"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Museum Hameln (museumhameln.de): „Der Hamelner Bürgermeister Friedrich
+    Poppendiek ließ das Stiftsherrenhaus 1558 als Neubau mit drei
+    Vollgeschossen und einem Grundriß von 15 x 15m traufenständig zur
+    Osterstraße errichten. Die Deckenbalken haben ohne Stoß Längen von
+    mehr als 15 Metern." Architektur-Bildarchiv: „Das Stiftsherrenhaus
+    in der Hamelner Altstadt wurde 1558 für den Bürgermeister Friedrich
+    Poppendiek als Fachwerkhaus im Stil der Weserrenaissance erbaut."
+    Weserbergland Tourismus: „Das Stiftsherrenhaus wurde 1558 erbaut."
+  notes: >
+    Eines der größten Fachwerkhäuser des 16. Jahrhunderts in Nordwest-
+    deutschland. Grundriss 15 x 15 m, drei Vollgeschosse, traufständig.
+    Deckenbalken über 15 m ohne Stoß — technisch außergewöhnlich (Normal-
+    maß selbst bei großen Häusern unter 13 m). Bauherr Friedrich Poppendiek:
+    Bürgermeister und Kaufmann. Parzellenzusammenlegung 1558 oder früher
+    wahrscheinlich (Haus breiter als benachbarte Parzellen). Beide Speicher-
+    geschosse nachträglich im 18./19. Jh. zu Wohnzwecken unterteilt.
+    Schnitzprogramm: biblische Motive und antike Planetengötter.
+    Heute Museum Hameln (zusammen mit Leisthaus). Weserrenaissance-Cluster
+    Hameln: Stiftsherrenhaus (1558), Rattenkrug/Bäckerstraße 16 (1568,
+    Cord Tönnies), Leisthaus (1585–89), Rattenfängerhaus (1602/03),
+    Hochzeitshaus (1610–17) — längster dokumentierter Bauboom der Region.
+
+- chid: "FW:DE:NI:hameln:leisthaus"
+  title: "Leisthaus"
+  locality: "Hameln, Osterstraße 9"
+  admin: "NI"
+  country: "DE"
+  date: "1585"
+  date_method: "urkundlich"
+  date_range: "1585-1589"
+  type: "kaufmannshaus_weserrenaissance"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Architektur-Bildarchiv: „Das Leisthaus wurde 1585-89 nach Plänen von
+    Cord Tönnis für den Kaufmann Gerd Leist im Stil der Weserrenaissance
+    erbaut." Reisefrequenzen: „Der Kern des Hauses ist gotisch, zur
+    zeitgemäßen Umgestaltung beauftragte der Investor Gerd Leist 1585
+    Cord Tönnies als Architekten."
+  notes: >
+    Kaufmann Gerd Leist, Auftraggeber. Architekt Cord Tönnies — zentraler
+    Leitfigur der Weserrenaissance; baute auch Schloss Schwöbber, Schloss
+    Leitzkau, arbeitete in Lemgo und Detmold. Kern des Hauses gotisch
+    (14./15. Jh.?), Sandsteinfassade Weserrenaissance 1585–89. Sechs
+    Kardinaltugenden am Brüstungsfries — humanistisches Bildprogramm.
+    Museum Hameln seit Ende 20. Jh. (zusammen mit Stiftsherrenhaus).
+    Cord Tönnies als Netzwerkknoten: sein Wirken verbindet Hameln mit
+    Detmold, Lemgo, Minden — möglicher Dendro-Netz-Nachweis für
+    Werkstattwanderung entlang der Weser.
+
+# --- HÖXTER EINTRÄGE ---
+
+- chid: "FW:DE:NW:hoexter:dechanei"
+  title: "Dechanei (Amelunxenscher Hof)"
+  locality: "Höxter, Stummrigestraße / Innenstadt"
+  admin: "NRW"
+  country: "DE"
+  date: "1561"
+  date_method: "bauhistorisch"
+  date_range: "1561-1564"
+  type: "adelspalais_weserrenaissance"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Höxter Tourismus (hoexter-tourismus.de): „Christoph von Amelunxen
+    baute 1564–1571 dieses zweifellos bekannteste höxteraner Wohnhaus im
+    Stil der Weserrenaissance um." Historisches Vereinsblatt HVV: „Es
+    steht in den gegenwärtigen Ausmaßen seit dem Jahre 1561." Fachwerk-
+    App Höxter: Alte Dechanei 1561.
+  notes: >
+    Datierungskonflikt: Historisch erhaltene Ausmaße seit 1561 (HVV),
+    Umbau zur Weserrenaissance durch Christoph von Amelunxen 1564–1571
+    (Tourismus). Wie beim Brusttuch Goslar wahrscheinlich: Grundstruktur
+    älter, Renaissancekleid nachträglich. Grundstruktur laut HVV möglicherweise
+    bis ins Hochmittelalter zurückreichend. Bauherr von Amelunxen erwarb
+    Reichtum als Rittmeister im Dienste Frankreichs — ungewöhnliche
+    Provenance. Über 60 unterschiedlich gestaltete Fächerrosetten an der
+    zwiegiebeligen Front. Polygonale, zweigeschossige Utlucht — aufwändigste
+    Erkerform der Weserrenaissance. Seit 1796 Pfarrhaus der katholischen
+    Gemeinde. Kirchenbesitz, nur von außen zugänglich.
+    needs_verification: true (Datierungskonflikt 1561 vs. 1564–1571;
+    Grundstrukturalter unklar).
+
+- chid: "FW:DE:NW:warburg:eckmaennekenhaus"
+  title: "Eckmännekenhaus (Bäckergildhaus)"
+  locality: "Warburg, Lange Straße 2 / Ecke Klockenstraße"
+  admin: "NRW"
+  country: "DE"
+  date: "1471"
+  date_method: "inschrift"
+  type: "gildehaus_spaetgotisch"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Kulturland Kreis Höxter (kulturland.org): „Das älteste inschriftlich
+    datierte Fachwerkhaus Westfalens — das Eckmännekenhaus." Fachwerk-App
+    Höxter: „Das Eckmänneken ist ein 1471 errichtetes und als Kulturdenkmal
+    ausgewiesenes Bürgerhaus in der Altstadt von Warburg. Es liegt am
+    Altstädter Marktplatz in der Langen Straße 2 an der Ecke zur Klocken-
+    straße und gilt als das älteste inschriftlich datierte Fachwerkhaus
+    Westfalens. Spätestens seit 1560 war es das Amtshaus der Warburger
+    Bäckergilde."
+  notes: >
+    Ältestes inschriftlich datiertes Fachwerkhaus Westfalens. Warburg liegt
+    im Kreis Höxter, NRW — administrative Einheit für den Dendro-Netz-
+    Kontext Weserbergland. Dreigeschossiges Vorderhaus + zweigeschossiges
+    Hinterhaus, beide Eichenbalken-Fachwerk. Charakteristisch: gekreuzte
+    Fußstreben in der straßenseitigen Brüstungszone des vorspringenden
+    Speicherstocks — typische Spätgotik. Ständerbau Erdgeschoss → Obergeschoss,
+    Stockwerkbauweise mit Vorkragung im 2. OG. Funktion: ab 1560 (oder früher)
+    Amtshaus der Bäckergilde — mögliche Erstnutzung als Kaufmannshaus.
+    Vergleich mit Braunschweiger Ackerhof 2 (1432, Inschrift): auch dort
+    Inschrift als Datierungsträger, ähnliche Konstruktion und Epoche.
+
+# --- HILDESHEIM EINTRÄGE ---
+
+- chid: "FW:DE:NI:hildesheim:waffenschmiedehaus"
+  title: "Waffenschmiedehaus"
+  locality: "Hildesheim, Gelber Stern 21"
+  admin: "NI"
+  country: "DE"
+  date: "1548"
+  date_method: "inschrift"
+  type: "handwerkerhaus_fruehrenaissance"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Wikipedia Waffenschmiedehaus: „Das Waffenschmiedehaus wurde 1548
+    erbaut, wie die Jahreszahl über dem gotisch anmutenden Eingang anzeigt,
+    und ist damit eines der ältesten noch erhaltenen Wohnhäuser Hildesheims."
+    Hildesheim Tourismus: „Das Waffenschmiedehaus aus dem Jahr 1548 ist
+    das älteste erhaltene Fachwerkhaus Hildesheims. Über der Tür ließ der
+    hier früher ansässige Schmied ein Schnitzwerk aus Radschloss,
+    Kettenkugeln und Jahreszahl anbringen."
+  notes: >
+    Ältestes erhaltenes Fachwerkhaus Hildesheims. Datierung 1548 durch
+    Inschrift über dem Eingang (gotisch anmutend — Übergangsform in Stil
+    und Konstruktion). Handwerker-Bauherr: Waffenschmied. Schnitzwerk
+    über Eingang thematisiert das Handwerk direkt (Radschloss, Kettenkugeln)
+    — ungewöhnliche ikonographische Direktheit. Frührenaissance-Fachwerk;
+    Renovierung Anfang 19. Jh. (Fachwerk und Grundschwelle erneuert,
+    Erdgeschoss umgestaltet — konstruktiver Kern aber original). WWII
+    ohne nennenswerte Schäden überstanden. Hildesheim verlor durch
+    Bombenangriff März 1945 fast den gesamten Marktplatz mit Knochenhauer-
+    amtshaus (1529) und Bäckeramtshaus — beide 1986–89 rekonstruiert.
+    Vergleich mit Stiftsherrenhaus Hameln (1558): zeitgleiche Handwerker-
+    und Patrizierarchitektur im selben Jahrzehnt, aber grundverschiedene
+    soziale Ebene des Bauherrn.
+
+# --- LEMGO EINTRAG ---
+
+- chid: "FW:DE:NRW:lemgo:hexenbuergermeisterhaus"
+  title: "Hexenbürgermeisterhaus (Kruwel-Haus)"
+  locality: "Lemgo, Breite Straße 19"
+  admin: "NRW"
+  country: "DE"
+  date: "1568"
+  date_method: "urkundlich"
+  date_range: "1568-1571"
+  type: "kaufmannshaus_weserrenaissance"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Gesichter der Weserrenaissance (gesichter-weserrenaissance.de):
+    „Eines der bedeutendsten Bürgerhäuser in Nordwestdeutschland ist das
+    sogenannte Hexenbürgermeisterhaus, das 1568–71 für Hermann Kruwel und
+    seine Gemahlin Lisbeth Fürstenau gebaut wurde." Bauherreninschrift
+    am Haus: „In Gottes Namen und unter dem Schutz Christi hat Hermann
+    Kruwell dieses Haus an dieser Stätte erbaut im Jahr 1571."
+    Bauhandwerk-Magazin: Fassadenrestaurierung 2013–2016 dokumentiert
+    — Weserrenaissance-Ostfassade mit Buntsandsteinzierwerk.
+  notes: >
+    Bauherr Hermann Kruwel, Kaufmann, 1572–82 Bürgermeister. Inschrift-
+    datum 1571 (Fertigstellung), Baubeginn 1568. Name des Hauses stammt
+    von späterem Bewohner Hermann Cothmann (Bürgermeister 1662–82),
+    der für ~90 Hinrichtungen wegen Hexerei verantwortlich war —
+    kein Zusammenhang mit der Baugeschichte. Besonderheit: dem Fachwerk-
+    bau wurde eine Steinfassade aus Buntsandstein vorgeblendet — eine
+    überaus aufwändige Form für einen Kaufmann (typischer für Palaststil
+    kleiner Residenzen). Architekt: dem Lemgoer Baumeister Hermann Wulff
+    zugeschrieben (abweichend von Cord Tönnies — Lemgo hatte eigene
+    Meisterwerkstatt, kein Tönnies-Monopol). Adam-und-Eva-Portal und
+    Tugendfiguren an Erkern — vollständiges humanistisches Bildprogramm.
+    Städtisches Museum seit 1926 — eines der ältesten Stadtmuseen OWL.
+    Lemgo als Hansestadt: eigenständige Baukultur mit lokalen Meistern,
+    parallel zu Hamelns Cord-Tönnies-Netz, nicht abhängig davon.
+
+# --- HANN. MÜNDEN EINTRÄGE ---
+
+- chid: "FW:DE:NI:hann-muenden:alte-windmuehle"
+  title: "Alte Windmühle (Ziegelstraße 66)"
+  locality: "Hann. Münden, Ziegelstraße 66"
+  admin: "NI"
+  country: "DE"
+  date: "1400"
+  date_method: "dendro"
+  date_qualifier: "ca."
+  type: "dielenstadthaus_gotisch"
+  ev: "E1"
+  provenance: "in_situ"
+  source: >
+    Fachwerk5Eck (fachwerk5eck.de): „Das um 1400 erbaute Fachwerkhaus
+    Alte Windmühle in der Ziegelstraße 66 ist das älteste erhaltene
+    gotische Gebäude in Mischkonstruktion mit durchgehenden Ständern über
+    Erd- und Zwischengeschoss und einem Stockwerkrahmen darüber – ein
+    für die Fachwerk-Fünfeck-Region typisches Dielenstadthaus."
+    Stadt Hann. Münden (Sanierungsdokumentation Altstadt III): „Mündener
+    Altstadt, nur 2 Gebäude konnten bisher nach dendrochronologischer
+    Untersuchung ein noch früheres Baudatum aufweisen – diese Häuser sind
+    jedoch durch spätere Um- und Anbauten so verändert, dass ihre
+    ursprüngliche Bauart kaum noch erkennbar ist."
+  notes: >
+    Ältestes datiertes Fachwerkhaus Hann. Mündens mit erkennbarer
+    Originalstruktur. Dendrodatierung ~1400 (Stadtdokumentation bestätigt
+    Dendrochronologie, zwei noch ältere Gebäude existieren aber stark
+    verändert). Mischkonstruktion: durchgehende Ständer über EG und
+    Zwischengeschoss + Stockwerkrahmen darüber — konstruktiver Übergang
+    in situ, zeitgleich mit Braunschweiger Ständerbau (Spohrhaus 1357,
+    Echternstraße 8 1391). Dielenstadthaus: typisch für Stapelrecht-
+    Stadt — Erdgeschoss als Handelsdiele, Obergeschoss Wohnen und
+    Vorrat. Heute Hotel. Sanierung dokumentiert gotischen Torbogen-
+    Rekonstruktion. Hann. Münden: 700 Fachwerkhäuser aus 6 Jahrhunderten
+    — dichtester erhaltener Bestand dieser Größenordnung in Südniedersachsen.
+    needs_verification: false (Dendrodatierung durch Stadtbaudokumentation
+    bestätigt, Quelle Primär verfügbar im Stadtarchiv).
+
+- chid: "FW:DE:NI:hann-muenden:kuesterhaus"
+  title: "Küsterhaus"
+  locality: "Hann. Münden, Kirchplatz"
+  admin: "NI"
+  country: "DE"
+  date: "1457"
+  date_method: "bauhistorisch"
+  type: "dielenstadthaus_gotisch"
+  ev: "E2"
+  provenance: "in_situ"
+  source: >
+    Fachwerk5Eck (fachwerk5eck.de): „Ebenfalls gotisch ... das Küsterhaus
+    am Kirchplatz. Das Küsterhaus von 1457 ist ein Dielenstadthaus."
+  notes: >
+    Gotisches Dielenstadthaus, 1457. Funktionell gebunden an die
+    St.-Blasius-Kirche am Kirchplatz. Datierungsmethode bauhistorisch —
+    ob Dendro oder Schriftquelle, in Sekundärliteratur nicht spezifiziert.
+    Vergleichsobjekt: Alte Windmühle (Ziegelstraße 66, ~1400) zeigt
+    Kontinuität des Dielenstadthaus-Typs in Hann. Münden über 60 Jahre.
+    needs_verification: true (Datierungsmethode unklar).
+
+# --- DETMOLD / LIPPE MUSEUMSEXEMPLARE ---
+
+- chid: "FW:DE:NRW:detmold:sabbenhauser-zehntscheune"
+  title: "Sabbenhauser Zehntscheune (Lippisches Landesmuseum)"
+  locality: "Detmold, Ameide 4 (transloziert aus Sabbenhausen)"
+  admin: "NRW"
+  country: "DE"
+  date: "1420"
+  date_method: "bauhistorisch"
+  date_qualifier: "ca."
+  type: "zehntscheune_dielenhaus_spaetgotik"
+  ev: "M"
+  provenance: "transloziert"
+  source: >
+    Lippisches Landesmuseum (wandheizung.de Referenzbericht):
+    „Die Sabbenhauser Zehntscheune ist eines der ältesten datierten großen
+    Dielenhäuser in Lippe. Im Stil der Spätgotik wurde es von den Kreuzherren
+    von Falkenhagen als Zehntscheune für das Kloster in Sabbenhausen errichtet.
+    Zwischen 1960 und 1962 wurde sie in den innerstädtischen Kontext des
+    Lippischen Landesmuseums transloziert."
+  notes: >
+    Ältestes datiertes großes Dielenhaus Lippes. Errichtet von Kreuzherren
+    von Falkenhagen als Klosterzehntscheune — kirchliche Auftraggeber,
+    nicht bürgerlich. Spätgotik, ~1420 (Datierungsmethode in Sekundärliteratur
+    nicht spezifiziert — vermutlich bauhistorisch, Dendro nicht bestätigt).
+    Transloziert 1960–62 ins Landesmuseum Detmold. Seit 1973 Denkmal.
+    Heute Ausstellungsraum nach Umbau. Vergleich: Mittelmühle Detmold
+    (1420, gleiches Jahrzehnt, im selben Museumskontext — beide spätgotisch,
+    beide Lippe). Klosterbau-Provenance und Zehntfunktion unterscheidet
+    dieses Objekt scharf von bürgerlichen Dielenhäusern gleicher Periode.
+
+- chid: "FW:DE:NRW:detmold:speicher-wilper-winkhausen"
+  title: "Speicher Hof Wilper (LWL-Freilichtmuseum Detmold)"
+  locality: "Detmold, LWL-Freilichtmuseum (transloziert aus Winkhausen)"
+  admin: "NRW"
+  country: "DE"
+  date: "1561"
+  date_method: "dendro"
+  type: "speicher_spaetgotik_renaissance"
+  ev: "M"
+  provenance: "transloziert"
+  source: >
+    LWL-Freilichtmuseum Detmold (Besuchsbericht zeilenabstand.net):
+    „Letzterer stammt vom Hof Wilper in Winkhausen, ist für das Jahr
+    1561d dendrodatiert und zeigt wiederum Fächerrosetten – ein
+    bemerkenswerter Luxus an einem Nebengebäude."
+  notes: >
+    Dendrodatiert 1561 (d = exaktes Fälljahr). Nebengebäude eines
+    westfälischen Bauernhofs — Speicher, kein Haupthaus. Fächerrosetten
+    als Schmuckelement an einem Wirtschaftsgebäude: erhöhter Aufwand,
+    der auf wohlhabenden Hof oder regionale Schreinerkultur hinweist.
+    Vergleich: Valepagenhof Haupthaus (1577d, Delbrück) im gleichen
+    Freilichtmuseum — figuraler Fassadenschmuck, niederer Adel als Bauherr.
+    Beide Dendrodatierungen aus LWL-Dendrochemie-Archiv.
+    Lippischer Meierhof Haupthaus (1570, Leese) im selben Museum als
+    weiteres Vergleichsobjekt derselben Dekade.
