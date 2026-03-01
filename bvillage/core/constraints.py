@@ -69,7 +69,13 @@ class ConstraintEval:
     penalties: Dict[str, float]
     issues: Tuple[Issue, ...] = ()
 
-_DEFAULT_PROFILE = (CostProfile(name="default", mode="quadratic"),)
+_DEFAULT_PROFILE: Tuple[CostProfile, ...] = (
+    CostProfile(name="default", mode="quadratic"),
+)
+
+def _u01_from_u32(x: int) -> float:
+    """Maps a uint32 to a uniform float in [0, 1)."""
+    return (x & 0xFFFFFFFF) / 4294967296.0  # 2**32
 
 # ----------------------------
 # Deterministic RNG
@@ -235,16 +241,19 @@ def sample_soft(
     Deterministically sample a value:
       - with probability prefer_ideal_prob from ideal band
       - else from allowed band
+
+    HOT PATH:
+      - no Random() construction
+      - no allocations
+      - stable across processes
     """
-    # Use a stable per-house seed basis. ctx.seed.derive(key) is fine,
-    # but avoid Random(...) construction in hot path.
     base = int(ctx.seed.derive(key))
 
-    # One draw to choose band
+    # Draw 1: choose band
     u_choice = _u01_from_u32(_stable_u32(base, "choose"))
     band = soft.ideal if (u_choice < prefer_ideal_prob) else soft.allowed
     a, b = band
 
-    # One draw to sample uniform within band
+    # Draw 2: uniform inside band
     u = _u01_from_u32(_stable_u32(base, "u"))
     return a + (b - a) * u
