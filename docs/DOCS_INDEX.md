@@ -26,6 +26,7 @@ Read in this sequence. Each document assumes the ones before it.
 7. **ARCH_MATERIALS.md** — the material system: physical and visual parameters.
 8. **ENG_CODING_GUIDE.md** — how to write Python in this project.
 9. **ENG_BUILDER_CONTRACT.md** — specific rules for Blender builder modules.
+10. **ENG_AI_CONTRIBUTION_RULES.md** — mandatory integrity rules for AI-assisted contributions.
 
 ---
 
@@ -56,6 +57,7 @@ For a focused coding session, the minimum context is:
 | ENG_CODING_GUIDE.md | 3 — Operational | Python conventions. Additions welcome; changes require team decision. |
 | ENG_BUILDER_CONTRACT.md | 3 — Operational | Builder rules. Changes only on schema increment. |
 | ENG_PERFORMANCE_GUIDE.md | 3 — Operational | Performance patterns. Independent of architecture. |
+| ENG_AI_CONTRIBUTION_RULES.md | 3 — Operational | Mandatory integrity rules for AI-assisted contributions. Session continuity protocol. |
 | DEV_ROADMAP.md | 3 — Operational | Tasks and milestones. Frequently updated. |
 | SYS_WORKFLOW.md | 3 — Operational | Collaboration process. Rarely changes. |
 | SYS_NAMING_POLICY.md | 3 — Operational | File and function naming rules. Enforced by ARCH_SCAN. |
