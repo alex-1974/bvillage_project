@@ -369,7 +369,7 @@ def stable_u64(seed: int, salt: str) -> int:
     h = hashlib.blake2b(digest_size=8)
     h.update(str(int(seed)).encode("utf-8"))
     h.update(b"|")
-    h.update(str(salt).encode("utf-8"))
+    h.update(salt.encode("utf-8"))
     return int.from_bytes(h.digest(), "big", signed=False)
 
 # HOT PATH — called per member; dominates at settlement scale
@@ -622,7 +622,7 @@ def sample_render(
 
     # value jitter (brightness)
     base_value_j = float(rp.jitters.get("value", 0.0)) + _CONDITION_VALUE_JITTER_BONUS.get(surface.condition, 0.0)
-    u_val = rand01(seed, salt + "|val")
+    u_val = rand01(seed, f"{salt}|val")
     final_hex = _apply_value_jitter_hex(base_hex, base_value_j, u_val)
 
     # roughness jitter
@@ -720,16 +720,5 @@ def resolve_for_builder(
 
     salt = _member_uid(member)
     sample = sample_render(resolved, surface, seed=seed, salt=salt)
-
-    # ---- Visibility: warn once when we had to fall back to a default ----
-    if not explicit_mid:
-        key = f"{role}|{policy_default}"
-        if key not in _WARNED_DEFAULT_FALLBACKS:
-            LOG.warning(
-                "Material fallback: using default '%s' for role='%s' (no member.material_id).",
-                policy_default,
-                role,
-            )
-            _WARNED_DEFAULT_FALLBACKS.add(key)
 
     return resolved, surface, sample

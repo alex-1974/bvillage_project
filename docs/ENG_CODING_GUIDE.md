@@ -613,67 +613,12 @@ A module is acceptable when:
 
 ## 16. AI-assisted development
 
-BVILLAGE uses AI for code generation. This section defines how AI-assisted sessions work and what AI must observe.
+BVILLAGE uses AI for code generation. All rules governing AI-assisted
+contributions — integrity constraints, stop conditions, vocabulary discipline,
+session continuity, and the HANDOFF protocol — are defined in:
 
-### Session context — ARCH_SCAN
+**`ENG_AI_CONTRIBUTION_RULES.md`** (Tier 3 — Operational, Mandatory)
 
-Every code session begins with an ARCH_SCAN — the output of the project's architecture scanner. The scan provides:
-
-- All files with their layer classification
-- All imports per file — layer boundary violations are immediately visible
-- All top-level functions and classes
-- SIGNALS — calls to canonical accessors (`get_domain_artifact`, `configure_logging`)
-- SOFT issues — `print()` usage, global `random`, notes access without schema
-
-AI uses the scan to understand the current state of the codebase before writing any code. AI does not invent module structures, function names, or import paths that contradict the scan.
-
-### What the scan does not provide
-
-The scan shows function names but not their full signatures with types, and dataclass names but not their fields. When AI needs exact signatures or field names, it asks for the relevant file — it does not guess.
-
-### What AI must not change without explicit instruction
-
-- Existing function signatures — name, parameters, return type
-- Existing dataclass field names and types
-- Existing member role strings (`"corner"`, `"stud"`, `"knee_brace"`, ...)
-- Existing material IDs
-- Existing notes schema keys
-
-Changing any of these breaks determinism, snapshot tests, or the builder contract. AI flags when a task seems to require changing a stable interface and waits for confirmation.
-
-### Import discipline
-
-AI follows the import whitelist strictly per layer:
-
-| Layer | Allowed imports |
-|-------|----------------|
-| `core/` | stdlib only: `math`, `hashlib`, `dataclasses`, `itertools`, `typing`, `logging`, `pathlib`, `json`, `random` ¹ |
-| `domain-core/` | stdlib only + `bvillage.core.*` |
-| `type/` | stdlib only + `bvillage.core.*` |
-| `domain-blender/` | `bpy`, `mathutils` + `bvillage.core.*` + `bvillage.domains.<domain>.core.*` |
-| `blender/` | `bpy`, `mathutils` + `bvillage.core.*` |
-| `tests/` | `pytest` + all `bvillage.*` except `bpy` |
-
-¹ `random` is permitted in `core/` exclusively for the `Seed` wrapper — `random.Random(seed)` to construct a local seeded instance. Global functions (`random.random()`, `random.choice()`, `random.shuffle()`, etc.) must never be called directly anywhere in the codebase. All other layers access randomness through the `Seed` wrapper from `bvillage.core` — they do not import `random` directly.
-
-AI never introduces `numpy`, `scipy`, or any external library without explicit instruction.
-
-### Code style AI produces
-
-AI writes code that follows this guide fully:
-- `X | Y` union syntax, never `typing.Union`, `typing.List`, `typing.Dict`
-- `@dataclass(frozen=True, slots=True)` for value objects
-- `tuple` for completed collections, `list` only during construction
-- Google-style docstrings with preconditions and postconditions on stage functions
-- `log = logging.getLogger(__name__)` — never a hardcoded logger name, except in logging configuration functions and tests (see §13)
-- `log.debug("msg %s", value)` — never f-strings in log calls
-- Raises from `BVillageError` hierarchy — never bare `ValueError` for contract violations
-- `# HOT PATH` comment on functions in the critical path
-
-### What AI flags proactively
-
-When writing code, AI notes explicitly:
-- If a new function would exceed three public functions in a module
-- If a proposed import violates the layer whitelist
-- If a signature change would affect existing tests or snapshot behavior
-- If randomness is needed and no `Seed` is available in scope
+That document is the single source of truth for AI contribution behavior.
+The rules are not repeated here. In any conflict between a convention in
+this guide and a rule in `ENG_AI_CONTRIBUTION_RULES.md`, the latter governs.

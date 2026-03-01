@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import pytest
 
+from bvillage.core.seed import Seed
 from bvillage.core.model import (
     Context,
     Footprint,
@@ -36,10 +37,18 @@ from bvillage.core.model import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def ctx() -> Context:
-    # Minimal context; tests should not depend on epoch logic yet.
-    return Context(seed=123, wealth=0.6, epoch_band="E2", region="north")
+    return Context(
+        seed=Seed(123),
+        region="north",
+        epoch_band="late_medieval",
+        settlement_type="village",
+        wealth=0.6,
+        occupants=4,
+        climate_hint="temperate",
+        house_type="fachwerkhaus.hallenhaus",
+    )
 
 
 def make_structure(

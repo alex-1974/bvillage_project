@@ -8,7 +8,7 @@ from mathutils import Vector
 
 from .timber import make_beam_rect
 from .opening_profiles import OpeningProfilePolicy
-from bvillage.core.materials.material_registry import resolve_for_builder
+from .materials_assign import assign_member_material
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.opening_frames")
 
@@ -16,44 +16,6 @@ LOG = logging.getLogger("bvillage.domains.fachwerk.blender.opening_frames")
 # ------------------------------------------------------------
 # Materials (local, minimal)
 # ------------------------------------------------------------
-
-def _ensure_bv_material(mat_name: str, sample):
-    """
-    sample: RenderSample(base_color_hex, roughness, metallic)
-    """
-    mat = bpy.data.materials.get(mat_name)
-    if mat is None:
-        mat = bpy.data.materials.new(mat_name)
-        mat.use_nodes = True
-
-    nt = mat.node_tree
-    bsdf = nt.nodes.get("Principled BSDF")
-    if bsdf is None:
-        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
-
-    h = str(sample.base_color_hex).lstrip("#")
-    try:
-        r = int(h[0:2], 16) / 255.0
-        g = int(h[2:4], 16) / 255.0
-        b = int(h[4:6], 16) / 255.0
-    except Exception:
-        r, g, b = 0.8, 0.8, 0.8
-
-    bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
-    bsdf.inputs["Roughness"].default_value = float(sample.roughness)
-    bsdf.inputs["Metallic"].default_value = float(sample.metallic)
-    return mat
-
-
-def _assign_material(obj: Optional[bpy.types.Object], mat: bpy.types.Material) -> None:
-    if obj is None or obj.data is None:
-        return
-    mats = obj.data.materials
-    if len(mats) == 0:
-        mats.append(mat)
-    else:
-        mats[0] = mat
-
 
 def _assign_member_material(
     *,
@@ -73,12 +35,15 @@ def _assign_member_material(
     mm.setdefault("id", obj_name)  # deterministic salt fallback
 
     try:
-        resolved, surface, sample = resolve_for_builder(mm, ctx_view, default_material_id=default_material_id)
-        mat = _ensure_bv_material(f"BV_{resolved.id}", sample)
-        _assign_material(obj, mat)
+        assign_member_material(
+            obj=obj,
+            member=mm,
+            ctx_view=ctx_view,
+            default_material_id=default_material_id,
+            name_hint=f"BV_{obj_name}",
+        )
     except Exception:
         LOG.exception("OpeningFrames: material assignment failed for %s member=%s", obj_name, mm)
-
 
 # ------------------------------------------------------------
 # Mapping

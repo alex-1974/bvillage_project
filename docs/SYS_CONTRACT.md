@@ -182,6 +182,11 @@ The following must not change without an explicit architecture decision:
 - Logging discipline
 - Contract semantics
 
+AI-assisted contributions are governed by `ENG_AI_CONTRIBUTION_RULES.md`.
+That document defines integrity constraints, stop conditions, and session
+continuity protocol. Its rules have the same force as the conventions
+in `ENG_CODING_GUIDE.md`.
+
 ---
 
 ## 13. Known failure modes

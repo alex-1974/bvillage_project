@@ -36,7 +36,6 @@ import bpy
 from mathutils import Vector
 
 from bvillage.core.errors import InvariantError, MaterialResolveError, SchemaError
-from bvillage.core.materials.material_registry import resolve_for_builder
 from bvillage.domains.fachwerk.blender.materials_adapter import apply_material_to_object
 from bvillage.core.notes import get_domain_artifact
 
@@ -111,33 +110,24 @@ def _assign_member_material(
 ) -> None:
     """Resolve deterministic material for a member and assign to Blender object.
 
-    Semantics:
-      - member.material_id wins when present
-      - otherwise policy decides defaults (role/domain)
-      - this builder provides *no override*; it passes empty fallback.
+    Canonical path:
+      resolve_for_builder(...) -> materials_adapter.apply_material_to_object(...)
 
-    Raises:
-      - MaterialResolveError if no material can be resolved or Blender assignment fails.
+    Builder provides no override; it passes empty fallback so policy decides defaults.
     """
     if obj is None:
         return
 
-    resolved, surface, sample = resolve_for_builder(
-        member,
-        ctx_view,
-        default_material_id="",
-    )
+    from .materials_assign import assign_member_material
 
-    # Deterministic cache & node graph handled by adapter.
-    apply_material_to_object(
+    assign_member_material(
         obj=obj,
-        resolved=resolved,
-        surface=surface,
-        sample=sample,
-        ctx=ctx_view,
         member=member,
-        name_hint=str(getattr(resolved, "id", "material")),
+        ctx_view=ctx_view,
+        default_material_id="",
+        name_hint=str(getattr(member, "id", None) or member.get("id") or getattr(obj, "name", "material")),
     )
+    
 # -----------------------------------------------------------------------------
 # Collections & clearing
 # -----------------------------------------------------------------------------

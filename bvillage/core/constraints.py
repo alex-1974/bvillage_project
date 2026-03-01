@@ -28,7 +28,6 @@ from .model import Context, Issue
 Range2 = Tuple[float, float]
 PenaltyMode = Literal["linear", "quadratic", "hinge"]
 
-
 @dataclass(frozen=True)
 class RangeHard:
     min_v: float
@@ -70,6 +69,13 @@ class ConstraintEval:
     penalties: Dict[str, float]
     issues: Tuple[Issue, ...] = ()
 
+_DEFAULT_PROFILE: Tuple[CostProfile, ...] = (
+    CostProfile(name="default", mode="quadratic"),
+)
+
+def _u01_from_u32(x: int) -> float:
+    """Maps a uint32 to a uniform float in [0, 1)."""
+    return (x & 0xFFFFFFFF) / 4294967296.0  # 2**32
 
 # ----------------------------
 # Deterministic RNG
@@ -134,7 +140,7 @@ def penalty_soft(v: float, soft: RangeSoft, prof: CostProfile) -> float:
     if ia <= v <= ib:
         return 0.0
 
-    w = float(soft.weight)
+    w = soft.weight
 
     # Inside allowed: penalize distance to ideal band
     if aa <= v <= ab:
@@ -171,11 +177,16 @@ def eval_range(
     - Penalties computed for each profile independently.
     """
     if profiles is None:
-        profiles = (CostProfile(name="default", mode="quadratic"),)
+        profiles = _DEFAULT_PROFILE
 
     issues: List[Issue] = []
-    penalties: Dict[str, float] = {p.name: 0.0 for p in profiles}
-
+    #penalties: Dict[str, float] = {p.name: 0.0 for p in profiles}
+    if len(profiles) == 1:
+        p = profiles[0]
+        penalties = {p.name: penalty_soft(value, soft, p)} if soft else {p.name: 0.0}
+    else:
+        penalties = {p.name: 0.0 for p in profiles}
+    
     # HARD
     if hard is not None and not hard.contains(value):
         issues.append(
@@ -213,6 +224,11 @@ def eval_range(
 
     return ConstraintEval(value=value, penalties=penalties, issues=tuple(issues))
 
+def _u01_from_u32(x: int) -> float:
+    # Map uint32 -> [0,1). 2**32 = 4294967296
+    return (x & 0xFFFFFFFF) / 4294967296.0
+
+
 # HOT PATH — may run many times per house; explodes with candidate sampling
 def sample_soft(
     ctx: Context,
@@ -225,8 +241,19 @@ def sample_soft(
     Deterministically sample a value:
       - with probability prefer_ideal_prob from ideal band
       - else from allowed band
+
+    HOT PATH:
+      - no Random() construction
+      - no allocations
+      - stable across processes
     """
-    r = rng_for(ctx, key)
-    band = soft.ideal if (r.random() < prefer_ideal_prob) else soft.allowed
+    base = int(ctx.seed.derive(key))
+
+    # Draw 1: choose band
+    u_choice = _u01_from_u32(_stable_u32(base, "choose"))
+    band = soft.ideal if (u_choice < prefer_ideal_prob) else soft.allowed
     a, b = band
-    return r.uniform(a, b)
+
+    # Draw 2: uniform inside band
+    u = _u01_from_u32(_stable_u32(base, "u"))
+    return a + (b - a) * u
