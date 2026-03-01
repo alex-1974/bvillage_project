@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping, Optional
 import hashlib
 
+from bvillage.core.materials.policies.resolve import (
+    default_material_id_for_member,
+)
+
+LOG = logging.getLogger(__name__)
 
 # =============================================================================
 # BVILLAGE v0.4.0 — MaterialRegistry
@@ -17,6 +23,7 @@ import hashlib
 # - ProductForm / SectionProfile live on member/geometry, not here
 # =============================================================================
 
+_WARNED_DEFAULT_FALLBACKS: set[str] = set()
 
 # -----------------------------------------------------------------------------
 # TYPES
@@ -646,20 +653,82 @@ def resolve_for_builder(
     ctx: Any,
     *,
     default_material_id: str,
-) -> tuple[MaterialResolved, SurfaceSpec, RenderSample]:
+) -> tuple["MaterialResolved", "SurfaceSpec", "RenderSample"]:
     """
     One-stop helper for Blender builder:
-      - resolve material (physics+render)
+      - resolve material (physics+render) via registry
       - resolve surface
-      - sample deterministic render
+      - sample deterministic render (seed + member salt)
+
+    Semantics:
+      - member["material_id"] (if present) wins
+      - otherwise use policy-derived default (role/domain policy)
+      - builder-provided default_material_id is only a fallback input to policy;
+        it is NOT an override.
 
     Requirements:
-      - ctx.seed (int) for determinism (fallbacks to 0 if absent)
+      - ctx.seed (int or Seed(base=int)) for determinism (fallbacks to 0 if absent)
       - member stable identifier for salt (member.id/uid/name/member_id/key)
     """
-    seed = int(_get_attr_or_key(ctx, "seed") or 0)
-    resolved = resolve_material(member, ctx, DEFAULT_REGISTRY, default=default_material_id)
+
+    # ---- Seed normalization (supports Seed(base=42) and plain int) ----
+    seed_any = _get_attr_or_key(ctx, "seed")
+    seed_base = _get_attr_or_key(seed_any, "base") if seed_any is not None else None
+    try:
+        seed = int(seed_base if seed_base is not None else (seed_any or 0))
+    except Exception:
+        seed = 0
+
+    # ---- Determine whether member explicitly specifies a material_id ----
+    explicit_mid = None
+    role = None
+    if isinstance(member, dict):
+        explicit_mid = member.get("material_id")
+        role = member.get("role")
+
+    # ---- Policy-derived default (domain-specific) ----
+    # This returns:
+    #   - builder-provided default_material_id if present, else
+    #   - role-based policy default, else
+    #   - None
+    policy_default = default_material_id_for_member(
+        member,
+        ctx,
+        fallback=default_material_id,
+    )
+
+    if not explicit_mid and not policy_default:
+        raise MaterialResolveError(
+            f"No material available: member has no material_id and no policy default found (role={role!r})."
+        )
+
+    # ---- Resolve material + surface + sample deterministically ----
+    try:
+        resolved = resolve_material(
+            member,
+            ctx,
+            DEFAULT_REGISTRY,
+            default=policy_default,  # used only if member has no explicit material_id
+        )
+    except Exception as e:
+        raise MaterialResolveError(
+            f"Material could not be resolved (explicit={explicit_mid!r}, default={policy_default!r}, role={role!r})."
+        ) from e
+
     surface = resolve_surface(member, ctx)
+
     salt = _member_uid(member)
     sample = sample_render(resolved, surface, seed=seed, salt=salt)
+
+    # ---- Visibility: warn once when we had to fall back to a default ----
+    if not explicit_mid:
+        key = f"{role}|{policy_default}"
+        if key not in _WARNED_DEFAULT_FALLBACKS:
+            LOG.warning(
+                "Material fallback: using default '%s' for role='%s' (no member.material_id).",
+                policy_default,
+                role,
+            )
+            _WARNED_DEFAULT_FALLBACKS.add(key)
+
     return resolved, surface, sample
