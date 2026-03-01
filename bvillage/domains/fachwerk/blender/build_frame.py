@@ -37,6 +37,7 @@ from mathutils import Vector
 
 from bvillage.core.errors import InvariantError, MaterialResolveError, SchemaError
 from bvillage.core.materials.material_registry import resolve_for_builder
+from bvillage.domains.fachwerk.blender.materials_adapter import apply_material_to_object
 from bvillage.core.notes import get_domain_artifact
 
 from bvillage.domains.fachwerk.core.frameplan_contract import audit_frameplan_contract
@@ -71,73 +72,19 @@ def _call_compat(func: Any, /, **kwargs: Any) -> Any:
 
 
 # -----------------------------------------------------------------------------
-# Material cache (avoid thousands of duplicate Blender materials)
+# Materials
 # -----------------------------------------------------------------------------
-
-_MATERIAL_CACHE: dict[str, bpy.types.Material] = {}
-
-
-def _ensure_bv_material(name: str, sample: Any) -> bpy.types.Material:
-    """Create/return a deterministic BV_ material based on a RenderSample."""
-    mat = bpy.data.materials.get(name)
-    if mat is None:
-        mat = bpy.data.materials.new(name=name)
-    mat.use_nodes = True
-
-    nt = mat.node_tree
-    if nt is None:
-        return mat
-
-    nodes = nt.nodes
-    links = nt.links
-
-    bsdf = nodes.get("Principled BSDF")
-    if bsdf is None:
-        bsdf = nodes.new("ShaderNodeBsdfPrincipled")
-
-    out = nodes.get("Material Output")
-    if out is None:
-        out = nodes.new("ShaderNodeOutputMaterial")
-
-    # ensure link exists
-    linked = any(lk.from_node == bsdf and lk.to_node == out for lk in links)
-    if not linked:
-        links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
-
-    # Assign sampled parameters (minimal deterministic shader)
-    col_hex = getattr(sample, "base_color_hex", "#808080").lstrip("#")
-    try:
-        r = int(col_hex[0:2], 16) / 255.0
-        g = int(col_hex[2:4], 16) / 255.0
-        b = int(col_hex[4:6], 16) / 255.0
-    except Exception:
-        r, g, b = 0.5, 0.5, 0.5
-
-    bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
-    bsdf.inputs["Roughness"].default_value = float(getattr(sample, "roughness", 0.6))
-    bsdf.inputs["Metallic"].default_value = float(getattr(sample, "metallic", 0.0))
-
-    return mat
-
-
-def _assign_material(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
-    """Assign material to an object's first material slot (if mesh-like)."""
-    if obj.data is None:
-        return
-    mats = getattr(obj.data, "materials", None)
-    if mats is None:
-        return
-    if len(mats) == 0:
-        mats.append(mat)
-    else:
-        mats[0] = mat
 
 
 def _material_ctx_view(ctx: Any, *, house_name: str) -> dict[str, Any]:
     """ctx may be a frozen dataclass -> never mutate it.
 
     Provide a dict "view" for material resolution + seed-based variation.
-    Material policy is resolved inside core.materials, not here.
+
+    Important:
+      - Role/material defaults are resolved by `core.materials` (policy).
+      - The *Blender* material cache & node graphs live in `materials_adapter`.
+        This builder never caches `bpy.types.Material` objects.
     """
     seed_any = getattr(ctx, "seed", None)
     if seed_any is None:
@@ -164,7 +111,13 @@ def _assign_member_material(
 ) -> None:
     """Resolve deterministic material for a member and assign to Blender object.
 
-    Raises MaterialResolveError on failure (no silent partial builds).
+    Semantics:
+      - member.material_id wins when present
+      - otherwise policy decides defaults (role/domain)
+      - this builder provides *no override*; it passes empty fallback.
+
+    Raises:
+      - MaterialResolveError if no material can be resolved or Blender assignment fails.
     """
     if obj is None:
         return
@@ -172,26 +125,19 @@ def _assign_member_material(
     resolved, surface, sample = resolve_for_builder(
         member,
         ctx_view,
-        # empty fallback -> role policy decides; explicit member.material_id still wins
         default_material_id="",
     )
 
-    # deterministic cache key (resolved id + appearance-affecting fields)
-    mat_key = f"{resolved.id}|{getattr(surface, 'condition', '')}|{getattr(surface, 'finish', '')}|{sample.base_color_hex}|{float(sample.roughness):.4f}|{float(sample.metallic):.4f}"
-    mat_hash = hashlib.blake2b(mat_key.encode("utf-8"), digest_size=4).hexdigest()
-    mat_name = f"BV_{resolved.id}_{mat_hash}"
-
-    mat = _MATERIAL_CACHE.get(mat_name)
-    if mat is None:
-        mat = _ensure_bv_material(mat_name, sample)
-        _MATERIAL_CACHE[mat_name] = mat
-
-    try:
-        _assign_material(obj, mat)
-    except Exception as e:
-        raise MaterialResolveError(f"Failed to assign Blender material '{mat_name}' to obj='{obj.name}'") from e
-
-
+    # Deterministic cache & node graph handled by adapter.
+    apply_material_to_object(
+        obj=obj,
+        resolved=resolved,
+        surface=surface,
+        sample=sample,
+        ctx=ctx_view,
+        member=member,
+        name_hint=str(getattr(resolved, "id", "material")),
+    )
 # -----------------------------------------------------------------------------
 # Collections & clearing
 # -----------------------------------------------------------------------------
@@ -522,21 +468,54 @@ def _build_plates_from_members(fp: dict[str, Any], house: dict[str, Any], col_fr
     return built
 
 
+
 def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
+    """Build hall posts on the midline up to ridge/roof support.
+
+    Important: In current FramePlan schema, hall posts are not necessarily present
+    in fp.members.posts. Historically, Hallenhaus requires a row of interior
+    posts (Ständer) along the building length. The builder therefore generates
+    these members deterministically from house.axis_x.
+
+    If future schemas provide explicit HALL_POST members, those will be built in
+    addition to (or instead of) generated posts depending on policy. For now we
+    generate one per axis_x entry.
+    """
     built = 0
-    members = fp.get("members") or {}
-    posts = members.get("posts") or []
-    for mm in posts:
-        if str(mm.get("role")) != "HALL_POST":
-            continue
-        # hall posts may lack z0/z1 in some schemas; tolerate and default to house
-        mm2 = dict(mm)
-        mm2.setdefault("z0", float(house.get("z0", 0.0)))
-        mm2.setdefault("z1", float(house.get("H_e", 2.6)))
-        p0, p1 = _map_post_member(mm2, house=house)
-        obj = _add_beam(col_frame, name=_member_name(mm2, fallback="HallPost"), p0=p0, p1=p1, profile=mm2.get("profile") or house.get("profile_post"))
-        _assign_member_material(obj, mm2, ctx_view)
+
+    axis_x = list(house.get("axis_x") or [])
+    if not axis_x:
+        return 0
+
+    z0 = float(house.get("z0", 0.0))
+    # Prefer explicit ridge/hall height if present; otherwise fall back to H_e.
+    z1 = float(house.get("z_ridge", house.get("H_e", 2.6)))
+
+    # Midline y=0 in house coordinates; x runs along axis_x.
+    for i, x in enumerate(axis_x):
+        mm: dict[str, Any] = {
+            "role": "HALL_POST",
+            "id": f"HallPost_{i:02d}",
+            "wall": "MID",
+            "u": float(x),  # interpreted as absolute x for MID
+            "z0": z0,
+            "z1": z1,
+            # allow profile override if present on house
+            "profile": {"w": float(house.get("profile_post", (0.20, 0.20))[0]),
+                        "d": float(house.get("profile_post", (0.20, 0.20))[1])},
+        }
+        p0 = Vector((float(x), 0.0, z0))
+        p1 = Vector((float(x), 0.0, z1))
+        obj = _add_beam(
+            col_frame,
+            name=mm["id"],
+            p0=p0,
+            p1=p1,
+            profile=mm.get("profile") or house.get("profile_post"),
+        )
+        _assign_member_material(obj, mm, ctx_view)
         built += 1
+
     return built
 
 
