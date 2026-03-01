@@ -49,15 +49,15 @@ class FieldCell:
 class Grid:
     # Axes in local coordinates (meters). Convention:
     # x axis = length direction (longitudinal), y axis = width direction (transverse)
-    axis_x: Tuple[float, ...]
-    axis_y: Tuple[float, ...]
+    axes_u: Tuple[float, ...]
+    axes_v: Tuple[float, ...]
     fields: Tuple[FieldCell, ...] = ()
 
 
 @dataclass(frozen=True)
-class Frame:
+class BayFrame:
     id: str
-    axis_index: int
+    bay_index: int
     tags: Tuple[str, ...] = ("PRIMARY_FRAME",)
 
 
@@ -85,7 +85,7 @@ class StructurePlan:
     stories: int = 1
 
     grid: Grid = Grid((), (), ())
-    frames: Tuple[Frame, ...] = ()
+    frames: Tuple[BayFrame, ...] = ()
     walls: Tuple[WallSegment, ...] = ()
     reserved_slots: Tuple[ReservedSlot, ...] = ()
 
@@ -135,7 +135,7 @@ class InteriorPlan:
     zones: Tuple[Zone, ...] = ()
     rooms: Tuple[Room, ...] = ()
     doors: Tuple[Door, ...] = ()
-    openings_demands: Tuple[OpeningDemand, ...] = ()
+    opening_demands: Tuple[OpeningDemand, ...] = ()
     notes: Dict[str, Any] = field(default_factory=dict)
 
 

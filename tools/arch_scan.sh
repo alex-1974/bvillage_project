@@ -593,7 +593,7 @@ def scan_file(p):
     substr = find_substrings(text, [
         "notes[", 'notes["domains"]', "notes['domains']",
         "structure.notes",
-        "axis_x", "axis_y", "axes_u", "axes_z",
+        "axes_u", "axes_v", "axes_u", "axes_z",
         "frameplan",
         "logging.getLogger",
     ])

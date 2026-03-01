@@ -1,431 +1,113 @@
-# bvillage/types/fachwerkhaus/hallenhaus/planner.py
-
-"""
-bvillage.types.fachwerkhaus.hallenhaus.planner
-==============================================
-
-Type Orchestration: Fachwerkhaus – Hallenhaus
-
-Responsibilities
-----------------
-- Generate type-specific StructurePlan (semantic)
-- Generate interior + openings (semantic)
-- Resolve policy stack (ctx -> ResolvedPolicy) and store as notes artifact
-- Attach constraints-derived parameters + penalty info as notes artifact (core)
-- Attach Fachwerk frameplan into structure.notes (fachwerk domain artifact)
-
-Layer rules
------------
-- No Blender imports.
-- Planner consumes ResolvedPolicy only (no hidden structural defaults).
-- StructurePlan is frozen; only mutate structure.notes dict via notes schema helpers.
-"""
+# bvillage/types/fachwerkhaus/hallenhaus/interior.py
 
 from __future__ import annotations
-
-import logging
-from dataclasses import dataclass
-from typing import Any, Dict, Final, Tuple, Optional
-
+from typing import List, Tuple
 from bvillage.core.model import (
-    Context,
-    StructurePlan,
-    Footprint,
-    Frame,
-    WallSegment,
-    ReservedSlot,
-    Issue,
-)
-from bvillage.core.grid import build_rect_grid
-from bvillage.core.notes import set_domain_artifact
-
-from bvillage.core.constraints import (
-    RangeHard,
-    RangeSoft,
-    CostProfile,
-    eval_range,
-    sample_soft,
-)
-
-from bvillage.core.policy_stack import resolve_policy_stack_with_trace
-from bvillage.core.policy_types import ResolvedPolicy, ConstraintSpec, RangeHardSpec, RangeSoftSpec
-
-from bvillage.domains.fachwerk.core.frameplan import (
-    build_frameplan,
-    FramePolicy,
-    frameplan_to_dict,
-    frameplan_report,
-)
-
-from bvillage.types.fachwerkhaus.hallenhaus.interior import generate_interior
-from bvillage.types.fachwerkhaus.hallenhaus.openings import generate_openings
-
-logger = logging.getLogger(__name__)
-
-
-# ============================================================
-# Dims
-# ============================================================
-
-@dataclass(frozen=True, slots=True)
-class HallenhausDims:
-    L: float = 19.9
-    W: float = 6.9
-    H_e: float = 2.58
-    z0: float = 0.0
-
-
-DEFAULT_DIMS: Final[HallenhausDims] = HallenhausDims()
-
-
-# ============================================================
-# Cost Profiles (scoring lenses)
-# ============================================================
-# NOTE:
-# These are scoring "lenses" (auth/risk/complexity). They don't change geometry directly.
-# If you want *zero* defaults in planners, move them into ResolvedPolicy later.
-_DEFAULT_COST_PROFILES: Final[Tuple[CostProfile, ...]] = (
-    CostProfile(name="auth", mode="quadratic", outside_allowed_step=3.0),
-    CostProfile(name="risk", mode="quadratic", outside_allowed_step=6.0),
-    CostProfile(name="complexity", mode="linear", outside_allowed_step=2.0),
+    Context, StructurePlan, InteriorPlan,
+    Zone, Room, Door, OpeningDemand
 )
 
 
-# ============================================================
-# Helpers
-# ============================================================
-
-def _issue_to_dict(i: Issue) -> Dict[str, Any]:
-    return {
-        "code": i.code,
-        "severity": i.severity,
-        "message": i.message,
-        "related_ids": list(i.related_ids),
-        "suggested_repairs": list(i.suggested_repairs),
-    }
+def _field_id(ix: int, iy: int) -> str:
+    return f"F_{ix}_{iy}"
 
 
-def _hard_from_spec(h: Optional[RangeHardSpec]) -> Optional[RangeHard]:
-    if h is None:
-        return None
-    return RangeHard(float(h.min_v), float(h.max_v))
+def _range_fields(ix0: int, ix1_excl: int, iy0: int, iy1_excl: int) -> List[str]:
+    ids: List[str] = []
+    for ix in range(ix0, ix1_excl):
+        for iy in range(iy0, iy1_excl):
+            ids.append(_field_id(ix, iy))
+    return ids
 
 
-def _soft_from_spec(s: Optional[RangeSoftSpec]) -> Optional[RangeSoft]:
-    if s is None:
-        return None
-    return RangeSoft(
-        ideal=(float(s.ideal[0]), float(s.ideal[1])),
-        allowed=(float(s.allowed[0]), float(s.allowed[1])),
-        weight=float(s.weight),
-    )
+def plan_interior(ctx: Context, structure: StructurePlan) -> InteriorPlan:
+    """
+    Hallenhaus MVP interior:
+      - Diele dominates mid section
+      - Stall at rear
+      - Stube on one side near front
+      - Simple door graph: Stube <-> Diele <-> Stall
+    """
 
+    bays_x = len(structure.grid.axes_u) - 1  # 8 in your current run
+    bays_y = len(structure.grid.axes_v) - 1  # 2 in your current run
 
-def _policy_to_dict(pol: ResolvedPolicy) -> Dict[str, Any]:
-    # keep it explicit + stable for debugging; no dataclass.asdict to avoid surprises
-    c_out: Dict[str, Any] = {}
-    for k, spec in pol.constraints.items():
-        c_out[k] = {
-            "unit": spec.unit,
-            "code_prefix": spec.code_prefix,
-            "hard": None if spec.hard is None else {"min_v": spec.hard.min_v, "max_v": spec.hard.max_v},
-            "soft": None if spec.soft is None else {
-                "ideal": [spec.soft.ideal[0], spec.soft.ideal[1]],
-                "allowed": [spec.soft.allowed[0], spec.soft.allowed[1]],
-                "weight": spec.soft.weight,
-            },
-        }
+    # ---- Partition along length (x) ----
+    # Choose proportions that satisfy typ signature:
+    # diele >= 40%, stall >= 20%, remainder = front/service
+    diele_len = max(3, int(round(0.45 * bays_x)))   # ~4 of 8
+    stall_len = max(2, int(round(0.25 * bays_x)))   # ~2 of 8
+    front_len = max(1, bays_x - diele_len - stall_len)
 
-    return {
-        "schema": pol.schema,
-        "fachwerk": {
-            "b_max": pol.fachwerk.b_max,
-            "default_jamb_t": pol.fachwerk.default_jamb_t,
-        },
-        "constraints": c_out,
-    }
+    # Indices
+    ix_front0 = 0
+    ix_front1 = front_len
+    ix_diele0 = ix_front1
+    ix_diele1 = ix_diele0 + diele_len
+    ix_stall0 = ix_diele1
+    ix_stall1 = bays_x
 
-def _attach_policy_trace_artifact(structure, trace):
-    structure.notes["policy_trace"] = {
-        "schema": trace.schema,
-        "layers": [
-            {
-                "layer_id": layer.layer_id,
-                "keys": [op.key for op in layer.ops],
+    # ---- Rooms ----
+    # Diele spans both aisles (iy 0..bays_y)
+    diele_fields = _range_fields(ix_diele0, ix_diele1, 0, bays_y)
+
+    # Stall spans both aisles in rear
+    stall_fields = _range_fields(ix_stall0, ix_stall1, 0, bays_y)
+
+    # Stube: pick one side aisle near front: iy=1 is "north half" (depends on your mapping)
+    # We'll use iy=1 if exists, else iy=0
+    stube_iy = 1 if bays_y >= 2 else 0
+    stube_fields = _range_fields(ix_front0, ix_front1, stube_iy, stube_iy + 1)
+
+    rooms: List[Room] = [
+        Room(id="R_DIELE", type="diele", field_ids=tuple(diele_fields), story=0),
+        Room(id="R_STALL", type="stall", field_ids=tuple(stall_fields), story=0),
+        Room(id="R_STUBE", type="stube", field_ids=tuple(stube_fields), story=0),
+    ]
+
+    # Zones (optional but useful later)
+    zones: List[Zone] = [
+        Zone(id="Z_PUBLIC", field_ids=tuple(diele_fields + stube_fields), tags=("PUBLIC",)),
+        Zone(id="Z_SERVICE", field_ids=tuple(stall_fields), tags=("SERVICE",)),
+    ]
+
+    # ---- Doors (abstract connections; wall_ref is placeholder for now) ----
+    doors: List[Door] = [
+        Door(
+            id="D_STUBE_DIELE",
+            between=("R_STUBE", "R_DIELE"),
+            wall_ref="INT_WALL_AUTO",
+            width=0.9,
+            z_range=(0.0, 2.0),
+            tags=("INTERIOR_DOOR",),
+        ),
+        Door(
+            id="D_DIELE_STALL",
+            between=("R_DIELE", "R_STALL"),
+            wall_ref="INT_WALL_AUTO",
+            width=1.2,
+            z_range=(0.0, 2.2),
+            tags=("INTERIOR_DOOR",),
+        ),
+    ]
+
+    # ---- Opening demands ----
+    demands: List[OpeningDemand] = [
+        OpeningDemand(room_id="R_STUBE", wall_preference="EXTERIOR", min_count=1, max_count=2, tags=("DAYLIGHT",)),
+    ]
+
+    return InteriorPlan(
+        zones=tuple(zones),
+        rooms=tuple(rooms),
+        doors=tuple(doors),
+        opening_demands=tuple(demands),
+        notes={
+            "partition": {
+                "front_len": front_len,
+                "diele_len": diele_len,
+                "stall_len": stall_len,
+                "bays_x": bays_x,
+                "bays_y": bays_y,
             }
-            for layer in trace.layers
-        ],
-    }
-    
-def _attach_resolved_policy_artifact(structure: StructurePlan, pol: ResolvedPolicy) -> None:
-    set_domain_artifact(
-        structure.notes,
-        domain="core",
-        artifact="resolved_policy",
-        payload=_policy_to_dict(pol),
-        legacy_aliases=("resolved_policy", "core.resolved_policy", "policy"),
+        },
     )
-
-
-def _attach_constraints_artifact(ctx: Context, structure: StructurePlan, pol: ResolvedPolicy) -> None:
-    """
-    Attach constraint-derived parameters and penalty summaries into notes schema.
-
-    We sample only when a soft range exists; otherwise we store a fixed value if the
-    planner already chose it (future extension).
-    """
-    out_params: Dict[str, Any] = {}
-
-    # ---- brustriegel_z (sampled) ----
-    spec = pol.constraints.get("brustriegel_z")
-    if spec is not None and spec.soft is not None:
-        soft = _soft_from_spec(spec.soft)
-        hard = _hard_from_spec(spec.hard)
-
-        # deterministic sample
-        z_brust = sample_soft(ctx, key="hallenhaus.brustriegel_z", soft=soft)
-
-        ev = eval_range(
-            ctx,
-            name="brustriegel_z",
-            value=z_brust,
-            hard=hard,
-            soft=soft,
-            profiles=_DEFAULT_COST_PROFILES,
-            unit=spec.unit,
-            code_prefix=spec.code_prefix,
-        )
-
-        out_params["brustriegel_z"] = {
-            "value": float(ev.value),
-            "penalties": dict(ev.penalties),
-            "issues": [_issue_to_dict(x) for x in ev.issues],
-            "range_hard": None if hard is None else [hard.min_v, hard.max_v],
-            "range_soft": {
-                "ideal": [soft.ideal[0], soft.ideal[1]],
-                "allowed": [soft.allowed[0], soft.allowed[1]],
-                "weight": soft.weight,
-            },
-            "key": "hallenhaus.brustriegel_z",
-        }
-
-    # ---- gefach_width_target (sampled around ideal center, or fixed if no soft) ----
-    spec = pol.constraints.get("gefach_width_target")
-    if spec is not None:
-        hard = _hard_from_spec(spec.hard)
-        soft = _soft_from_spec(spec.soft)
-
-        if soft is not None:
-            # Sample within ideal most of the time.
-            target = sample_soft(ctx, key="hallenhaus.gefach_width_target", soft=soft)
-        else:
-            # Fallback (should be avoided long-term): choose mid of hard if present, else 1.35.
-            if hard is not None:
-                target = 0.5 * (hard.min_v + hard.max_v)
-            else:
-                target = 1.35
-
-        ev = eval_range(
-            ctx,
-            name="gefach_width_target",
-            value=target,
-            hard=hard,
-            soft=soft,
-            profiles=_DEFAULT_COST_PROFILES,
-            unit=spec.unit,
-            code_prefix=spec.code_prefix,
-        )
-
-        out_params["gefach_width_target"] = {
-            "value": float(ev.value),
-            "penalties": dict(ev.penalties),
-            "issues": [_issue_to_dict(x) for x in ev.issues],
-            "range_hard": None if hard is None else [hard.min_v, hard.max_v],
-            "range_soft": None if soft is None else {
-                "ideal": [soft.ideal[0], soft.ideal[1]],
-                "allowed": [soft.allowed[0], soft.allowed[1]],
-                "weight": soft.weight,
-            },
-            "key": "hallenhaus.gefach_width_target" if soft is not None else None,
-        }
-
-    payload = {
-        "schema": 1,
-        "profiles": [p.name for p in _DEFAULT_COST_PROFILES],
-        "params": out_params,
-    }
-
-    set_domain_artifact(
-        structure.notes,
-        domain="core",
-        artifact="constraints",
-        payload=payload,
-        legacy_aliases=("constraints", "core.constraints"),
-    )
-
-
-# ============================================================
-# Structure (semantic)
-# ============================================================
-
-def generate_structure(ctx: Context, *, dims: HallenhausDims = DEFAULT_DIMS) -> StructurePlan:
-    L = float(dims.L)
-    W = float(dims.W)
-    H_e = float(dims.H_e)
-    z0 = float(dims.z0)
-
-    grid = build_rect_grid(L, W, bays_x=8, bays_y=2)
-
-    frames = tuple(
-        Frame(id=f"BINDER_{i}", axis_index=i, tags=("PRIMARY_FRAME",))
-        for i in range(len(grid.axis_x))
-    )
-
-    half_L = L / 2.0
-    half_W = W / 2.0
-
-    walls = (
-        WallSegment("W_N_0", "N", (-half_L, half_L), (z0, H_e), ("EXTERIOR", "WINDOW_OK")),
-        WallSegment("W_S_0", "S", (-half_L, half_L), (z0, H_e), ("EXTERIOR", "WINDOW_OK", "GATE_OK")),
-        WallSegment("W_E_0", "E", (-half_W, half_W), (z0, H_e), ("EXTERIOR",)),
-        WallSegment("W_W_0", "W", (-half_W, half_W), (z0, H_e), ("EXTERIOR",)),
-    )
-
-    reserved = (ReservedSlot("HEARTH_ZONE", "F_2_1", ("HEARTH_ZONE",)),)
-
-    footprint = Footprint(length=L, width=W, orientation_deg=0.0)
-
-    return StructurePlan(
-        footprint=footprint,
-        stories=1,
-        grid=grid,
-        frames=frames,
-        walls=walls,
-        reserved_slots=reserved,
-        notes={},
-    )
-
-
-# ============================================================
-# Domain hookup (fachwerk)
-# ============================================================
-
-def _frame_policy_from_resolved(resolved_policy) -> FramePolicy:
-    """
-    Map ResolvedPolicy -> domain FramePolicy (fachwerk).
-    Keep this mapping explicit to avoid defaults creeping into the domain.
-    """
-    # Try common layout: resolved_policy.fachwerk.* (dataclass or namespace)
-    fw = getattr(resolved_policy, "fachwerk", resolved_policy)
-
-    def g(name: str, default):
-        v = getattr(fw, name, None)
-        return default if v is None else v
-
-    return FramePolicy(
-        b_max=float(g("b_max", 2.40)),
-        default_jamb_t=float(g("default_jamb_t", 0.20)),
-        horizontal_axes_style=list(g("horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])),
-
-        z_merge_tol=float(g("z_merge_tol", FramePolicy(b_max=0.0).z_merge_tol)),
-        z_band_min=float(g("z_band_min", 0.15)),
-        z_band_target_min=float(g("z_band_target_min", 0.25)),
-
-        width_type=g("width_type", "axis"),
-
-        profile_post_w=float(g("profile_post_w", 0.20)),
-        profile_post_d=float(g("profile_post_d", 0.20)),
-        profile_plate_w=float(g("profile_plate_w", 0.18)),
-        profile_plate_d=float(g("profile_plate_d", 0.18)),
-
-        profile_opening_jamb_w=float(g("profile_opening_jamb_w", 0.18)),
-        profile_opening_jamb_d=float(g("profile_opening_jamb_d", 0.18)),
-
-        profile_opening_lintel_gate_w=float(g("profile_opening_lintel_gate_w", 0.20)),
-        profile_opening_lintel_gate_d=float(g("profile_opening_lintel_gate_d", 0.20)),
-        profile_opening_lintel_window_w=float(g("profile_opening_lintel_window_w", 0.16)),
-        profile_opening_lintel_window_d=float(g("profile_opening_lintel_window_d", 0.18)),
-        profile_opening_sill_w=float(g("profile_opening_sill_w", 0.16)),
-        profile_opening_sill_d=float(g("profile_opening_sill_d", 0.18)),
-
-        braces_enable=bool(g("braces_enable", True)),
-        brace_profile_w=float(g("brace_profile_w", 0.12)),
-        brace_profile_d=float(g("brace_profile_d", 0.12)),
-        brace_min_cell_w=float(g("brace_min_cell_w", 0.80)),
-        brace_min_cell_h=float(g("brace_min_cell_h", 0.80)),
-
-        target_gefach_w=float(g("target_gefach_w", 1.35)),
-        target_gefach_jitter=float(g("target_gefach_jitter", 0.10)),
-    )
-    
-def attach_frameplan(
-    ctx: Context,
-    structure: StructurePlan,
-    openings,
-    resolved: ResolvedPolicy,
-) -> None:
-    """
-    Build and attach Fachwerk FramePlan domain artifact.
-
-    No structural defaults allowed here.
-    Mapping ResolvedPolicy → FramePolicy is explicit and centralized.
-    """
-
-    # 1) Map resolved policy → domain policy
-    frame_policy = _frame_policy_from_resolved(resolved)
-
-    # 2) Build deterministic frameplan
-    fp = build_frameplan(
-        structure=structure,
-        openings=openings,
-        policy=frame_policy,
-        seed=int(ctx.seed.derive("fachwerk.frameplan.jitter")),
-    )
-
-    # 3) Persist artifact
-    payload = frameplan_to_dict(fp)
-
-    set_domain_artifact(
-        structure.notes,
-        domain="fachwerk",
-        artifact="frameplan",
-        payload=payload,
-        legacy_aliases=("frameplan", "fachwerk.frameplan"),
-    )
-
-    # 4) Human-readable report
-    logger.info("%s", frameplan_report(fp))
-
-
-# ============================================================
-# Orchestration
-# ============================================================
-
-def generate_house(ctx: Context):
-    logger.debug(
-        "Hallenhaus.generate_house() start (seed=%s wealth=%s)",
-        getattr(ctx, "seed", None),
-        getattr(ctx, "wealth", None),
-    )
-
-    # 1) Resolve policy stack (mandatory)
-    resolved, trace = resolve_policy_stack_with_trace(ctx)
-
-    structure = generate_structure(ctx)
-
-    # 2) Persist resolved policy for debugging + downstream consumers
-    _attach_resolved_policy_artifact(structure, resolved)
-    _attach_policy_trace_artifact(structure, trace)
-
-    # 3) Attach constraints-derived parameters early (independent of interior/openings)
-    _attach_constraints_artifact(ctx, structure, resolved)
-
-    # 4) Semantic planning
-    interior = generate_interior(ctx, structure)
-    openings = generate_openings(ctx, structure, interior)
-
-    # 5) Domain frameplan (constructive truth) from resolved policy
-    attach_frameplan(ctx, structure, openings, resolved)
-
-    logger.debug("Hallenhaus.generate_house() done")
-    return structure, interior, openings
