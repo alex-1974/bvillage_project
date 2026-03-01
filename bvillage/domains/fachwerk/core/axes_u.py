@@ -56,7 +56,7 @@ def compute_vertical_axes(
     *,
     L: float,
     W: float,
-    b_max: float,
+    binder_max: float,
     openings: List[OpeningFinal],
 ) -> Dict[str, Dict[str, List[float]]]:
     out: Dict[str, Dict[str, List[float]]] = {}
@@ -78,10 +78,10 @@ def compute_vertical_axes(
         for i in range(len(fixed) - 1):
             a, b = fixed[i], fixed[i + 1]
             span = b - a
-            if span <= b_max + EPS_EQ:
+            if span <= binder_max + EPS_EQ:
                 continue
 
-            n_seg = int(math.ceil(span / b_max))
+            n_seg = int(math.ceil(span / binder_max))
             step = span / n_seg
 
             for k in range(1, n_seg):

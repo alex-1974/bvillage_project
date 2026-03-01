@@ -33,7 +33,7 @@ def test_frameplan_report_contains_core_sections_and_expected_openings():
         opening(oid="Op02", typ="window", wall_id="W_S_0", u0=3.0, u1=4.2, z0=0.9, z1=1.6),
         opening(oid="Op03", typ="window", wall_id="W_N_0", u0=1.6, u1=2.8, z0=0.9, z1=1.6),
     )
-    policy = FramePolicy(b_max=1.4, horizontal_axes_style=[0.0, 0.9, 1.6, 2.2, 2.58])
+    policy = FramePolicy(binder_max=1.4, horizontal_axes_style=[0.0, 0.9, 1.6, 2.2, 2.58])
 
     fp = build_frameplan(
         structure=structure,

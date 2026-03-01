@@ -35,11 +35,11 @@ class OpeningFinal:
     u0: float
     u1: float
     u_center: float
-    width_axis: float
+    width_range: float
     width_clear: float
     z0: float
     z1: float
-    jamb_t: float
+    jamb_thickness: float
 
 
 def wall_side_from_id(wall_id: str) -> str:
@@ -70,7 +70,7 @@ def wall_side_from_id(wall_id: str) -> str:
 def normalize_openings_from_plan(
     openings_plan: Any,
     *,
-    default_jamb_t: float,
+    default_jamb_thickness: float,
     width_type: WidthType = "axis",
 ) -> list[OpeningFinal]:
     """
@@ -80,11 +80,11 @@ def normalize_openings_from_plan(
     ----------
     openings_plan:
         Object with `.openings` iterable.
-    default_jamb_t:
+    default_jamb_thickness:
         Default jamb thickness (meters).
     width_type:
-        - "axis": u_axis is axis width; clear = axis - jamb_t
-        - "clear": u_axis is clear width; axis = clear + jamb_t
+        - "axis": u_axis is axis width; clear = axis - jamb_thickness
+        - "clear": u_axis is clear width; axis = clear + jamb_thickness
 
     Returns
     -------
@@ -92,7 +92,7 @@ def normalize_openings_from_plan(
         Sorted by (wall, u_center, name) deterministically.
     """
     openings: Iterable[Any] = getattr(openings_plan, "openings", ())
-    jamb_t = float(default_jamb_t)
+    jamb_thickness = float(default_jamb_thickness)
 
     finals: list[OpeningFinal] = []
     for op in openings:
@@ -126,24 +126,24 @@ def normalize_openings_from_plan(
             raise ValueError(f"Opening {name!r} has non-positive width_in={width_in} (u0={u0}, u1={u1}).")
 
         if width_type == "axis":
-            width_axis = width_in
-            width_clear = width_axis - jamb_t
+            width_range = width_in
+            width_clear = width_range - jamb_thickness
             if width_clear <= EPS_EQ:
                 raise ValueError(
-                    f"Opening {name!r} clear width <= 0. axis={width_axis}, jamb_t={jamb_t}."
+                    f"Opening {name!r} clear width <= 0. axis={width_range}, jamb_thickness={jamb_thickness}."
                 )
             u0n, u1n = u0, u1
 
         elif width_type == "clear":
             width_clear = width_in
-            width_axis = width_clear + jamb_t
-            if width_axis <= EPS_EQ:
+            width_range = width_clear + jamb_thickness
+            if width_range <= EPS_EQ:
                 raise ValueError(
-                    f"Opening {name!r} axis width <= 0. clear={width_clear}, jamb_t={jamb_t}."
+                    f"Opening {name!r} axis width <= 0. clear={width_clear}, jamb_thickness={jamb_thickness}."
                 )
             # Expand around center by jamb/2 on each side
             u_center = (u0 + u1) / 2.0
-            half_axis = width_axis / 2.0
+            half_axis = width_range / 2.0
             u0n = u_center - half_axis
             u1n = u_center + half_axis
 
@@ -166,11 +166,11 @@ def normalize_openings_from_plan(
                 u0=u0n,
                 u1=u1n,
                 u_center=u_center,
-                width_axis=width_axis,
+                width_range=width_range,
                 width_clear=width_clear,
                 z0=z0,
                 z1=z1,
-                jamb_t=jamb_t,
+                jamb_thickness=jamb_thickness,
             )
         )
 

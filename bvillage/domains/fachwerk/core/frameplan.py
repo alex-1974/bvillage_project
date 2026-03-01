@@ -53,8 +53,8 @@ class FramePolicy:
 
     Units: meters.
     """
-    b_max: float
-    default_jamb_t: float = 0.20
+    binder_max: float
+    default_jamb_thickness: float = 0.20
     horizontal_axes_style: List[float] = None  # type: ignore[assignment]
 
     # z-axis post-processing parameters (merge, min band thickness, etc.)
@@ -191,7 +191,7 @@ def build_frameplan(
 
     openings_final = normalize_openings_from_plan(
         openings,
-        default_jamb_t=float(policy.default_jamb_t),
+        default_jamb_thickness=float(policy.default_jamb_thickness),
         width_type=policy.width_type,
     )
 
@@ -199,7 +199,7 @@ def build_frameplan(
     vertical_axes = compute_vertical_axes(
         L=L,
         W=W,
-        b_max=float(policy.b_max),
+        binder_max=float(policy.binder_max),
         openings=list(openings_final),
     )
 
@@ -344,8 +344,8 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
     # Robust policy access (older FramePlan instances may have policy=None)
     pol = fp.policy
     if pol is None:
-        # b_max not needed here; only profile/threshold defaults matter for members emission
-        pol = FramePolicy(b_max=0.0)
+        # binder_max not needed here; only profile/threshold defaults matter for members emission
+        pol = FramePolicy(binder_max=0.0)
 
     # ---- Members v3: PRIMARY_POST + opening frames + eaves plates + infill cells + braces ----
 
@@ -586,11 +586,11 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 "u0": o.u0,
                 "u1": o.u1,
                 "u_center": o.u_center,
-                "width_axis": o.width_axis,
+                "width_range": o.width_range,
                 "width_clear": o.width_clear,
                 "z0": o.z0,
                 "z1": o.z1,
-                "jamb_t": o.jamb_t,
+                "jamb_thickness": o.jamb_thickness,
             }
             for o in fp.openings_final
         ],
@@ -665,7 +665,7 @@ def frameplan_report(fp: FramePlan) -> str:
     for o in fp.openings_final:
         lines.append(
             f"  {o.name} {o.typ:<6} wall={o.wall} "
-            f"u=[{o.u0:+.3f},{o.u1:+.3f}] (axis={o.width_axis:.3f} clear={o.width_clear:.3f}) "
+            f"u=[{o.u0:+.3f},{o.u1:+.3f}] (range={o.width_range:.3f} clear={o.width_clear:.3f}) "
             f"z=[{o.z0:.3f},{o.z1:.3f}]"
         )
 
