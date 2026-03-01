@@ -359,7 +359,7 @@ def _is_hex_color(s: str) -> bool:
     except ValueError:
         return False
 
-
+# HOT PATH — called per member; dominates at settlement scale
 def stable_u64(seed: int, salt: str) -> int:
     """
     Stable 64-bit hash for deterministic sampling.
@@ -372,14 +372,14 @@ def stable_u64(seed: int, salt: str) -> int:
     h.update(str(salt).encode("utf-8"))
     return int.from_bytes(h.digest(), "big", signed=False)
 
-
+# HOT PATH — called per member; dominates at settlement scale
 def rand01(seed: int, salt: str) -> float:
     """Deterministic uniform [0,1)."""
     x = stable_u64(seed, salt)
     # 53-bit mantissa mapping
     return ((x >> 11) & ((1 << 53) - 1)) / float(1 << 53)
 
-
+# HOT PATH — called per member; dominates at settlement scale
 def _pick_palette_color(profile: RenderProfile, seed: int, salt: str) -> str:
     pal = profile.palette or ()
     if pal:
@@ -519,6 +519,7 @@ class MaterialRegistry:
 # RESOLUTION (member -> material)
 # -----------------------------------------------------------------------------
 
+# HOT PATH — called per member; dominates at settlement scale
 def resolve_material_id(member: Any, ctx: Any, registry: MaterialRegistry, default: str) -> str:
     """
     Deterministic resolution order:
@@ -575,7 +576,7 @@ def resolve_surface(member: Any, ctx: Any) -> SurfaceSpec:
 
     return SurfaceSpec()
 
-
+# HOT PATH — called per member; dominates at settlement scale
 def resolve_material(member: Any, ctx: Any, registry: MaterialRegistry, default: str) -> MaterialResolved:
     mid = resolve_material_id(member, ctx, registry, default=default)
     return registry.get(mid)
@@ -600,7 +601,7 @@ _CONDITION_VALUE_JITTER_BONUS: dict[Condition, float] = {
     "aged": 0.08,
 }
 
-
+# HOT PATH — called per member; dominates at settlement scale
 def sample_render(
     resolved: MaterialResolved,
     surface: SurfaceSpec,
@@ -647,7 +648,7 @@ def sample_render(
 
 DEFAULT_REGISTRY = MaterialRegistry(BASES, VARIANTS, FAMILY_DEFAULT_VARIANT)
 
-
+# HOT PATH — called per member; dominates at settlement scale
 def resolve_for_builder(
     member: Any,
     ctx: Any,

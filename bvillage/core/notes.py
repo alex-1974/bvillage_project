@@ -79,6 +79,7 @@ def _normalize_artifact_param(
 # Public API
 # ------------------------------------------------------------
 
+# HOT PATH — pipeline backbone; called frequently across stages
 def ensure_domains(notes: Dict[str, Any]) -> Dict[str, Any]:
     """
     Ensure notes contains notes["domains"] as a dict and return it.
@@ -89,7 +90,7 @@ def ensure_domains(notes: Dict[str, Any]) -> Dict[str, Any]:
         notes[DOMAINS_KEY] = d
     return d
 
-
+# HOT PATH — pipeline backbone; called frequently across stages
 def set_domain_artifact(
     notes: Dict[str, Any],
     *,
@@ -126,7 +127,7 @@ def set_domain_artifact(
     for k in legacy_aliases:
         notes[k] = payload
 
-
+# HOT PATH — pipeline backbone; called frequently across stages
 def get_domain_artifact(
     notes: Dict[str, Any],
     *,

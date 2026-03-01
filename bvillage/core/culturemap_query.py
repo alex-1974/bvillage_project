@@ -73,7 +73,7 @@ def point_in_ring(lon: float, lat: float, ring: List[List[float]]) -> bool:
 
     return inside
 
-
+# HOT PATH
 def point_in_polygon(lon: float, lat: float, coords: Any) -> bool:
     """
     Polygon coords: [outer_ring, hole1, hole2,...]
@@ -89,7 +89,7 @@ def point_in_polygon(lon: float, lat: float, coords: Any) -> bool:
             return False
     return True
 
-
+# HOT PATH
 def point_in_geometry(lon: float, lat: float, geom: GeoJSONGeometry) -> bool:
     """
     Supports GeoJSON Polygon / MultiPolygon.

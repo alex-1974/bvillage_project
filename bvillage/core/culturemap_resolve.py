@@ -54,7 +54,7 @@ def _load_default_catalog() -> List[CultureTrace]:
     p = Path("bvillage/data/culturemap/cultures.geojson")
     return load_culture_traces_geojson(p)
 
-
+# HOT PATH
 def culture_candidates(
     lon: float,
     lat: float,
