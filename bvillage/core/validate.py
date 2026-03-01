@@ -37,7 +37,7 @@ from typing import Dict, List, Set
 
 from .model import Context, StructurePlan, InteriorPlan, Issue
 
-
+# HOT PATH
 def validate(ctx: Context, structure: StructurePlan, interior: InteriorPlan) -> List[Issue]:
     """
     Validate structure + interior plan coherence.

@@ -119,7 +119,7 @@ def _shape_cost(d: float, prof: CostProfile) -> float:
     dd = max(0.0, d - float(prof.deadband))
     return dd
 
-
+# HOT PATH — may run many times per house; explodes with candidate sampling
 def penalty_soft(v: float, soft: RangeSoft, prof: CostProfile) -> float:
     """
     Piecewise penalty:
@@ -150,6 +150,7 @@ def penalty_soft(v: float, soft: RangeSoft, prof: CostProfile) -> float:
 # Public API
 # ----------------------------
 
+# HOT PATH — may run many times per house; explodes with candidate sampling
 def eval_range(
     ctx: Context,
     *,
@@ -212,7 +213,7 @@ def eval_range(
 
     return ConstraintEval(value=value, penalties=penalties, issues=tuple(issues))
 
-
+# HOT PATH — may run many times per house; explodes with candidate sampling
 def sample_soft(
     ctx: Context,
     *,

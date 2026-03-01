@@ -30,6 +30,7 @@ class ResolutionTrace:
     schema: int
     layers: Tuple[TraceLayer, ...]
 
+# HOT PATH — called once per house; becomes N× per house with multi-candidate search
 def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
     """
     Resolve minimal cultural + structural policy from Context.

@@ -394,7 +394,217 @@ else — not "what existed here" but "what plausibly happened to this building o
 
 ---
 
-## 11. The guiding principle for vision work
+## 11. The construction site — roles, boundaries, and conflict
+
+Every building in BVILLAGE is produced by a team of specialized roles coordinated by a
+single authority. The roles are modeled on historical construction practice — not as
+historical simulation, but because the vocabulary is precise and immediately understood.
+
+This architecture is fully generic. The same role structure produces a timber-framed
+Hallenhaus, a masonry Stadthaus, a log-construction farmhouse, or a high-rise. What
+changes between building types is the content each role carries — not the roles
+themselves, not the coordination mechanism.
+
+---
+
+### 11.1 The roles
+
+```
+Foreman       — master of the site. Last authority. Knows the plot and all
+                context constraints. Coordinates the team, resolves conflicts
+                that roles cannot resolve themselves. Builds nothing.
+
+Architect     — the structural exterior. Load-bearing frame, outer shell,
+                openings, vertical elements that penetrate all floors
+                (stairs, chimneys, shafts). Floor dimensions may vary
+                per storey. Underground floors are floors with different rules.
+
+Roofer        — everything from eave height upward. Roof type, pitch,
+                ridge direction, roof structure, overhang. Receives wall
+                geometry from Architect.
+
+Planner       — interior space. Room arrangement, zoning, circulation,
+                room function. Plans within what Architect declares.
+                Never touches load-bearing structure.
+
+Furnisher     — room contents. Furniture, lighting, equipment. Plans within
+                what Planner defines. Never touches room boundaries.
+
+Landscaper    — everything outside the building envelope. Garden, paths,
+                enclosures, vegetation, outdoor structures. Receives
+                opening positions from Architect.
+```
+
+Each role owns exactly one decision domain. What falls within that domain is decided
+by that role alone — without consultation. What falls outside is not its concern.
+Conflicts arise only when two roles place legitimate demands on the same physical space
+or element.
+
+---
+
+### 11.2 Role boundaries
+
+The boundaries are the architecture. Without them, every element becomes a negotiation
+and the system has no stable foundation.
+
+```
+Foreman      owns:  plot boundary, context constraints, conflict resolution
+Architect    owns:  load-bearing structure, outer shell, opening positions,
+                    vertical penetrating elements, floor-by-floor geometry
+Roofer       owns:  everything above eave height
+Planner      owns:  room arrangement, zoning, room function, circulation
+Furnisher    owns:  room contents — furniture, lighting, equipment
+Landscaper   owns:  everything outside the building envelope
+```
+
+The boundary between Architect and Planner is the most active. The Architect thinks in
+structural possibility — what can be built. The Planner thinks in spatial requirement —
+what is needed. When a structural element occupies space the Planner needs, that is a
+genuine conflict between two legitimate demands. Neither is wrong.
+
+The boundary between Architect and Roofer is eave height. Below it: Architect. Above
+it: Roofer. Roof pitch and ridge height affect total building height, which the Foreman
+constrains — this is the primary escalation path from Roofer to Foreman.
+
+The boundary between Planner and Furnisher is the room boundary. The Planner defines
+the room; the Furnisher works within it. Conflicts here are rare and typically soft —
+a room too small for its required furnishing is scored, not blocked.
+
+The boundary between Architect and Landscaper is the building envelope. The Landscaper
+receives opening positions from the Architect as fixed inputs and works outward from
+there.
+
+---
+
+### 11.3 The Declaration Register
+
+Many structural elements have spatial consequences that cross role boundaries. A
+staircase is structural — Architect — but it consumes floor area in every storey the
+Planner must respect. A chimney is structural — Architect — but its footprint appears
+in every room it passes through. A window is structural — Architect — but it removes
+wall area the Planner may need.
+
+The solution is not a new role for each cross-boundary element. The solution is a
+Declaration Register — a formal record produced by the Architect during the briefing
+phase that declares the spatial consequences of every element with cross-boundary effect.
+
+```
+Architect declares:
+  post at u=2.4              → Planner: this position is structurally fixed
+  stair at u=3.2, 1.2×2.4m  → Planner: reserve this footprint on all connected floors
+  chimney at u=5.0, 0.6×0.6 → Planner: reserve this footprint through all floors
+  window south face, 1.2m   → Planner: this wall section is open
+  bay window south, +0.8m   → Landscaper: this area is covered at floor 1 height
+  balcony east, floor 2     → Landscaper: this area is covered, has access from floor 2
+```
+
+The Declaration Register is produced before construction begins. Every role reads it
+before planning their own domain. Most conflicts are prevented here — not resolved after
+they occur.
+
+---
+
+### 11.4 The three-phase construction process
+
+**Phase 1 — Briefing**
+
+The Foreman convenes all roles. Each role submits a Proposal: what it requires, what it
+prefers, what variants it can offer, and the cost of each variant. The Architect also
+produces the initial Declaration Register.
+
+The Foreman reviews all proposals for feasibility and selects the variant combination
+that minimizes total cost within hard constraints. The result is the BuildingBrief —
+a binding document all roles receive before construction begins.
+
+No construction happens in this phase. Only planning and negotiation.
+
+**Phase 2 — Construction**
+
+Roles build sequentially, each reading all prior outputs. Within their domain, each
+role may vary autonomously within its soft constraints to resolve minor tensions without
+escalation. Only genuine conflicts — where no autonomous resolution is possible —
+escalate to the Foreman.
+
+Every conflict that reaches the Foreman is documented as a Conflict record with the
+positions of both roles and the cost of each resolution option. The Foreman decides
+by minimizing total building cost. The resolution is recorded.
+
+**Phase 3 — Refinement**
+
+Details that only become visible after construction is complete. Weathering distribution,
+light source placement, garden details, furnishing adjustments. Each role reads the
+completed outputs of all others and writes only its own refinement layer.
+
+---
+
+### 11.5 Conflict resolution — the cost principle
+
+Every conflict between roles is resolved by the same mechanism regardless of which
+roles are involved or what element is contested.
+
+Each role states its position and the cost of conceding. Cost is a score reduction on
+the overall candidate quality — expressed in the same units the Evaluator uses.
+
+```
+Example: window position conflict
+
+Architect position:  window at u=3.6 — optimal for facade rhythm
+  Cost if conceded:  facade rhythm broken, -0.08 score
+
+Planner position:    wall needed at u=3.0–4.2 — room partition required
+  Cost if conceded:  room loses partition, must be reorganized, -0.15 score
+
+Foreman decision:    Architect concedes — lower total cost
+  Resolution:        window moved to u=2.8, facade rhythm slightly compromised
+  Total cost:        -0.08 recorded against this candidate
+```
+
+Roles first attempt autonomous resolution within their soft constraint ranges. Only
+when neither role can move without violating its own hard constraints does the Foreman
+intervene.
+
+The Foreman decides by one principle: minimize total cost to the building. Not who
+asked first. Not who has higher rank. Total cost.
+
+All conflict resolutions are recorded and visible to the Evaluator. A candidate with
+many small-cost conflicts may score better than one with a single large-cost conflict.
+This feeds directly into multi-candidate search — the system can generate multiple
+candidates and select the one with the lowest accumulated conflict cost.
+
+---
+
+### 11.6 Genericity — one architecture for all building types
+
+The Foreman mechanism is fully generic. It knows nothing about timber framing, masonry,
+or log construction. It knows roles, proposals, declarations, conflicts, and costs.
+
+What is building-type-specific is the content each role carries — not the role itself.
+A timber-frame Architect knows post spacing, bracing patterns, and jettying. A masonry
+Architect knows wall thickness, lintel spans, and bonding. Both implement the same
+interface. The Foreman coordinates both identically.
+
+New building types require new role implementations — not new coordination architecture.
+Optional roles — those that only exist for certain building types — register themselves
+during briefing or remain silent. The Foreman does not ask for them.
+
+```python
+class Architect(Protocol):
+    def propose(self, context: BuildContext) -> RoleProposal: ...
+    def declare(self, brief: BuildingBrief) -> DeclarationRegister: ...
+    def build(self, brief: BuildingBrief, declarations: DeclarationRegister) -> FramePlan: ...
+    def resolve(self, conflict: Conflict) -> Resolution: ...
+
+# Domain-specific implementations
+class TimberFrameArchitect: ...   # knows posts, bracing, jettying
+class MasonryArchitect: ...       # knows walls, lintels, bonding
+class LogConstructionArchitect: ... # knows courses, corner joints, settlement
+```
+
+The Foreman receives any implementation of Architect. It never branches on type.
+
+---
+
+## 12. The guiding principle for vision work
 
 Vision without constraint is fantasy. Constraint without vision is local optimization.
 
