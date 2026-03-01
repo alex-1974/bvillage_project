@@ -1,13 +1,15 @@
 # tests/test_constraints.py
 
+import math
 from bvillage.core.model import Context
+from bvillage.core.seed import Seed
 from bvillage.core.constraints import (
     RangeHard, RangeSoft, CostProfile, eval_range, sample_soft
 )
 
 def _ctx(seed=123):
     return Context(
-        seed=seed,
+        seed=Seed(seed),
         epoch_band="late_medieval",
         region="north",
         settlement_type="village",

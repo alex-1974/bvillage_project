@@ -24,7 +24,7 @@ from bvillage.core.report import report_plans
 from bvillage.domains.fachwerk.core.frameplan import build_frameplan, FramePolicy, frameplan_report
 
 from conftest import make_structure, make_openings_plan, opening
-
+from bvillage.core.seed import Seed
 
 def test_frameplan_report_contains_core_sections_and_expected_openings():
     structure = make_structure(L=19.9, W=6.9, z0=0.0, H_e=2.58)
@@ -35,12 +35,17 @@ def test_frameplan_report_contains_core_sections_and_expected_openings():
     )
     policy = FramePolicy(b_max=1.4, horizontal_axes_style=[0.0, 0.9, 1.6, 2.2, 2.58])
 
-    fp = build_frameplan(structure=structure, openings=ops, policy=policy)
+    fp = build_frameplan(
+        structure=structure,
+        openings=ops,
+        policy=policy,
+        seed=123,
+    )
     rep = frameplan_report(fp)
 
     # Stable header + dims signature
     assert "========== PLANNER REPORT ==========" in rep
-    assert "[Dims] L=19.900 W=6.900 H_e=2.580 z0=0.000" in rep
+    assert "[Dims] L=19.900 W=6.900 H_e=2.600 z0=0.000" in rep
 
     # Z axes header exists
     assert "[Z Axes]" in rep
@@ -55,11 +60,14 @@ def test_frameplan_report_contains_core_sections_and_expected_openings():
     assert "[Axes Summary]" in rep
     assert "Wall N:" in rep
     assert "Wall S:" in rep
+    
+    assert "[Z Repair Log]" in rep
+    assert "drop z=2.580" in rep
 
 
 def test_core_report_contains_sections_and_formats_dims_in_meters():
     ctx = Context(
-        seed=42,
+        seed=Seed(42),
         epoch_band="late_medieval",
         region="north",
         settlement_type="village",
