@@ -112,8 +112,8 @@ The result must be verifiable: correct structural members, plausible
 opening positions, coherent roof, readable infills.
 
 Scope:
-- Planner generates StructurePlan + FramePlan
-- InteriorPlanner integrated into pipeline (earlier than originally planned)
+- `architect.py` generates StructurePlan + FramePlan
+- `planner.py` (interior) integrated into pipeline (earlier than originally planned)
 - FramePlan consumed by Blender builder
 - Blender renders members-only result (no surface detail)
 - No PPV gate (physics skeleton exists but does not block)
@@ -131,7 +131,7 @@ Status: ACTIVE
 Priority: HIGH
 
 Goal:
-Eliminate the parallel policy system in planner.py.
+Eliminate the parallel policy system in `architect.py` (formerly `planner.py` — see ENG-003).
 `_hallenhaus_policy(ctx)` is replaced by `resolve_policy_stack(ctx)`.
 FramePolicy is populated from ResolvedPolicy.
 
@@ -139,8 +139,8 @@ This is the single most important structural cleanup for v0.4.0.
 Without it, the policy system has two sources of truth.
 
 Tasks:
-- [ ] Remove `_hallenhaus_policy(ctx)` from planner
-- [ ] Wire planner to `resolve_policy_stack(ctx)`
+- [ ] Remove `_hallenhaus_policy(ctx)` from `architect.py`
+- [ ] Wire `architect.py` to `resolve_policy_stack(ctx)`
 - [ ] Populate FramePolicy from `resolved_policy.fachwerk`
 - [ ] Verify determinism after switch
 - [ ] Document allowed cross-layer data flow
@@ -174,24 +174,30 @@ Slots are added as hypotheses are confirmed.
 
 ---
 
-## INT-001 — InteriorPlanner Pipeline Integration
+## INT-001 — Interior / Architect Integration Point
 
 Status: ACTIVE
 Priority: HIGH
 
 Goal:
-InteriorPlanner must enter the pipeline earlier than originally planned.
-Without it, the Hallenhaus cannot be correctly generated — room zones,
-opening demands, and interior structure are interdependent.
+The correct pipeline position for `planner.py` (interior) relative to `architect.py`
+must be established. Without it, the Hallenhaus cannot be correctly generated —
+room zones, opening demands, and interior structure are interdependent.
 
 This version is exploratory. The exact integration point will be
 determined during v0.4.0 work.
 
 Tasks:
-- [ ] Determine correct pipeline position for InteriorPlanner
-- [ ] Define data contract between Planner and InteriorPlanner
-- [ ] Ensure InteriorPlanner cannot modify exterior FramePlan directly
-- [ ] Document findings for pipeline interface freeze (v0.4.x)
+- [ ] Determine correct pipeline position for `planner.py` (interior) relative to `architect.py`
+- [ ] Define data contract between `architect.py` and `planner.py`
+- [ ] Ensure `planner.py` cannot modify exterior FramePlan directly
+- [ ] Document findings — they feed into ROL-001 (role interfaces) and ROL-002 (Foreman wiring),
+      not into a separate pipeline freeze document
+
+Note:
+The integration point found here determines how Architect and Planner roles
+coordinate in the Foreman mechanism (ROL-002). INT-001 is the exploration;
+ROL-002 is the implementation.
 
 ---
 
@@ -285,9 +291,10 @@ depend on v0.4.0 experience and research outcomes.
 Prerequisites for v0.5.0 that must be completed in v0.4.x:
 
 - `resolve_policy_stack(ctx)` handles multiple archetypes without branching on type
-- Fachwerk planner is type-agnostic — Hallenhaus and Stadthaus share the same engine
+- Foreman coordinates Architect, Planner, and Roofer without type-specific branching
+- Hallenhaus Architect and Stadthaus Architect implement the same Protocol
 - FramePlan schema supports vertical stacking and façade-oriented topology
-- InteriorPlanner contract is frozen and supports different room programs
+- Planner contract is frozen and supports different room programs
 - Policy axes cover Stadthaus parameters (narrow parcel, multi-storey, potential jetties)
 - All structural constants replaced by span-driven resolution
 - Pipeline interfaces frozen — no stage rewrites needed for a new type
@@ -300,6 +307,7 @@ Prerequisites for v0.5.0 that must be completed in v0.4.x:
 |--------|--------|
 | RES-   | Research |
 | SYS-   | System Architecture & Schema |
+| ROL-   | Role Architecture (Foreman / Architect / Planner / ...) |
 | STR-   | Structural Physics |
 | MAT-   | Material System |
 | SEM-   | Semantics & Variation |
@@ -318,11 +326,12 @@ Three Crossroads structure v0.4.x:
 
 | ID    | Name                  | Reached when                                      | Unlocks |
 |-------|-----------------------|---------------------------------------------------|---------|
-| CR-1  | Research Converged    | RES-001 + RES-002 deliver documented hypotheses   | SYS-001, SYS-002, SYS-003, STR-003 |
-| CR-2  | Architecture Stable   | SYS-001 + SYS-002 + SYS-003 complete           | STR-001, STR-002, MAT-001, SEM-001, SYS-004 |
-| CR-3  | Engine Complete       | STR-001, STR-002, MAT-001, SEM-001, SYS-004, ENG-002 complete | SEM-002, SEM-003, ENG-003, v0.5.0 |
+| CR-1  | Research Converged    | RES-001 + RES-002 deliver documented hypotheses   | SYS-002, SYS-003, STR-003 |
+| CR-2  | Architecture Stable   | SYS-001 + SYS-002 + SYS-003 + ROL-002 complete   | STR-001, STR-002, MAT-001, SEM-001, SYS-004 |
+| CR-3  | Engine Complete       | STR-001, STR-002, MAT-001, SEM-001, SYS-004, ENG-002 complete | SEM-002, SEM-003, v0.5.0 |
 
-ENG-001 and ENG-002 are independent of all Crossroads and may begin immediately.
+ENG-001, ENG-002, and ROL-001 are independent of all Crossroads and may begin immediately.
+ENG-003 must be completed before ROL-001 begins (names must be stable before interfaces are defined).
 
 ---
 
@@ -340,7 +349,8 @@ This Crossroad does not require complete historical certainty.
 Documented hypotheses are sufficient. Decisions can be revised —
 but they must be explicit before architecture begins.
 
-Unlocks: SYS-001, SYS-002, SYS-003, STR-003
+Unlocks: SYS-002, SYS-003, STR-003
+Note: SYS-001 is unlocked by SYS-002 completion, not by CR-1 directly.
 
 ---
 
@@ -348,9 +358,10 @@ Unlocks: SYS-001, SYS-002, SYS-003, STR-003
 
 Reached when:
 - SYS-001: Policy axes implemented, PolicyStack is multi-archetype entry point
-- SYS-002: Fachwerk planner is type-agnostic, Hallenhaus generates identically
+- SYS-002: Fachwerk Architect is type-agnostic, Hallenhaus generates identically
 - SYS-003: FramePlan schema has slots for multi-storey and jetties,
   backward compatible with Hallenhaus
+- ROL-002: Foreman coordination mechanism implemented and wired for Hallenhaus
 
 At this point the engine can accept a second archetype without structural rewrites.
 This is the architectural proof-of-concept before the Stadthaus is built.
@@ -373,7 +384,7 @@ At this point the engine is structurally complete for v0.5.0.
 The Stadthaus can be built. Semantic variation and multi-candidate search
 can be wired in without structural interference.
 
-Unlocks: SEM-002, SEM-003, ENG-003, v0.5.0
+Unlocks: SEM-002, SEM-003, v0.5.0
 
 ---
 
@@ -444,25 +455,35 @@ Dependency: SYS-002 (planner type-agnosticity) must be complete first.
 ### SYS-002 — Fachwerk Planner Type-Agnosticity
 
 Priority: HIGH
-Requires: ARC-001 (v0.4.0 — planner on PolicyStack), RES-002
+Requires: ARC-001 (v0.4.0 — planner on PolicyStack), RES-002, ROL-001
 Unlocks: SYS-001
 
 Goal:
 The Fachwerk planner must serve multiple Fachwerk types without
 type-specific branching in shared code.
 
-Today the planner is implicitly Hallenhaus-specific — dimensions,
+The concrete mechanism is the role architecture defined in ROL-001 and ROL-002:
+Architect, Planner, and Roofer are Protocol implementations.
+The Foreman coordinates them without branching on type.
+A Stadthaus provides its own Architect and Planner — the Foreman is unchanged.
+
+Today `architect.py` is implicitly Hallenhaus-specific — dimensions,
 opening logic, and room programs are woven into a single flow.
-Before a Stadthaus can be built, this must be factored out.
+Before a Stadthaus can be built, this must be factored into role implementations
+that share a common interface but carry type-specific knowledge internally.
 
 Tasks:
-- [ ] Identify all Hallenhaus-specific assumptions in the shared planner path
-- [ ] Extract type-specific logic into archetype modules
-- [ ] Define the minimal shared interface that any Fachwerk type must implement
+- [ ] Identify all Hallenhaus-specific assumptions in the shared Architect path
+      (dimensions, opening logic, binder positions, wall height derivation)
+- [ ] Extract type-specific logic into the Hallenhaus Architect implementation
+      such that a Stadthaus Architect can be written without touching shared code
+- [ ] Define the minimal shared interface (Protocol) that any Fachwerk Architect
+      must implement — this is the ROL-001 Protocol extension
 - [ ] Verify Hallenhaus still generates identically after refactor (determinism check)
-- [ ] Document the extension contract for new Fachwerk archetypes
+- [ ] Document the extension contract: what a new Fachwerk type must provide
 
-Dependency: ARC-001 (planner on PolicyStack, v0.4.0) must be complete first.
+Dependency: ROL-001 (role interfaces) must be in place before the shared interface
+can be defined. ARC-001 (planner on PolicyStack) must be complete first.
 
 ---
 
@@ -497,19 +518,29 @@ The Stadthaus must not require a schema_version bump at v0.5.0.
 ### SYS-004 — Pipeline Interface Freeze
 
 Priority: HIGH
-Requires: SYS-001, INT-001 (v0.4.0 — InteriorPlanner integration point documented)
+Requires: CR-2 (SYS-001 + SYS-002 + SYS-003 + ROL-002 all complete),
+          INT-001 (v0.4.0 — integration point between Architect and Planner documented)
 Unlocks: SEM-003
-Note: Must not be frozen before INT-001 findings are incorporated.
+Note: Must not be frozen before CR-2 is reached. CR-2 ensures the Foreman,
+      type-agnostic Architect, and schema slots are all stable before interfaces are frozen.
+
 Stage interfaces are frozen. Immutability between stages is enforced.
 Multi-candidate support is scaffolded.
 
-The InteriorPlanner integration point determined in INT-001 (v0.4.0)
-must be reflected here before the interfaces are frozen.
-Freezing without this would require a later unfreeze.
+The stage sequence after ROL-002 is:
+
+```
+Foreman → Architect (plan_structure + derive_frameplan)
+        → Planner   (plan_interior)
+        → Roofer    (roof structure — currently domain-implicit)
+        → PhysicalPlausibilityValidator
+        → Evaluator
+```
 
 Tasks:
-- [ ] Incorporate InteriorPlanner position from INT-001 findings
-- [ ] Freeze stage interfaces (OrderProvider → Planner → InteriorPlanner → Domain → Validator → Evaluator)
+- [ ] Incorporate Foreman entry point from ROL-002 as the pipeline start
+- [ ] Incorporate Architect/Planner integration point from INT-001 findings
+- [ ] Freeze stage interfaces with the new role names
 - [ ] Enforce immutability between stages
 - [ ] Add stage-level reporting
 - [ ] Scaffold multi-candidate support (no full implementation yet)
@@ -547,9 +578,116 @@ Non-goals:
 
 ---
 
+---
+
+## Role Architecture
+
+The role architecture (Foreman, Architect, Planner, Roofer, Furnisher, Landscaper)
+is the concrete mechanism through which SYS-002 (type-agnostic planner) is achieved.
+It is documented in SYS_VISION.md §11. The tasks here implement it incrementally.
+
+ROL-001 may begin as soon as ENG-003 is complete. It does not require CR-1.
+ROL-002 requires SYS-002 to be in progress — the Foreman cannot be wired in
+before the role interfaces exist.
+
+### ROL-001 — Role Schema Foundation
+
+Priority: HIGH
+Requires: ENG-003 (names must be stable before interfaces are defined)
+Unlocks: ROL-002, SYS-002 (provides the concrete mechanism)
+Parallel: ENG-001, ENG-002, RES-002
+
+Goal:
+Define the data structures that the role architecture rests on.
+No behavior — only frozen dataclasses in `bvillage/core/model.py`
+and a Protocol extension in `bvillage/core/registry.py`.
+The existing Hallenhaus generation is unchanged.
+
+Tasks:
+- [ ] Add `RoleProposal` to `model.py` — what a role offers in the Briefing phase:
+      hard requirements (non-negotiable), soft preferences, variants with cost/score
+- [ ] Add `ProposalVariant` to `model.py` — one option within a proposal
+- [ ] Add `Declaration` to `model.py` — structural elements with cross-role spatial
+      consequences (stair footprint, chimney, post positions, window openings)
+- [ ] Add `Conflict` to `model.py` — documented conflict between two roles,
+      with position and cost of conceding for each
+- [ ] Add `Resolution` to `model.py` — outcome of a conflict, with total cost
+      and whether resolved mutually or by Foreman
+- [ ] Add `BuildingBrief` to `model.py` — binding output of the Briefing phase:
+      selected variants, all declarations, resolved policy
+- [ ] Extend `HouseTypeProvider` in `registry.py` with new optional methods:
+      `propose(ctx) -> RoleProposal`, `declare(brief) -> tuple[Declaration, ...]`,
+      `resolve(conflict) -> Resolution`
+      (existing `generate()` signature unchanged — backward compatible)
+- [ ] Unit tests for all new dataclasses (construction, equality, immutability)
+
+Note:
+All new dataclasses follow the standard: `@dataclass(frozen=True, slots=True)`.
+No existing code changes. No existing tests affected.
+
+---
+
+### ROL-002 — Briefing Mechanism + Foreman
+
+Priority: HIGH
+Requires: ROL-001
+Unlocks: ROL-003, CR-2 (together with SYS-001, SYS-002, SYS-003)
+Parallel: SYS-002 (can run simultaneously — both build on ROL-001 interfaces)
+
+Goal:
+Implement the Foreman coordination mechanism. Two new modules:
+`bvillage/core/briefing.py` and `bvillage/core/foreman.py`.
+The existing `orchestrate_house()` in `architect.py` is replaced by the Foreman.
+
+Tasks:
+- [ ] Implement `conduct_briefing(ctx, roles) -> BuildingBrief` in `briefing.py`:
+      collect proposals from all roles, resolve variant selection by min(total_cost),
+      collect all declarations into the brief
+- [ ] Implement `resolve_conflict(conflict, roles) -> Resolution` in `briefing.py`:
+      first attempt mutual resolution (both roles negotiate within soft constraints),
+      escalate to Foreman (min total_cost) if no mutual solution found
+- [ ] Implement `build_house(ctx) -> tuple[StructurePlan, InteriorPlan, OpeningsPlan]`
+      in `foreman.py`: replaces `orchestrate_house()` as the pipeline entry point
+- [ ] Wire Hallenhaus roles into the Foreman: Architect (`plan_structure` + `derive_frameplan`),
+      Planner (`plan_interior`), Roofer (stub acceptable — full implementation in ROL-003)
+      Note: Hallenhaus-specific assumptions in Architect need not be factored out yet —
+      that is SYS-002's job. ROL-002 wires what exists; SYS-002 refactors it.
+- [ ] Verify Hallenhaus generates identically through the new entry point (determinism check)
+- [ ] Update `bvillage/types/fachwerkhaus/hallenhaus/__init__.py` to use `foreman.build_house()`
+- [ ] Document conflict resolution decisions in generation report
+
+---
+
+### ROL-003 — Hallenhaus Role Implementations (Complete)
+
+Priority: MEDIUM
+Requires: ROL-002
+Parallel: RES-002 (Stadthaus research runs in parallel)
+
+Goal:
+The Hallenhaus Architect, Planner, and Roofer fully implement the role Protocol.
+`propose()` and `declare()` return meaningful data, not stubs.
+The Declaration Register contains all cross-role spatial claims.
+
+Tasks:
+- [ ] `architect.py`: implement `propose()` — variants for footprint dimensions,
+      cost tied to deviation from policy soft ranges
+- [ ] `architect.py`: implement `declare()` — posts at their u-positions,
+      stair footprint if present, chimney if present, window openings on each wall
+- [ ] `planner.py`: implement `propose()` — room program variants, cost tied to
+      deviation from required zone areas
+- [ ] `planner.py`: implement `resolve()` — partition conflict with Architect:
+      can planner reorganize room without a wall at the contested position?
+- [ ] `architect.py`: implement `resolve()` — window conflict with Planner:
+      can window move within facade rhythm constraints?
+- [ ] Integration test: generate Hallenhaus, verify all declarations present,
+      verify no unresolved conflicts
+
+---
+
 > **⊕ CR-2 — Architecture Stable**
-> SYS-001 + SYS-002 + SYS-003 complete. PolicyStack is multi-archetype.
-> Planner is type-agnostic. FramePlan schema has Stadthaus slots.
+> SYS-001 + SYS-002 + SYS-003 + ROL-002 complete. PolicyStack is multi-archetype.
+> Architect/Planner/Foreman role structure in place. FramePlan schema has Stadthaus slots.
 > Structural intelligence and materials work may begin.
 
 ---
@@ -596,7 +734,9 @@ Tasks:
 
 Priority: MEDIUM
 Requires: RES-001 (roof question answered)
-Parallel: SYS-002, SYS-003, ENG-001 (independent of policy work)
+Parallel: SYS-002, SYS-003, ENG-001, ROL-001 (independent of policy and role work)
+Note: STR-003 can start as soon as RES-001 answers the roof question specifically —
+      it does not need full CR-1 to be formally reached.
 
 Goal:
 The current roof implementation shows open rafter framing (Sparrenwerk).
@@ -807,7 +947,8 @@ Tasks:
 - [ ] Document the canonical coordinate system (local → wall-local → world)
 - [ ] Extract `_house_basis()` into a shared, tested utility
 - [ ] Add unit tests for wall coordinate mapping (N/S/E/W, center_x, halfW)
-- [ ] Verify Stadthaus gable-facing orientation is handled without special-casing
+- [ ] Verify Stadthaus gable-facing orientation can be expressed in the Stadthaus Architect
+      implementation without special-casing in the shared coordinate utility
 
 ---
 
@@ -838,19 +979,80 @@ Tasks:
 
 ---
 
-### ENG-003 — Naming Refactor Window
+### ENG-003 — Role Rename: Atomic Commit
 
-Priority: LOW
-Requires: all structural intelligence tasks complete, determinism confirmed, no open structural refactors
-Note: Last item in v0.4.x by definition. Activation is conditional, not scheduled.
-- All structural intelligence tasks complete
-- Determinism confirmed
-- No open structural refactors
+Priority: HIGH
+Requires: nothing — can begin immediately
+Unlocks: ROL-001 (names must be stable before role interfaces are defined)
+Note: Originally planned as last v0.4.x item. Promoted and concretized: the rename
+      prepares the role architecture (ROL-001, SYS-002) and costs least now while
+      the codebase is still small. Single atomic branch, no functional changes.
 
 Constraints:
-- No functional changes
+- No functional changes whatsoever
 - Single atomic rename branch
-- Determinism unchanged
+- Determinism unchanged — verify with existing test suite after rename
+
+#### Files to rename
+
+| Old path | New path | Reason |
+|---|---|---|
+| `bvillage/types/fachwerkhaus/hallenhaus/planner.py` | `architect.py` | This file plans the structural exterior — that is the Architect role |
+| `bvillage/types/fachwerkhaus/hallenhaus/interior.py` | `planner.py` | This file plans interior space division — that is the Planner role |
+
+`openings.py` and `validate.py` are unchanged — openings are an Architect output,
+not an independent role; validate is a utility.
+
+#### Functions to rename
+
+In `architect.py` (formerly `planner.py`):
+
+| Old name | New name | Reason |
+|---|---|---|
+| `generate_structure()` | `plan_structure()` | verb reflects semantic planning, not construction |
+| `attach_frameplan()` | `derive_frameplan()` | aligns with naming policy: `derive_*` computes data |
+| `generate_house()` | `orchestrate_house()` | temporary name — replaced by Foreman in ROL-002; avoids collision with Blender's `build_house()` |
+
+In `planner.py` (formerly `interior.py`):
+
+| Old name | New name | Reason |
+|---|---|---|
+| `generate_interior()` | `plan_interior()` | verb reflects semantic planning |
+
+In `openings.py`:
+
+| Old name | New name | Reason |
+|---|---|---|
+| `generate_openings()` | `plan_openings()` | verb reflects semantic planning |
+
+In `bvillage/blender/build.py`:
+
+| Old name | New name | Reason |
+|---|---|---|
+| `build_house()` | `render_house()` | disambiguates from the future Foreman's `build_house()`; renderer renders, does not build |
+
+In `bvillage/core/registry.py`:
+
+| Old name | New name | Reason |
+|---|---|---|
+| `HouseTypeProvider` | `HouseTypeProvider` | unchanged for now — gets extended (not renamed) in ROL-001 |
+
+#### Import chain updates
+
+After renaming the files, update all import references:
+
+- `bvillage/types/fachwerkhaus/hallenhaus/__init__.py`:
+  `from planner import generate_house` → `from architect import orchestrate_house`
+- `bvillage/blender/build.py`:
+  internal call site of `build_house` → `render_house`
+- Any test files referencing the old function names
+
+#### Verification
+
+After the atomic commit:
+- [ ] Full test suite passes without modification
+- [ ] Hallenhaus generates identically (same FramePlan output, same seed)
+- [ ] ARCH_SCAN shows no new issues introduced by the rename
 
 ---
 
@@ -883,7 +1085,7 @@ on upper floors. The FramePlan schema must support vertical stacking
 and floor-level differentiation.
 
 **Interior.** No Längsdiele. Different room hierarchy, staircase logic,
-merchant or craft zones. InteriorPlanner must handle a structurally
+merchant or craft zones. The Planner role must handle a structurally
 different program.
 
 **Policy.** Urban context, narrow plot, different wealth curve, later
@@ -903,10 +1105,11 @@ v0.5.0 is complete when:
 1. A Stadthaus is generated deterministically through the full pipeline
 2. Blender renders the result: correct gable orientation, multi-storey
    structure, urban opening density, plausible roof
-3. No structural rewrite was required in the pipeline, planner, or domain
+3. No structural rewrite was required in the pipeline, Foreman, or domain
 4. `resolve_policy_stack(ctx)` produces a correct, distinct policy
    for the Stadthaus without branching on type inside the stack
-5. The Fachwerk domain engine handles both types from the same codebase
+5. The Stadthaus Architect and Hallenhaus Architect implement the same Protocol —
+   the Foreman coordinates both without knowing which type it is building
 6. Determinism confirmed for both house types simultaneously
 
 ---
@@ -996,10 +1199,10 @@ Vertical rules, max height, 3D fit validation.
 
 ---
 
-## INT-002 — InteriorPlanner Full Iteration Model
+## INT-002 — Planner Full Iteration Model
 
 Multi-proposal interior planning with conflict detection and alternative scoring.
-Depends on pipeline interface freeze (ARC-002) and research into
+Depends on pipeline interface freeze (SYS-004) and research into
 historical room programs.
 
 ---
