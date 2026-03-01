@@ -26,7 +26,7 @@ def test_compute_z_axes_contains_bounds_and_opening_edges():
         opening(oid="Gate", typ="gate", wall_id="W_S_0", u0=-1.0, u1=1.0, z0=0.0, z1=2.2),
         opening(oid="Win", typ="window", wall_id="W_N_0", u0=2.0, u1=3.0, z0=0.9, z1=1.6),
     )
-    openings_final = normalize_openings_from_plan(ops, default_jamb_t=0.2, width_type="axis")
+    openings_final = normalize_openings_from_plan(ops, default_jamb_thickness=0.2, width_type="axis")
 
     z_axes, z_clusters, z_log = compute_z_axes(
         z0=0.0,
@@ -60,7 +60,7 @@ def test_build_frameplan_smoke_normalizes_and_repairs_height_and_generates_axes(
     ops = make_openings_plan(
         opening(oid="Gate", typ="gate", wall_id="W_S_0", u0=-1.4, u1=1.4, z0=0.1, z1=2.2),
     )
-    policy = FramePolicy(b_max=1.4)
+    policy = FramePolicy(binder_max=1.4)
 
     fp = build_frameplan(
         structure=structure,

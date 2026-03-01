@@ -36,7 +36,7 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
     Resolve minimal cultural + structural policy from Context.
 
     This is the ONLY place where:
-    - b_max
+    - binder_max
     - target_gefach_w
     - typological parameters
 
@@ -62,8 +62,8 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
         # Wealth slightly increases span (better timber quality).
         base = 1.50
         span = 0.15
-        b_max = base + span * (wealth - 0.5)
-        b_max = max(1.40, min(1.65, b_max))
+        binder_max = base + span * (wealth - 0.5)
+        binder_max = max(1.40, min(1.65, binder_max))
 
         # ---- Cultural target gefach width (aesthetic rhythm) ----
         # Long walls in Hallenhaus typically 1.20–1.50 m
@@ -74,13 +74,13 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
 
     else:
         # Generic fallback for other Fachwerk types
-        b_max = 1.65
+        binder_max = 1.65
         target_gefach_w = 1.45
         target_gefach_jitter = 0.12
 
     fachwerk = FachwerkPolicySpec(
-        b_max=b_max,
-        default_jamb_t=0.20,
+        binder_max=binder_max,
+        default_jamb_thickness=0.20,
     )
 
     # =========================================================
@@ -103,10 +103,10 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
         )
 
         constraints["gefach_width_target"] = ConstraintSpec(
-            hard=RangeHardSpec(0.0, b_max),
+            hard=RangeHardSpec(0.0, binder_max),
             soft=RangeSoftSpec(
                 ideal=(target_gefach_w - 0.10, target_gefach_w + 0.10),
-                allowed=(1.10, b_max),
+                allowed=(1.10, binder_max),
                 weight=3.0,
             ),
             unit="m",
@@ -131,8 +131,8 @@ def resolve_policy_stack_with_trace(ctx: Context) -> tuple[ResolvedPolicy, Resol
         layer_id = "TypePolicy:generic"
 
     ops = [
-        TraceOp("fachwerk.b_max", resolved.fachwerk.b_max),
-        TraceOp("fachwerk.default_jamb_t", resolved.fachwerk.default_jamb_t),
+        TraceOp("fachwerk.binder_max", resolved.fachwerk.binder_max),
+        TraceOp("fachwerk.default_jamb_thickness", resolved.fachwerk.default_jamb_thickness),
     ]
 
     layers.append(TraceLayer(layer_id, tuple(sorted(ops, key=lambda o: o.key))))

@@ -31,8 +31,8 @@ class ConstraintSpec:
 @dataclass(frozen=True, slots=True)
 class FachwerkPolicySpec:
     # minimal subset that the fachwerk frameplan builder needs
-    b_max: float
-    default_jamb_t: float = 0.20
+    binder_max: float
+    default_jamb_thickness: float = 0.20
 
 
 @dataclass(frozen=True, slots=True)

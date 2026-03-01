@@ -139,8 +139,8 @@ def _policy_to_dict(pol: ResolvedPolicy) -> Dict[str, Any]:
     return {
         "schema": pol.schema,
         "fachwerk": {
-            "b_max": pol.fachwerk.b_max,
-            "default_jamb_t": pol.fachwerk.default_jamb_t,
+            "binder_max": pol.fachwerk.binder_max,
+            "default_jamb_thickness": pol.fachwerk.default_jamb_thickness,
         },
         "constraints": c_out,
     }
@@ -323,11 +323,11 @@ def _frame_policy_from_resolved(resolved_policy) -> FramePolicy:
         return default if v is None else v
 
     return FramePolicy(
-        b_max=float(g("b_max", 2.40)),
-        default_jamb_t=float(g("default_jamb_t", 0.20)),
+        binder_max=float(g("binder_max", 2.40)),
+        default_jamb_thickness=float(g("default_jamb_thickness", 0.20)),
         horizontal_axes_style=list(g("horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])),
 
-        z_merge_tol=float(g("z_merge_tol", FramePolicy(b_max=0.0).z_merge_tol)),
+        z_merge_tol=float(g("z_merge_tol", FramePolicy(binder_max=0.0).z_merge_tol)),
         z_band_min=float(g("z_band_min", 0.15)),
         z_band_target_min=float(g("z_band_target_min", 0.25)),
 

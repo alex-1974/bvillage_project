@@ -53,7 +53,7 @@ def test_contract_openings_final_sorted_and_ranges_valid():
         opening(oid="Gate", typ="gate", wall_id="W_S_0", u0=+1.0, u1=-1.0, z0=2.2, z1=0.0),  # inverted on purpose
         opening(oid="Win", typ="window", wall_id="W_N_0", u0=3.0, u1=2.0, z0=1.6, z1=0.9),   # inverted on purpose
     )
-    finals = normalize_openings_from_plan(ops, default_jamb_t=0.2, width_type="axis")
+    finals = normalize_openings_from_plan(ops, default_jamb_thickness=0.2, width_type="axis")
 
     # deterministic ordering by (wall, u_center, name)
     assert finals[0].wall <= finals[1].wall
@@ -61,7 +61,7 @@ def test_contract_openings_final_sorted_and_ranges_valid():
     for o in finals:
         assert o.u0 <= o.u1
         assert o.z0 <= o.z1
-        assert o.width_axis > 0
+        assert o.width_range > 0
         assert o.width_clear > 0
 
 
@@ -71,9 +71,9 @@ def test_contract_axes_u_contains_wall_bounds_and_opening_edges():
         opening(oid="Gate", typ="gate", wall_id="W_S_0", u0=-1.0, u1=1.0, z0=0.0, z1=2.2),
         opening(oid="WinS", typ="window", wall_id="W_S_0", u0=3.0, u1=4.0, z0=0.9, z1=1.6),
     )
-    finals = normalize_openings_from_plan(ops, default_jamb_t=0.2, width_type="axis")
+    finals = normalize_openings_from_plan(ops, default_jamb_thickness=0.2, width_type="axis")
 
-    v = compute_vertical_axes(L=structure.footprint.length, W=structure.footprint.width, b_max=1.5, openings=list(finals))
+    v = compute_vertical_axes(L=structure.footprint.length, W=structure.footprint.width, binder_max=1.5, openings=list(finals))
 
     # S wall bounds must be present
     assert v["S"]["primary"] == [-5.0, 5.0]
@@ -93,9 +93,9 @@ def test_contract_axes_u_secondary_not_inside_openings():
     ops = make_openings_plan(
         opening(oid="Gate", typ="gate", wall_id="W_S_0", u0=-1.0, u1=1.0, z0=0.0, z1=2.2),
     )
-    finals = normalize_openings_from_plan(ops, default_jamb_t=0.2, width_type="axis")
+    finals = normalize_openings_from_plan(ops, default_jamb_thickness=0.2, width_type="axis")
 
-    v = compute_vertical_axes(L=structure.footprint.length, W=structure.footprint.width, b_max=0.9, openings=list(finals))
+    v = compute_vertical_axes(L=structure.footprint.length, W=structure.footprint.width, binder_max=0.9, openings=list(finals))
     sec = v["S"]["secondary"]
 
     # No secondary axis strictly inside the opening interval
@@ -108,9 +108,9 @@ def test_contract_axes_u_all_within_wall_range():
     ops = make_openings_plan(
         opening(oid="Win", typ="window", wall_id="W_N_0", u0=-5.0, u1=-3.0, z0=0.9, z1=1.6),
     )
-    finals = normalize_openings_from_plan(ops, default_jamb_t=0.2, width_type="axis")
+    finals = normalize_openings_from_plan(ops, default_jamb_thickness=0.2, width_type="axis")
 
-    v = compute_vertical_axes(L=structure.footprint.length, W=structure.footprint.width, b_max=1.0, openings=list(finals))
+    v = compute_vertical_axes(L=structure.footprint.length, W=structure.footprint.width, binder_max=1.0, openings=list(finals))
 
     # For N/S walls: range is [-L/2, +L/2]
     umin, umax = -12.0 / 2.0, 12.0 / 2.0
@@ -124,7 +124,7 @@ def test_contract_axes_z_contains_bounds_and_opening_edges():
         opening(oid="Gate", typ="gate", wall_id="W_S_0", u0=-1.0, u1=1.0, z0=0.1, z1=2.2),
         opening(oid="Win", typ="window", wall_id="W_N_0", u0=2.0, u1=3.0, z0=0.9, z1=1.6),
     )
-    finals = normalize_openings_from_plan(ops, default_jamb_t=0.2, width_type="axis")
+    finals = normalize_openings_from_plan(ops, default_jamb_thickness=0.2, width_type="axis")
 
     z_axes, _, _ = compute_z_axes(
         z0=0.1,
@@ -151,7 +151,7 @@ def test_contract_frameplan_self_consistent():
         opening(oid="WinS", typ="window", wall_id="W_S_0", u0=3.0, u1=4.2, z0=0.9, z1=1.6),
         opening(oid="WinN", typ="window", wall_id="W_N_0", u0=1.6, u1=2.8, z0=0.9, z1=1.6),
     )
-    policy = FramePolicy(b_max=1.4)
+    policy = FramePolicy(binder_max=1.4)
 
     fp = build_frameplan(
         structure=structure,
