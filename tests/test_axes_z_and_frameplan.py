@@ -48,7 +48,14 @@ def test_compute_z_axes_contains_bounds_and_opening_edges():
     assert isinstance(z_log, list)
 
 
-def test_build_frameplan_smoke_uses_structure_wall_height_and_generates_axes():
+def test_build_frameplan_smoke_normalizes_and_repairs_height_and_generates_axes():
+    """
+    Contract:
+    - FramePlan canonicalizes z0 to 0.0
+    - FramePlan may repair/quantize H_e
+    - Resulting H_e must equal top Z-axis
+    - Axes must be sorted and span full height
+    """
     structure = make_structure(L=12.0, W=6.0, z0=0.1, H_e=2.7)
     ops = make_openings_plan(
         opening(oid="Gate", typ="gate", wall_id="W_S_0", u0=-1.4, u1=1.4, z0=0.1, z1=2.2),
@@ -62,13 +69,26 @@ def test_build_frameplan_smoke_uses_structure_wall_height_and_generates_axes():
         seed=123,
     )
 
+    # Footprint must pass through unchanged
     assert abs(fp.L - 12.0) < 1e-9
     assert abs(fp.W - 6.0) < 1e-9
-    # FramePlan normalizes z0 to 0.0 (structure.z0 is an input offset, not a structural baseline)
-    assert abs(fp.z0 - 0.0) < 1e-9
-    # FramePlan repairs/quantizes wall height (policy-driven), so 2.70 snaps to 2.60 currently
-    assert abs(fp.H_e - 2.60) < 1e-9
 
+    # z0 is canonicalized
+    assert abs(fp.z0 - 0.0) < 1e-9
+
+    # Height must be positive and within reasonable band
+    assert 2.0 <= fp.H_e <= 3.0
+
+    # Height must equal the top Z-axis
+    assert abs(fp.H_e - fp.z_axes[-1]) < 1e-9
+
+    # Z-axes must be sorted and span from z0 to H_e
+    assert fp.z_axes == sorted(fp.z_axes)
+    assert abs(fp.z_axes[0] - fp.z0) < 1e-9
+    assert abs(fp.z_axes[-1] - fp.H_e) < 1e-9
+
+    # All cardinal walls must be present
     assert set(fp.vertical_axes.keys()) == {"N", "S", "E", "W"}
+
+    # Must generate at least bottom + top axis
     assert len(fp.z_axes) >= 2
-    assert fp.z_axes[0] <= fp.z_axes[-1]

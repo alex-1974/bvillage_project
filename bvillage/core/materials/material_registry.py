@@ -721,16 +721,4 @@ def resolve_for_builder(
     salt = _member_uid(member)
     sample = sample_render(resolved, surface, seed=seed, salt=salt)
 
-    # ---- Visibility: warn once when we had to fall back to a default ----
-    if not explicit_mid:
-        key = f"{role}|{policy_default}"
-        if key not in _WARNED_DEFAULT_FALLBACKS:
-            if LOG.isEnabledFor(logging.WARNING):
-                LOG.warning(
-                    "Material fallback: using default '%s' for role='%s' (no member.material_id).",
-                    policy_default,
-                    role,
-                )
-            _WARNED_DEFAULT_FALLBACKS.add(key)
-
     return resolved, surface, sample

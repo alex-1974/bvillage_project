@@ -5,7 +5,7 @@ from typing import Any, Dict, Tuple
 
 import bpy
 from mathutils import Vector
-from bvillage.core.materials.material_registry import resolve_for_builder
+from .materials_assign import assign_member_material
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.braces")
 
@@ -55,36 +55,6 @@ def _map_wall_uvz_to_world(
     raise ValueError(f"Unknown wall '{wall}'")
 
 
-def _ensure_bv_material(mat_name: str, sample):
-    mat = bpy.data.materials.get(mat_name)
-    if mat is None:
-        mat = bpy.data.materials.new(mat_name)
-        mat.use_nodes = True
-
-    nt = mat.node_tree
-    bsdf = nt.nodes.get("Principled BSDF")
-
-    h = sample.base_color_hex.lstrip("#")
-    r = int(h[0:2], 16) / 255.0
-    g = int(h[2:4], 16) / 255.0
-    b = int(h[4:6], 16) / 255.0
-
-    bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
-    bsdf.inputs["Roughness"].default_value = float(sample.roughness)
-    bsdf.inputs["Metallic"].default_value = float(sample.metallic)
-
-    return mat
-
-
-def _assign_material(obj, mat):
-    if obj.data is None:
-        return
-    if len(obj.data.materials) == 0:
-        obj.data.materials.append(mat)
-    else:
-        obj.data.materials[0] = mat
-
-
 def build_braces_corner_band(
     *,
     fp,
@@ -121,11 +91,16 @@ def build_braces_corner_band(
 
         if ctx_view:
             obj = collection.objects.get(name)
-            resolved, surface, sample = resolve_for_builder(
-                b, ctx_view, default_material_id="timber.spruce"
-            )
-            mat = _ensure_bv_material(f"BV_{resolved.id}", sample)
-            _assign_material(obj, mat)
+            try:
+                assign_member_material(
+                    obj=obj,
+                    member=b,
+                    ctx_view=ctx_view,
+                    default_material_id="timber.spruce",
+                    name_hint=f"BV_{name}",
+                )
+            except Exception:
+                LOG.exception("Braces: material assignment failed for %s member=%s", name, b)
 
         built += 1
 

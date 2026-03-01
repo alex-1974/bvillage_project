@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 import bpy
 from mathutils import Vector
 
-from bvillage.core.materials.material_registry import resolve_for_builder
+from .materials_assign import assign_member_material
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.infills")
 
@@ -186,40 +186,6 @@ def _cell_hits_opening(wall: str, u0: float, u1: float, z0: float, z1: float, op
 # Materials (local, deterministic)
 # ---------------------------------------------------------------------
 
-def _ensure_bv_material(mat_name: str, sample):
-    mat = bpy.data.materials.get(mat_name)
-    if mat is None:
-        mat = bpy.data.materials.new(mat_name)
-        mat.use_nodes = True
-
-    nt = mat.node_tree
-    bsdf = nt.nodes.get("Principled BSDF")
-    if bsdf is None:
-        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
-
-    h = str(sample.base_color_hex).lstrip("#")
-    try:
-        r = int(h[0:2], 16) / 255.0
-        g = int(h[2:4], 16) / 255.0
-        b = int(h[4:6], 16) / 255.0
-    except Exception:
-        r, g, b = 0.8, 0.8, 0.8
-
-    bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
-    bsdf.inputs["Roughness"].default_value = float(sample.roughness)
-    bsdf.inputs["Metallic"].default_value = float(sample.metallic)
-    return mat
-
-
-def _assign_material(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
-    if obj is None or obj.data is None:
-        return
-    mats = obj.data.materials
-    if len(mats) == 0:
-        mats.append(mat)
-    else:
-        mats[0] = mat
-
 
 def _make_infill_quad(
     collection: bpy.types.Collection,
@@ -246,13 +212,16 @@ def _make_infill_quad(
     mesh.update()
 
     if member_for_material is not None and ctx_view is not None:
-        resolved, surface, sample = resolve_for_builder(
-            member_for_material,
-            ctx_view,
-            default_material_id="brick.historic_mid",
-        )
-        mat = _ensure_bv_material(f"BV_{resolved.id}", sample)
-        _assign_material(obj, mat)
+        try:
+            assign_member_material(
+                obj=obj,
+                member=member_for_material,
+                ctx_view=ctx_view,
+                default_material_id="brick.historic_mid",
+                name_hint=f"BV_{name}",
+            )
+        except Exception:
+            LOG.exception("Infills: material assignment failed for %s member=%s", name, member_for_material)
 
     return obj
 
