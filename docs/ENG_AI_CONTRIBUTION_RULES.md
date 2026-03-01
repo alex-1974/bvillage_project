@@ -289,6 +289,31 @@ No free-form patches. No implicit changes buried in larger diffs.
 
 ---
 
+### Output Format — Code Delivery
+
+AI never delivers isolated code snippets for insertion into existing files.
+
+Reasons:
+- Python indentation errors are silent and destructive
+- Insertion point is often ambiguous
+- Partial output cannot be verified in isolation
+
+Rules:
+
+**Single function changed** — deliver the complete function, from `def` to
+the last line of the body. Nothing less.
+
+**Multiple functions in one file changed** — deliver the complete file,
+ready for copy/paste replacement.
+
+**New file** — deliver the complete file.
+
+The delivered code must be immediately usable without mental assembly.
+If the user has to decide where something goes or how to merge it,
+the delivery is incomplete.
+
+---
+
 ## VIII. Test Discipline
 
 Tests must be written against contract postconditions — not against
@@ -322,7 +347,7 @@ Before finalizing any contribution, AI verifies:
 - Did I preserve all directive comments and obey their constraints?
 - Did I leave non-obvious decisions uncommented — reasoning a future
   contributor would have to reconstruct from scratch?
-- Did I make a significant decision without updating the HANDOFF?
+- Did I deliver a code snippet instead of a complete function or file?
 - Is the HANDOFF current enough that a new AI instance could
   continue without asking questions already answered here?
 
