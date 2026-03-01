@@ -296,7 +296,7 @@ def audit_frameplan_contract(
     Pre-flight contract audit for FramePlan.
 
     v1 checks:
-      - axis monotonicity (house.axis_x/axis_y)
+      - axis monotonicity (house.axes_u/axes_v)
       - axes_z monotonicity
       - dimension plausibility (z_plate > z0, L/W > 0)
       - opening bounds inside wall and z-range
@@ -318,8 +318,8 @@ def audit_frameplan_contract(
 
     schema_version = int(fp.get("schema_version", 1) or 1)
 
-    axis_x = house.get("axis_x") or []
-    axis_y = house.get("axis_y") or []
+    axes_u = house.get("axes_u") or []
+    axes_v = house.get("axes_v") or []
     z0_build = float(house.get("z0", 0.0))
     z_plate = float(house.get("z_plate", 0.0))
 
@@ -329,42 +329,42 @@ def audit_frameplan_contract(
 
     stats: Dict[str, Any] = {
         "schema_version": schema_version,
-        "axis_x": len(axis_x) if isinstance(axis_x, list) else "?",
-        "axis_y": len(axis_y) if isinstance(axis_y, list) else "?",
+        "axes_u": len(axes_u) if isinstance(axes_u, list) else "?",
+        "axes_v": len(axes_v) if isinstance(axes_v, list) else "?",
         "axes_z": len(axes_z) if isinstance(axes_z, list) else "?",
         "openings": len(openings),
     }
 
     LOG.info(
-        "FRAMEPLAN AUDIT start | schema=%d axis_x=%s axis_y=%s z_axes=%s openings=%d",
+        "FRAMEPLAN AUDIT start | schema=%d axes_u=%s axes_v=%s z_axes=%s openings=%d",
         schema_version,
-        stats["axis_x"], stats["axis_y"], stats["axes_z"], stats["openings"],
+        stats["axes_u"], stats["axes_v"], stats["axes_z"], stats["openings"],
     )
 
     # --------------------------------------------------------
     # 1) House axis sanity (v1)
     # --------------------------------------------------------
 
-    if not isinstance(axis_x, list) or len(axis_x) < 2:
-        hard.append("axis_x must contain at least 2 values")
-    if not isinstance(axis_y, list) or len(axis_y) < 2:
-        hard.append("axis_y must contain at least 2 values")
+    if not isinstance(axes_u, list) or len(axes_u) < 2:
+        hard.append("axes_u must contain at least 2 values")
+    if not isinstance(axes_v, list) or len(axes_v) < 2:
+        hard.append("axes_v must contain at least 2 values")
 
-    if isinstance(axis_x, list) and len(axis_x) >= 2:
+    if isinstance(axes_u, list) and len(axes_u) >= 2:
         try:
-            ax = [float(x) for x in axis_x]
+            ax = [float(x) for x in axes_u]
             if not _is_monotonic(ax):
-                hard.append("axis_x must be strictly increasing")
+                hard.append("axes_u must be strictly increasing")
         except Exception:
-            hard.append("axis_x must be numeric")
+            hard.append("axes_u must be numeric")
 
-    if isinstance(axis_y, list) and len(axis_y) >= 2:
+    if isinstance(axes_v, list) and len(axes_v) >= 2:
         try:
-            ay = [float(y) for y in axis_y]
+            ay = [float(y) for y in axes_v]
             if not _is_monotonic(ay):
-                hard.append("axis_y must be strictly increasing")
+                hard.append("axes_v must be strictly increasing")
         except Exception:
-            hard.append("axis_y must be numeric")
+            hard.append("axes_v must be numeric")
 
     if not isinstance(axes_z, list) or len(axes_z) < 2:
         hard.append("axes_z must contain at least 2 values")
@@ -380,21 +380,21 @@ def audit_frameplan_contract(
     # 2) Dimension consistency (v1)
     # --------------------------------------------------------
 
-    if isinstance(axis_x, list) and axis_x:
+    if isinstance(axes_u, list) and axes_u:
         try:
-            L = float(axis_x[-1]) - float(axis_x[0])
+            L = float(axes_u[-1]) - float(axes_u[0])
             if L <= 0.0:
                 hard.append("computed length L <= 0")
         except Exception:
-            hard.append("computed length L invalid (axis_x not numeric)")
+            hard.append("computed length L invalid (axes_u not numeric)")
 
-    if isinstance(axis_y, list) and axis_y:
+    if isinstance(axes_v, list) and axes_v:
         try:
-            W = float(axis_y[-1]) - float(axis_y[0])
+            W = float(axes_v[-1]) - float(axes_v[0])
             if W <= 0.0:
                 hard.append("computed width W <= 0")
         except Exception:
-            hard.append("computed width W invalid (axis_y not numeric)")
+            hard.append("computed width W invalid (axes_v not numeric)")
 
     if z_plate <= z0_build:
         hard.append("z_plate must be greater than z0")

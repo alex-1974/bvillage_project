@@ -49,8 +49,8 @@ class FieldCell:
 class Grid:
     # Axes in local coordinates (meters). Convention:
     # x axis = length direction (longitudinal), y axis = width direction (transverse)
-    axis_x: Tuple[float, ...]
-    axis_y: Tuple[float, ...]
+    axes_u: Tuple[float, ...]
+    axes_v: Tuple[float, ...]
     fields: Tuple[FieldCell, ...] = ()
 
 
@@ -135,7 +135,7 @@ class InteriorPlan:
     zones: Tuple[Zone, ...] = ()
     rooms: Tuple[Room, ...] = ()
     doors: Tuple[Door, ...] = ()
-    openings_demands: Tuple[OpeningDemand, ...] = ()
+    opening_demands: Tuple[OpeningDemand, ...] = ()
     notes: Dict[str, Any] = field(default_factory=dict)
 
 

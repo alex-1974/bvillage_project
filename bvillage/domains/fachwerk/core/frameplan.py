@@ -152,19 +152,19 @@ def _infer_wall_height(structure: StructurePlan) -> Tuple[float, float]:
 
 def _binder_u_from_grid(structure: StructurePlan) -> List[float]:
     """
-    Convert grid axis_x (0..L) to wall-u coordinates (-L/2..+L/2).
+    Convert grid axes_u (0..L) to wall-u coordinates (-L/2..+L/2).
     Only meaningful for N/S walls.
     """
     L = float(structure.footprint.length)
     halfL = 0.5 * L
 
     grid = getattr(structure, "grid", None)
-    axis_x = getattr(grid, "axis_x", None) if grid is not None else None
-    if not isinstance(axis_x, (list, tuple)) or len(axis_x) < 2:
+    axes_u = getattr(grid, "axes_u", None) if grid is not None else None
+    if not isinstance(axes_u, (list, tuple)) or len(axes_u) < 2:
         return []
 
     # convert x -> u
-    out = [float(x) - halfL for x in axis_x]
+    out = [float(x) - halfL for x in axes_u]
 
     # drop endpoints (corners) because they're already in primary axes
     eps = 1e-6
@@ -260,7 +260,7 @@ def _adjust_secondary_axes_by_target(
     Anchors for segmentation on N/S:
       - primary axes (usually corners)
       - opening axes (opening edges)
-      - binder axes (grid axis_x mapped to u)
+      - binder axes (grid axes_u mapped to u)
 
     Then subdivide spans between anchors to approximate target_width.
     """

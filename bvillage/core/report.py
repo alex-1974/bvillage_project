@@ -74,13 +74,13 @@ def report_plans(
     )
 
     # Grid summary
-    gx = structure.grid.axis_x
-    gy = structure.grid.axis_y
-    lines.append(f"[Grid] axis_x n={len(gx)} axis_y n={len(gy)} fields n={len(structure.grid.fields)}")
+    gx = structure.grid.axes_u
+    gy = structure.grid.axes_v
+    lines.append(f"[Grid] axes_u n={len(gx)} axes_v n={len(gy)} fields n={len(structure.grid.fields)}")
     if len(gx) <= 25:
-        lines.append("  axis_x: " + ", ".join(f"{v:.3f}" for v in gx))
+        lines.append("  axes_u: " + ", ".join(f"{v:.3f}" for v in gx))
     if len(gy) <= 25:
-        lines.append("  axis_y: " + ", ".join(f"{v:.3f}" for v in gy))
+        lines.append("  axes_v: " + ", ".join(f"{v:.3f}" for v in gy))
 
     # Frames
     lines.append(f"[Frames] n={len(structure.frames)}")
@@ -121,8 +121,8 @@ def report_plans(
                 f"w={d.width:.2f} z={fmt_range_m(d.z_range[0], d.z_range[1])} tags={list(d.tags)}"
             )
 
-        lines.append(f"[OpeningDemands] n={len(interior.openings_demands)}")
-        for od in interior.openings_demands:
+        lines.append(f"[OpeningDemands] n={len(interior.opening_demands)}")
+        for od in interior.opening_demands:
             lines.append(
                 f"  room={od.room_id} pref={od.wall_preference} min={od.min_count} max={od.max_count} tags={list(od.tags)}"
             )

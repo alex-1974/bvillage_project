@@ -7,7 +7,7 @@ from .timber import make_beam_rect
 
 def build_roof_per_field(
     *,
-    axis_x,
+    axes_u,
     half_width: float,
     z_plate: float,
     roof_pitch_deg: float = 50.0,
@@ -21,7 +21,7 @@ def build_roof_per_field(
       - 1 collar tie (Kehlbalken) per field
       - 1 continuous ridge purlin (Firstpfette)
 
-    axis_x: list of x positions (len >= 2)
+    axes_u: list of x positions (len >= 2)
     half_width: W/2 (e.g. 3.45)
     z_plate: wall plate height (e.g. 2.2)
 
@@ -39,8 +39,8 @@ def build_roof_per_field(
             "collar": (0.12, 0.16),
         }
 
-    if not axis_x or len(axis_x) < 2:
-        raise ValueError("axis_x must contain at least 2 values")
+    if not axes_u or len(axes_u) < 2:
+        raise ValueError("axes_u must contain at least 2 values")
 
     # ridge height from pitch and half span
     h = tan(radians(roof_pitch_deg)) * half_width
@@ -56,16 +56,16 @@ def build_roof_per_field(
     # ridge purlin, continuous
     make_beam_rect(
         "Firstpfette",
-        Vector((axis_x[0], 0.0, z_ridge)),
-        Vector((axis_x[-1], 0.0, z_ridge)),
+        Vector((axes_u[0], 0.0, z_ridge)),
+        Vector((axes_u[-1], 0.0, z_ridge)),
         width=profiles["ridge"][0],
         depth=profiles["ridge"][1],
         collection=col_roof,
     )
 
     # per field: rafter pair + collar tie
-    for i in range(len(axis_x) - 1):
-        xmid = 0.5 * (axis_x[i] + axis_x[i + 1])
+    for i in range(len(axes_u) - 1):
+        xmid = 0.5 * (axes_u[i] + axes_u[i + 1])
 
         make_beam_rect(
             f"Rafter_L_{i:02d}",

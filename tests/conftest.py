@@ -67,10 +67,10 @@ def make_structure(
     fp = Footprint(length=L, width=W, orientation_deg=0.0)
 
     # Minimal grid: two axes each, one field cell
-    axis_x = (-L / 2.0, L / 2.0)
-    axis_y = (-W / 2.0, W / 2.0)
+    axes_u = (-L / 2.0, L / 2.0)
+    axes_v = (-W / 2.0, W / 2.0)
     fields = (FieldCell(id="F_0_0", bbox=(-L / 2.0, -W / 2.0, L / 2.0, W / 2.0), tags=()),)
-    grid = Grid(axis_x=axis_x, axis_y=axis_y, fields=fields)
+    grid = Grid(axes_u=axes_u, axes_v=axes_v, fields=fields)
 
     frames = (BayFrame(id="BINDER_0", bay_index=0, tags=("PRIMARY_FRAME",)),)
 
@@ -124,4 +124,4 @@ def make_interior_plan(*, room_ids: tuple[str, ...] = ("R0",), connected: bool =
         doors = (
             Door(id="D0", between=(room_ids[0], room_ids[1]), wall_ref="W_S_0", width=0.9, z_range=(0.0, 2.0), tags=("INTERIOR_DOOR",)),
         )
-    return InteriorPlan(rooms=rooms, doors=doors, zones=(), openings_demands=(), notes={})
+    return InteriorPlan(rooms=rooms, doors=doors, zones=(), opening_demands=(), notes={})

@@ -50,15 +50,15 @@ def _assign_member_material(
 # ------------------------------------------------------------
 
 def _house_basis(house: Dict[str, Any]) -> Tuple[float, float, float, float, float, float]:
-    axis_x = house["axis_x"]
-    axis_y = house["axis_y"]
+    axes_u = house["axes_u"]
+    axes_v = house["axes_v"]
 
-    x_min = min(axis_x)
-    x_max = max(axis_x)
+    x_min = min(axes_u)
+    x_max = max(axes_u)
     center_x = 0.5 * (x_min + x_max)
 
-    y_min = min(axis_y)
-    y_max = max(axis_y)
+    y_min = min(axes_v)
+    y_max = max(axes_v)
     halfW = 0.5 * (y_max - y_min)
 
     return x_min, x_max, center_x, y_min, y_max, halfW
@@ -208,15 +208,15 @@ def build_opening_frames(
     # ==========================================================
     # LEGACY FALLBACK
     # ==========================================================
-    axis_x = house["axis_x"]
-    axis_y = house["axis_y"]
+    axes_u = house["axes_u"]
+    axes_v = house["axes_v"]
 
-    x_min = min(axis_x)
-    x_max = max(axis_x)
+    x_min = min(axes_u)
+    x_max = max(axes_u)
     center_x = 0.5 * (x_min + x_max)
 
-    y_min = min(axis_y)
-    y_max = max(axis_y)
+    y_min = min(axes_v)
+    y_max = max(axes_v)
     halfW = 0.5 * (y_max - y_min)
 
     openings = fp.get("openings") or []

@@ -29,8 +29,8 @@ def plan_interior(ctx: Context, structure: StructurePlan) -> InteriorPlan:
       - Simple door graph: Stube <-> Diele <-> Stall
     """
 
-    bays_x = len(structure.grid.axis_x) - 1  # 8 in your current run
-    bays_y = len(structure.grid.axis_y) - 1  # 2 in your current run
+    bays_x = len(structure.grid.axes_u) - 1  # 8 in your current run
+    bays_y = len(structure.grid.axes_v) - 1  # 2 in your current run
 
     # ---- Partition along length (x) ----
     # Choose proportions that satisfy typ signature:
@@ -100,7 +100,7 @@ def plan_interior(ctx: Context, structure: StructurePlan) -> InteriorPlan:
         zones=tuple(zones),
         rooms=tuple(rooms),
         doors=tuple(doors),
-        openings_demands=tuple(demands),
+        opening_demands=tuple(demands),
         notes={
             "partition": {
                 "front_len": front_len,

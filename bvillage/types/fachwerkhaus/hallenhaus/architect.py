@@ -278,7 +278,7 @@ def plan_structure(ctx: Context, *, dims: HallenhausDims = DEFAULT_DIMS) -> Stru
 
     frames = tuple(
         BayFrame(id=f"BINDER_{i}", bay_index=i, tags=("PRIMARY_FRAME",))
-        for i in range(len(grid.axis_x))
+        for i in range(len(grid.axes_u))
     )
 
     half_L = L / 2.0

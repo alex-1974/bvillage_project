@@ -111,7 +111,7 @@ def _validate_opening_feasibility(structure: StructurePlan, interior: InteriorPl
 
     window_ok = any(("WINDOW_OK" in w.tags) for w in structure.walls)
 
-    for od in interior.openings_demands:
+    for od in interior.opening_demands:
         if od.min_count > 0 and od.wall_preference == "EXTERIOR" and not window_ok:
             issues.append(
                 Issue(

@@ -238,8 +238,8 @@ def _clear_fachwerk_subtree(root_collection: bpy.types.Collection) -> int:
 # -----------------------------------------------------------------------------
 
 def _require_house_keys(house: dict[str, Any]) -> None:
-    if not house.get("axis_x") or not house.get("axis_y"):
-        raise SchemaError("Invalid house: axis_x/axis_y missing or empty")
+    if not house.get("axes_u") or not house.get("axes_v"):
+        raise SchemaError("Invalid house: axes_u/axes_v missing or empty")
 
     house.setdefault("z0", 0.0)
     house.setdefault("z_plate", 2.2)
@@ -270,7 +270,7 @@ def _log_build_header(house_name: str, house: dict[str, Any]) -> None:
 def _coerce_house(ctx: Any, structure: Any) -> dict[str, Any]:
     """Extract `house` dict from ctx/structure notes or derive from StructurePlan grid."""
     def _is_house(d: Any) -> bool:
-        return isinstance(d, dict) and bool(d.get("axis_x")) and bool(d.get("axis_y"))
+        return isinstance(d, dict) and bool(d.get("axes_u")) and bool(d.get("axes_v"))
 
     def _get_notes(obj: Any) -> Optional[dict[str, Any]]:
         n = getattr(obj, "notes", None)
@@ -312,10 +312,10 @@ def _coerce_house(ctx: Any, structure: Any) -> dict[str, Any]:
     # derive from structure.grid where possible
     grid = getattr(structure, "grid", None)
     footprint = getattr(structure, "footprint", None)
-    if grid is not None and hasattr(grid, "axis_x") and hasattr(grid, "axis_y") and footprint is not None:
-        axis_x = list(getattr(grid, "axis_x"))
-        axis_y = list(getattr(grid, "axis_y"))
-        if axis_x and axis_y:
+    if grid is not None and hasattr(grid, "axes_u") and hasattr(grid, "axes_v") and footprint is not None:
+        axes_u = list(getattr(grid, "axes_u"))
+        axes_v = list(getattr(grid, "axes_v"))
+        if axes_u and axes_v:
             z0 = 0.0
             H_e = 2.6
             walls = getattr(structure, "walls", None)
@@ -330,11 +330,11 @@ def _coerce_house(ctx: Any, structure: Any) -> dict[str, Any]:
             fields_n = len(fields) if isinstance(fields, (list, tuple)) else getattr(grid, "n_fields", None)
 
             return {
-                "axis_x": axis_x,
-                "axis_y": axis_y,
+                "axes_u": axes_u,
+                "axes_v": axes_v,
                 "fields": fields_n if fields_n is not None else "?",
-                "L": float(getattr(footprint, "length", max(axis_x) - min(axis_x))),
-                "W": float(getattr(footprint, "width", max(axis_y) - min(axis_y))),
+                "L": float(getattr(footprint, "length", max(axes_u) - min(axes_u))),
+                "W": float(getattr(footprint, "width", max(axes_v) - min(axes_v))),
                 "z0": z0,
                 "H_e": H_e,
                 "z_plate": 2.2,
@@ -345,17 +345,17 @@ def _coerce_house(ctx: Any, structure: Any) -> dict[str, Any]:
             }
 
     raise SchemaError(
-        "House metadata missing: need house with axis_x/axis_y (from ctx/structure notes OR derivable from structure.grid)."
+        "House metadata missing: need house with axes_u/axes_v (from ctx/structure notes OR derivable from structure.grid)."
     )
 
 
 def _house_basis(house: dict[str, Any]) -> tuple[float, float, float, float]:
-    axis_x = list(house["axis_x"])
-    axis_y = list(house["axis_y"])
-    x_min = float(min(axis_x))
-    x_max = float(max(axis_x))
+    axes_u = list(house["axes_u"])
+    axes_v = list(house["axes_v"])
+    x_min = float(min(axes_u))
+    x_max = float(max(axes_u))
     center_x = 0.5 * (x_min + x_max)
-    halfW = 0.5 * float(max(axis_y) - min(axis_y))
+    halfW = 0.5 * float(max(axes_v) - min(axes_v))
     return x_min, x_max, center_x, halfW
 
 
@@ -465,24 +465,24 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
     Important: In current FramePlan schema, hall posts are not necessarily present
     in fp.members.posts. Historically, Hallenhaus requires a row of interior
     posts (Ständer) along the building length. The builder therefore generates
-    these members deterministically from house.axis_x.
+    these members deterministically from house.axes_u.
 
     If future schemas provide explicit HALL_POST members, those will be built in
     addition to (or instead of) generated posts depending on policy. For now we
-    generate one per axis_x entry.
+    generate one per axes_u entry.
     """
     built = 0
 
-    axis_x = list(house.get("axis_x") or [])
-    if not axis_x:
+    axes_u = list(house.get("axes_u") or [])
+    if not axes_u:
         return 0
 
     z0 = float(house.get("z0", 0.0))
     # Prefer explicit ridge/hall height if present; otherwise fall back to H_e.
     z1 = float(house.get("z_ridge", house.get("H_e", 2.6)))
 
-    # Midline y=0 in house coordinates; x runs along axis_x.
-    for i, x in enumerate(axis_x):
+    # Midline y=0 in house coordinates; x runs along axes_u.
+    for i, x in enumerate(axes_u):
         mm: dict[str, Any] = {
             "role": "HALL_POST",
             "id": f"HallPost_{i:02d}",
@@ -523,7 +523,7 @@ def _build_roof(house: dict[str, Any], col_roof: bpy.types.Collection) -> dict[s
     from .roof import build_roof_per_field
     halfW = 0.5 * float(house.get("W", 0.0))
     return build_roof_per_field(
-        axis_x=list(house["axis_x"]),
+        axes_u=list(house["axes_u"]),
         half_width=halfW,
         z_plate=float(house.get("z_plate", 2.2)),
         roof_pitch_deg=float(house.get("roof_pitch_deg", 45.0)),

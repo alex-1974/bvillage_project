@@ -15,7 +15,7 @@ This module is intentionally *domain-lean*:
 
 Contracts
 ---------
-build_house(ctx, structure, interior, openings, clear_previous=True) -> bpy.types.Collection
+render_house(ctx, structure, interior, openings, clear_previous=True) -> bpy.types.Collection
 
 - Reads Fachwerk planning artifacts via bvillage.core.notes.get_domain_artifact()
 - Does not mutate planning objects.
