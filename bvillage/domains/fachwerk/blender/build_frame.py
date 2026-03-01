@@ -149,7 +149,7 @@ def _ensure_collection(name: str, parent: Optional[bpy.types.Collection] = None)
 
 def _ensure_subcollections(root_collection: bpy.types.Collection) -> dict[str, bpy.types.Collection]:
     col_fachwerk = _ensure_collection("Fachwerk", parent=root_collection)
-    col_frame = _ensure_collection("Frame", parent=col_fachwerk)
+    col_frame = _ensure_collection("BayFrame", parent=col_fachwerk)
     col_roof = _ensure_collection("Roof", parent=col_fachwerk)
     col_openings = _ensure_collection("Openings", parent=col_fachwerk)
     col_braces = _ensure_collection("Braces", parent=col_fachwerk)

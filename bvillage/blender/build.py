@@ -77,7 +77,7 @@ def _require_fachwerk_frameplan(structure: StructurePlan) -> dict:
     return frameplan
 
 
-def build_house(
+def render_house(
     ctx: Context,
     structure: StructurePlan,
     interior: InteriorPlan,

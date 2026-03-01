@@ -19,7 +19,7 @@ Responsibilities
 Architecture
 ------------
 - Domain engine: bvillage.domains.fachwerk
-- Type-specific orchestration: planner.py
+- Type-specific orchestration: architect.py
 - Blender builder: domain-level
 
 Units
@@ -43,7 +43,7 @@ from dataclasses import dataclass
 from typing import Any, Tuple
 
 from bvillage.core.registry import register_house_type, HouseTypeProvider
-from .planner import generate_house
+from .architect import orchestrate_house
 
 # ---------------------------------------------------------
 # Provider Implementation
@@ -78,9 +78,9 @@ class HallenhausProvider:
         - interior: interior planning result
         - openings: normalized opening definitions
 
-        This function delegates to planner.generate_house().
+        This function delegates to planner.orchestrate_house().
         """
-        return generate_house(ctx)
+        return orchestrate_house(ctx)
 
 
 # ---------------------------------------------------------

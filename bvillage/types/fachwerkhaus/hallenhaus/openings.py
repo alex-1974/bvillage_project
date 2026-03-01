@@ -28,7 +28,7 @@ def _derive_seed(seed: object, component: str) -> int:
     return int.from_bytes(hashlib.blake2s(key, digest_size=4).digest(), "big")
 
 
-def generate_openings(ctx: Context, structure: StructurePlan, interior: InteriorPlan) -> OpeningsPlan:
+def plan_openings(ctx: Context, structure: StructurePlan, interior: InteriorPlan) -> OpeningsPlan:
     rng = Random(ctx.seed.derive("openings.windows"))
 
     openings: List[Opening] = []

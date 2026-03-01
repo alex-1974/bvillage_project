@@ -55,9 +55,9 @@ class Grid:
 
 
 @dataclass(frozen=True)
-class Frame:
+class BayFrame:
     id: str
-    axis_index: int
+    bay_index: int
     tags: Tuple[str, ...] = ("PRIMARY_FRAME",)
 
 
@@ -85,7 +85,7 @@ class StructurePlan:
     stories: int = 1
 
     grid: Grid = Grid((), (), ())
-    frames: Tuple[Frame, ...] = ()
+    frames: Tuple[BayFrame, ...] = ()
     walls: Tuple[WallSegment, ...] = ()
     reserved_slots: Tuple[ReservedSlot, ...] = ()
 

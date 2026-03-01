@@ -85,7 +85,7 @@ def report_plans(
     # Frames
     lines.append(f"[Frames] n={len(structure.frames)}")
     for fr in structure.frames[:30]:
-        lines.append(f"  {fr.id}: axis_index={fr.axis_index} tags={list(fr.tags)}")
+        lines.append(f"  {fr.id}: bay_index={fr.bay_index} tags={list(fr.tags)}")
     if len(structure.frames) > 30:
         lines.append(f"  ... (+{len(structure.frames) - 30} more)")
 

@@ -25,7 +25,7 @@ from bvillage.core.model import (
     Footprint,
     Grid,
     FieldCell,
-    Frame,
+    BayFrame,
     WallSegment,
     ReservedSlot,
     StructurePlan,
@@ -72,7 +72,7 @@ def make_structure(
     fields = (FieldCell(id="F_0_0", bbox=(-L / 2.0, -W / 2.0, L / 2.0, W / 2.0), tags=()),)
     grid = Grid(axis_x=axis_x, axis_y=axis_y, fields=fields)
 
-    frames = (Frame(id="BINDER_0", axis_index=0, tags=("PRIMARY_FRAME",)),)
+    frames = (BayFrame(id="BINDER_0", bay_index=0, tags=("PRIMARY_FRAME",)),)
 
     walls = (
         WallSegment("W_N_0", "N", (-L / 2.0, L / 2.0), (z0, H_e), ("EXTERIOR", "WINDOW_OK")),
