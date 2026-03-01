@@ -18,13 +18,14 @@ This index is the entry point for the documentation system. It defines reading o
 Read in this sequence. Each document assumes the ones before it.
 
 1. **SYS_PRINCIPLES.md** — why the system is designed this way. The decisions that are no longer up for debate.
-2. **SYS_CONCEPTS.md** — what the system is and how it thinks. The conceptual model.
-3. **SYS_CONTRACT.md** — what every module must and must not do. The enforceable rules.
-4. **ARCH_POLICIES.md** — how building variation is structured. The policy axis system.
-5. **ARCH_TAXONOMY.md** — the catalogue of known building types and their IDs.
-6. **ARCH_MATERIALS.md** — the material system: physical and visual parameters.
-7. **ENG_CODING_GUIDE.md** — how to write Python in this project.
-8. **ENG_BUILDER_CONTRACT.md** — specific rules for Blender builder modules.
+2. **SYS_VISION.md** — where the system is going. The large picture that governs architectural decisions today.
+3. **SYS_CONCEPTS.md** — what the system is and how it thinks. The conceptual model.
+4. **SYS_CONTRACT.md** — what every module must and must not do. The enforceable rules.
+5. **ARCH_POLICIES.md** — how building variation is structured. The policy axis system.
+6. **ARCH_TAXONOMY.md** — the catalogue of known building types and their IDs.
+7. **ARCH_MATERIALS.md** — the material system: physical and visual parameters.
+8. **ENG_CODING_GUIDE.md** — how to write Python in this project.
+9. **ENG_BUILDER_CONTRACT.md** — specific rules for Blender builder modules.
 
 ---
 
@@ -48,6 +49,7 @@ For a focused coding session, the minimum context is:
 | SYS_PRINCIPLES.md | 1 — Canonical | Foundational decisions. Changes require CHANGELOG entry. |
 | SYS_CONCEPTS.md | 1 — Canonical | Conceptual model. Changes require CHANGELOG entry. |
 | SYS_CONTRACT.md | 1 — Canonical | Enforceable rules. Changes require schema review. |
+| SYS_VISION.md | 2 — Reference | Large-picture vision and long-range architectural intent. Living document — grows with research and discussion. |
 | ARCH_POLICIES.md | 2 — Reference | Policy axis system. Expandable by new axes. |
 | ARCH_TAXONOMY.md | 2 — Reference | Building type catalogue. Expandable by new entries. |
 | ARCH_MATERIALS.md | 2 — Reference | Material system. Expandable by new species and subtypes. |
@@ -81,6 +83,8 @@ These documents remain in the repository for reference. They must not be edited.
 | 3 — Operational | Working instructions and process | Guides, roadmap, workflow | As needed |
 
 Tier 1 governs Tier 2. Tier 2 governs Tier 3. In any conflict, the higher tier wins.
+
+`SYS_VISION.md` is a Tier 2 document with a special role: it records intent that has not yet hardened into contract. When a vision item stabilizes into an architectural decision, it migrates into a Tier 1 document. SYS_VISION.md is the incubator, not the authority.
 
 ---
 
