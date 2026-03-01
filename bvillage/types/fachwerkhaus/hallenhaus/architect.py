@@ -1,4 +1,4 @@
-# bvillage/types/fachwerkhaus/hallenhaus/planner.py
+# bvillage/types/fachwerkhaus/hallenhaus/architect.py
 
 """
 bvillage.types.fachwerkhaus.hallenhaus.planner
@@ -325,7 +325,7 @@ def _frame_policy_from_resolved(resolved_policy) -> FramePolicy:
     return FramePolicy(
         binder_max=float(g("binder_max", 2.40)),
         default_jamb_thickness=float(g("default_jamb_thickness", 0.20)),
-        horizontal_axes_style=list(g("horizontal_axes_style", [0.0, 0.9, 1.6, 2.2])),
+        style_z_levels=list(g("style_z_levels", [0.0, 0.9, 1.6, 2.2])),
 
         z_merge_tol=float(g("z_merge_tol", FramePolicy(binder_max=0.0).z_merge_tol)),
         z_band_min=float(g("z_band_min", 0.15)),
@@ -333,28 +333,28 @@ def _frame_policy_from_resolved(resolved_policy) -> FramePolicy:
 
         width_type=g("width_type", "axis"),
 
-        profile_post_w=float(g("profile_post_w", 0.20)),
-        profile_post_d=float(g("profile_post_d", 0.20)),
-        profile_plate_w=float(g("profile_plate_w", 0.18)),
-        profile_plate_d=float(g("profile_plate_d", 0.18)),
+        post_section_width=float(g("post_section_width", 0.20)),
+        post_section_depth=float(g("post_section_depth", 0.20)),
+        plate_section_width=float(g("plate_section_width", 0.18)),
+        plate_section_depth=float(g("plate_section_depth", 0.18)),
 
-        profile_opening_jamb_w=float(g("profile_opening_jamb_w", 0.18)),
-        profile_opening_jamb_d=float(g("profile_opening_jamb_d", 0.18)),
+        opening_jamb_width=float(g("opening_jamb_width", 0.18)),
+        opening_jamb_depth=float(g("opening_jamb_depth", 0.18)),
 
-        profile_opening_lintel_gate_w=float(g("profile_opening_lintel_gate_w", 0.20)),
-        profile_opening_lintel_gate_d=float(g("profile_opening_lintel_gate_d", 0.20)),
-        profile_opening_lintel_window_w=float(g("profile_opening_lintel_window_w", 0.16)),
-        profile_opening_lintel_window_d=float(g("profile_opening_lintel_window_d", 0.18)),
-        profile_opening_sill_w=float(g("profile_opening_sill_w", 0.16)),
-        profile_opening_sill_d=float(g("profile_opening_sill_d", 0.18)),
+        gate_lintel_width=float(g("gate_lintel_width", 0.20)),
+        gate_lintel_depth=float(g("gate_lintel_depth", 0.20)),
+        window_lintel_width=float(g("window_lintel_width", 0.16)),
+        window_lintel_depth=float(g("window_lintel_depth", 0.18)),
+        window_sill_width=float(g("window_sill_width", 0.16)),
+        window_sill_depth=float(g("window_sill_depth", 0.18)),
 
         braces_enable=bool(g("braces_enable", True)),
-        brace_profile_w=float(g("brace_profile_w", 0.12)),
-        brace_profile_d=float(g("brace_profile_d", 0.12)),
-        brace_min_cell_w=float(g("brace_min_cell_w", 0.80)),
-        brace_min_cell_h=float(g("brace_min_cell_h", 0.80)),
+        brace_section_width=float(g("brace_section_width", 0.12)),
+        brace_section_depth=float(g("brace_section_depth", 0.12)),
+        brace_min_cell_width=float(g("brace_min_cell_width", 0.80)),
+        brace_min_cell_height=float(g("brace_min_cell_height", 0.80)),
 
-        target_gefach_w=float(g("target_gefach_w", 1.35)),
+        target_gefach_width=float(g("target_gefach_width", 1.35)),
         target_gefach_jitter=float(g("target_gefach_jitter", 0.10)),
     )
     

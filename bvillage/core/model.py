@@ -65,8 +65,8 @@ class BayFrame:
 class WallSegment:
     id: str
     side: Literal["N", "S", "E", "W"]
-    # u_axis is along wall run, expressed in meters in local coords (projected scalar along that wall)
-    u_axis: Range2
+    # u_range is along wall run, expressed in meters in local coords (projected scalar along that wall)
+    u_range: Range2
     z_range: Range2
     tags: Tuple[str, ...] = ("EXTERIOR",)
 
@@ -144,7 +144,7 @@ class Opening:
     id: str
     type: Literal["gate", "door", "window", "shutter"]
     wall_id: str
-    u_axis: Range2
+    u_range: Range2
     z_range: Range2
     tags: Tuple[str, ...] = ()
 
@@ -176,29 +176,3 @@ class Score:
     total: float = 0.0
 
 
-@dataclass(frozen=True)
-class EntryPoint:
-    type: str  # main_entry / service_entry / etc.
-    location: Vec3
-    normal: Vec3
-    width: float
-
-
-@dataclass(frozen=True)
-class AnimatableGroup:
-    opening_id: str
-    object_group_name: str
-
-
-@dataclass(frozen=True)
-class BuildManifest:
-    schema_version: SchemaVersion = "1.0"
-    house_id: str = "H_0"
-    entry_points: Tuple[EntryPoint, ...] = ()
-    animatable_groups: Tuple[AnimatableGroup, ...] = ()
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
-def to_dict(obj: Any) -> Dict[str, Any]:
-    """Stable conversion for JSON logging/versioning."""
-    return asdict(obj)

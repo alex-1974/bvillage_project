@@ -110,7 +110,7 @@ def opening(
         id=oid,
         type=typ,  # Literal in model, but tests keep it simple
         wall_id=wall_id,
-        u_axis=(u0, u1),
+        u_range=(u0, u1),
         z_range=(z0, z1),
         tags=(),
         animation={},

@@ -28,7 +28,7 @@ Expected integrations
 ---------------------
 - Domains should put structural members into notes, e.g.
   notes["domains"][domain_id]["frameplan"]["members"] = [ ... ]
-  members should include span, section, kind, and material_id (or defaultable).
+  members should include span, section, role, and material_id (or defaultable).
 
 - Materials come from bvillage.core.materials.material_registry (MaterialClass).
   Rendering params are irrelevant to PPV; PPV uses physical strengths.
@@ -131,15 +131,15 @@ class StructuralMember:
 
     Units:
     - span_mm: mm
-    - b_mm/h_mm: mm (rectangular section assumption in MVP)
+    - section_width_mm/section_height_mm: mm (rectangular section assumption in MVP)
     - bearing_len_mm: mm (if member sits on support)
     - tributary_width_m: meters (how much area contributes to this member)
     """
     id: str
-    kind: str  # "beam" | "purlin" | "joist" | "post" | "rafter" | ...
+    role: str  # "beam" | "purlin" | "joist" | "post" | "rafter" | ...
     span_mm: float
-    b_mm: float
-    h_mm: float
+    section_width_mm: float
+    section_height_mm: float
 
     material_id: Optional[str] = None
 
@@ -247,10 +247,10 @@ def _extract_members(
     structure.notes["domains"][domain]["frameplan"]["members"] = [
       {
         "id": "...",
-        "kind": "beam",
+        "role": "beam",
         "span_mm": 6000,
-        "b_mm": 140,
-        "h_mm": 280,
+        "section_width_mm": 140,
+        "section_height_mm": 280,
         "material_id": "timber_oak_structural",
         "usage": "roof",
         "tributary_width_m": 1.2,
@@ -314,26 +314,26 @@ def _extract_members(
             continue
 
         mid = str(m.get("id", f"member_{i:04d}"))
-        kind = str(m.get("kind", "unknown"))
+        role = str(m.get("role", "unknown"))
         span_mm = float(m.get("span_mm", 0.0))
-        b_mm = float(m.get("b_mm", 0.0))
-        h_mm = float(m.get("h_mm", 0.0))
+        section_width_mm = float(m.get("section_width_mm", 0.0))
+        section_height_mm = float(m.get("section_height_mm", 0.0))
 
-        if span_mm <= 0 or b_mm <= 0 or h_mm <= 0:
+        if span_mm <= 0 or section_width_mm <= 0 or section_height_mm <= 0:
             issues.append(Issue(
                 code="S_PHYS_MEMBER_INCOMPLETE",
                 severity="S",
                 message="Member missing span/section; skipped structural checks for this member.",
                 member_id=mid,
-                details={"span_mm": span_mm, "b_mm": b_mm, "h_mm": h_mm},
+                details={"span_mm": span_mm, "section_width_mm": section_width_mm, "section_height_mm": section_height_mm},
             ))
             # still keep it for sanity check visibility
         members.append(StructuralMember(
             id=mid,
-            kind=kind,
+            role=role,
             span_mm=span_mm,
-            b_mm=b_mm,
-            h_mm=h_mm,
+            section_width_mm=section_width_mm,
+            section_height_mm=section_height_mm,
             material_id=m.get("material_id"),
             usage=str(m.get("usage", "unknown")),
             tributary_width_m=m.get("tributary_width_m"),
@@ -369,19 +369,19 @@ class GeometrySanityCheck:
         bad = 0
 
         for m in members:
-            if m.b_mm <= 0 or m.h_mm <= 0:
+            if m.section_width_mm <= 0 or m.section_height_mm <= 0:
                 continue
 
-            if min(m.b_mm, m.h_mm) < min_thk:
+            if min(m.section_width_mm, m.section_height_mm) < min_thk:
                 bad += 1
                 issues.append(Issue(
                     code="S_PHYS_MIN_THICKNESS",
                     severity="S",
                     message=f"Member section thinner than minimum {min_thk:.0f} mm.",
                     member_id=m.id,
-                    details={"b_mm": m.b_mm, "h_mm": m.h_mm, "min_mm": min_thk},
+                    details={"section_width_mm": m.section_width_mm, "section_height_mm": m.section_height_mm, "min_mm": min_thk},
                 ))
-            pm[m.id] = {"b_mm": m.b_mm, "h_mm": m.h_mm, "span_mm": m.span_mm}
+            pm[m.id] = {"section_width_mm": m.section_width_mm, "section_height_mm": m.section_height_mm, "span_mm": m.span_mm}
 
         metrics["thin_members"] = float(bad)
         return issues, metrics, pm
@@ -396,9 +396,9 @@ class StructuralBeamCheck:
         pm: Dict[str, Dict[str, Any]] = {}
 
         for m in members:
-            if m.kind not in {"beam", "purlin", "joist", "rafter", "girder", "plate"}:
+            if m.role not in {"beam", "purlin", "joist", "rafter", "girder", "plate"}:
                 continue
-            if m.span_mm <= 0 or m.b_mm <= 0 or m.h_mm <= 0:
+            if m.span_mm <= 0 or m.section_width_mm <= 0 or m.section_height_mm <= 0:
                 continue
 
             mat = _resolve_material(m, pol)
@@ -406,8 +406,8 @@ class StructuralBeamCheck:
             w_N_per_mm = _line_load_N_per_mm(m.usage, pol, tw_m)
 
             L = m.span_mm
-            b = m.b_mm
-            h = m.h_mm
+            b = m.section_width_mm
+            h = m.section_height_mm
 
             # Section properties for rectangle
             I = b * (h ** 3) / 12.0
@@ -502,9 +502,9 @@ class BearingCheck:
         pm: Dict[str, Dict[str, Any]] = {}
 
         for m in members:
-            if m.kind not in {"beam", "purlin", "joist", "rafter", "girder", "plate"}:
+            if m.role not in {"beam", "purlin", "joist", "rafter", "girder", "plate"}:
                 continue
-            if m.span_mm <= 0 or m.b_mm <= 0 or m.h_mm <= 0:
+            if m.span_mm <= 0 or m.section_width_mm <= 0 or m.section_height_mm <= 0:
                 continue
 
             bearing_len = m.bearing_len_mm
@@ -528,7 +528,7 @@ class BearingCheck:
             # reaction per support (simply supported, UDL)
             R = (w_N_per_mm * L) / 2.0  # N
 
-            A_bearing = max(m.b_mm * bearing_len, 1e-9)  # mm²
+            A_bearing = max(m.section_width_mm * bearing_len, 1e-9)  # mm²
             sigma_c90 = R / A_bearing  # N/mm²
             util = sigma_c90 / max(mat.fc90_allow_N_mm2, 1e-9)
 
@@ -570,14 +570,14 @@ class PostSlendernessCheck:
         pm: Dict[str, Dict[str, Any]] = {}
 
         for m in members:
-            if m.kind not in {"post", "column", "stud"}:
+            if m.role not in {"post", "column", "stud"}:
                 continue
-            if m.span_mm <= 0 or m.b_mm <= 0 or m.h_mm <= 0:
+            if m.span_mm <= 0 or m.section_width_mm <= 0 or m.section_height_mm <= 0:
                 continue
 
             L = m.span_mm  # treat as effective length in MVP (mm)
-            b = m.b_mm
-            h = m.h_mm
+            b = m.section_width_mm
+            h = m.section_height_mm
 
             # Use weaker axis radius of gyration (conservative)
             I_min = min(b * (h ** 3), h * (b ** 3)) / 12.0

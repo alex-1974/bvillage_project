@@ -83,8 +83,8 @@ def normalize_openings_from_plan(
     default_jamb_thickness:
         Default jamb thickness (meters).
     width_type:
-        - "axis": u_axis is axis width; clear = axis - jamb_thickness
-        - "clear": u_axis is clear width; axis = clear + jamb_thickness
+        - "axis": u_range is axis width; clear = axis - jamb_thickness
+        - "clear": u_range is clear width; axis = clear + jamb_thickness
 
     Returns
     -------
@@ -104,15 +104,15 @@ def normalize_openings_from_plan(
             raise ValueError(f"Opening {name!r} missing wall_id.")
         wall = wall_side_from_id(wall_id)
 
-        u_axis = getattr(op, "u_axis", None)
+        u_range = getattr(op, "u_range", None)
         z_range = getattr(op, "z_range", None)
-        if not (isinstance(u_axis, tuple) and len(u_axis) == 2):
-            raise ValueError(f"Opening {name!r} invalid u_axis={u_axis!r}")
+        if not (isinstance(u_range, tuple) and len(u_range) == 2):
+            raise ValueError(f"Opening {name!r} invalid u_range={u_range!r}")
         if not (isinstance(z_range, tuple) and len(z_range) == 2):
             raise ValueError(f"Opening {name!r} invalid z_range={z_range!r}")
 
-        u0 = float(u_axis[0])
-        u1 = float(u_axis[1])
+        u0 = float(u_range[0])
+        u1 = float(u_range[1])
         if u1 < u0:
             u0, u1 = u1, u0
 

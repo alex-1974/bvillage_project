@@ -94,7 +94,7 @@ def report_plans(
     for w in structure.walls:
         lines.append(
             f"  {w.id} side={w.side} "
-            f"u={fmt_range_m(w.u_axis[0], w.u_axis[1])} "
+            f"u={fmt_range_m(w.u_range[0], w.u_range[1])} "
             f"z={fmt_range_m(w.z_range[0], w.z_range[1])} "
             f"tags={list(w.tags)}"
         )
@@ -133,7 +133,7 @@ def report_plans(
         for o in openings.openings:
             lines.append(
                 f"  {o.id} type={o.type} wall={o.wall_id} "
-                f"u={fmt_range_m(o.u_axis[0], o.u_axis[1])} "
+                f"u={fmt_range_m(o.u_range[0], o.u_range[1])} "
                 f"z={fmt_range_m(o.z_range[0], o.z_range[1])} "
                 f"anim={o.animation}"
             )

@@ -38,7 +38,7 @@ def plan_openings(ctx: Context, structure: StructurePlan, interior: InteriorPlan
             id="O_GATE_01",
             type="gate",
             wall_id="W_S_0",
-            u_axis=(-4.3, -1.3),
+            u_range=(-4.3, -1.3),
             z_range=(0.0, 2.2),
             tags=("MAIN_GATE",),
             animation={
@@ -58,7 +58,7 @@ def plan_openings(ctx: Context, structure: StructurePlan, interior: InteriorPlan
 
     if wall is not None:
         win_w = 1.2
-        u_min, u_max = wall.u_axis
+        u_min, u_max = wall.u_range
         margin = 1.5
         lo = u_min + margin
         hi = u_max - margin
@@ -69,7 +69,7 @@ def plan_openings(ctx: Context, structure: StructurePlan, interior: InteriorPlan
                 id="O_WIN_01",
                 type="window",
                 wall_id=wall.id,
-                u_axis=(c - win_w / 2.0, c + win_w / 2.0),
+                u_range=(c - win_w / 2.0, c + win_w / 2.0),
                 z_range=(0.9, 1.6),
                 tags=("DAYLIGHT", "STUBE_PREF"),
                 animation={
