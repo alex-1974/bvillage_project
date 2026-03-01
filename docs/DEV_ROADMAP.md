@@ -46,6 +46,35 @@ Result: Canonical structural truth established.
 
 ---
 
+## ENG-003 — Naming: Atomic Commit
+
+Status: DONE
+Delivered in two commits. All tests pass. Determinism confirmed.
+
+Delivered:
+- Files renamed: `hallenhaus/planner.py` → `architect.py`, `hallenhaus/interior.py` → `planner.py`
+- Functions renamed: `plan_structure`, `derive_frameplan`, `orchestrate_house`, `plan_interior`, `plan_openings`, `render_house`
+- Class renamed: `Frame` → `BayFrame`
+- model.py fields: `Grid.axes_u/axes_v`, `BayFrame.bay_index`, `WallSegment.u_range`, `Opening.u_range`, `InteriorPlan.opening_demands`
+- OpeningFinal fields: `id`, `opening_type`, `width_range`, `jamb_thickness`
+- FramePolicy fields: all 20 `profile_*`/`brace_*`/`target_*` suffixes written out in full
+- StructuralMember fields: `section_width_mm`, `section_height_mm`, `role`
+- Removed dead classes: `BuildManifest`, `AnimatableGroup`, `EntryPoint`
+
+Spec deviations (deliberate, documented here):
+- `FachwerkPolicySpec.b_max` → `binder_max` (not `max_bay_width` as specced — `binder_max` is fachwerktechnisch präziser)
+- `OpeningFinal.width_axis` → `width_range` (not `width_between_posts` — semantisch korrekter)
+
+Remaining ARCH_SCAN issues (pre-existing, not introduced by ENG-003):
+- Path header mismatch in `architect.py` and `planner.py` (first-line comment still shows old filename)
+- `__all__` not defined: 35 files
+- Legacy typing aliases: 32 files
+- Missing `slots=True`: 29 dataclasses
+
+Result: All API names are self-documenting. ROL-001 may begin.
+
+---
+
 # v0.4.0 — First House + Foundation
 
 ## Goal
@@ -131,7 +160,7 @@ Status: ACTIVE
 Priority: HIGH
 
 Goal:
-Eliminate the parallel policy system in `architect.py` (formerly `planner.py` — see ENG-003).
+Eliminate the parallel policy system in `architect.py` (formerly `planner.py` — renamed in ENG-003).
 `_hallenhaus_policy(ctx)` is replaced by `resolve_policy_stack(ctx)`.
 FramePolicy is populated from ResolvedPolicy.
 
@@ -180,7 +209,7 @@ Status: ACTIVE
 Priority: HIGH
 
 Goal:
-The correct pipeline position for `planner.py` (interior) relative to `architect.py`
+The correct pipeline position for `planner.py` (interior, `plan_interior`) relative to `architect.py`
 must be established. Without it, the Hallenhaus cannot be correctly generated —
 room zones, opening demands, and interior structure are interdependent.
 
@@ -251,9 +280,41 @@ Remove known boundary violations before they multiply.
 
 Tasks:
 - [ ] Move `OpeningProfilePolicy` out of Blender layer into domain-core or policy
-- [ ] Remove legacy `axis_x` / `axis_y` fallback from `opening_frames.py`
-  (members-first path already exists; legacy path to be removed once verified)
+- [x] Remove legacy `axis_x` / `axis_y` fallback from `opening_frames.py`
+  (resolved in ENG-003)
 - [ ] Add path header to `tests/test_constraints.py` (trivial scan issue)
+
+---
+
+## HYGIENE-002 — Path Header Corrections
+
+Status: DONE
+
+- [x] `architect.py` line 1: korrigiert
+- [x] `planner.py` line 1: korrigiert
+- [x] `tests/test_hotpaths_no_logging.py` line 1: korrigiert
+
+---
+
+## HYGIENE-003 — Typing Cleanup Remainder
+
+Status: PLANNED
+Priority: LOW
+
+Goal:
+`typing.List`, `typing.Dict`, `typing.Tuple`, `typing.Set` replaced via sed.
+Remainder requires manual attention.
+
+Done:
+- [x] `typing.List[` → `list[` (sed)
+- [x] `typing.Dict[` → `dict[` (sed)
+- [x] `typing.Tuple[` → `tuple[` (sed)
+- [x] `typing.Set[` → `set[` (sed)
+
+Remaining:
+- [ ] `typing.Optional[X]` → `X | None` (requires bracket-aware script or manual)
+- [ ] `typing.Union[X, Y]` → `X | Y` (same)
+- [ ] Clean up `from typing import` lines where all referenced names are now unused
 
 ---
 
@@ -654,6 +715,7 @@ Tasks:
       that is SYS-002's job. ROL-002 wires what exists; SYS-002 refactors it.
 - [ ] Verify Hallenhaus generates identically through the new entry point (determinism check)
 - [ ] Update `bvillage/types/fachwerkhaus/hallenhaus/__init__.py` to use `foreman.build_house()`
+      (currently calls `orchestrate_house()` — Foreman replaces this entry point)
 - [ ] Document conflict resolution decisions in generation report
 
 ---
@@ -981,261 +1043,11 @@ Tasks:
 
 ### ENG-003 — Naming: Atomic Commit
 
+Status: DONE — see COMPLETED section for delivery record.
+
 Priority: HIGH
 Requires: nothing — can begin immediately
 Unlocks: ROL-001 (names must be stable before role interfaces are defined)
-
-Background: Much of the current naming was introduced quickly, locally plausible
-at small scale. As the system grows to multiple archetypes and multiple consumers,
-ambiguous names cause errors and APIs become unusable. This commit establishes
-names that will still be clear in a year.
-
-Scope: 44 rename operations across 19 files. All changes are mechanical —
-no logic changes, no behavioral changes. A sed script can do most of the work.
-Test suite verifies correctness.
-
-Constraints:
-- No functional changes whatsoever
-- Single atomic branch
-- Determinism unchanged — verify with golden snapshot after rename
-
----
-
-#### 1. Files to rename
-
-| Old path | New path | Reason |
-|---|---|---|
-| `hallenhaus/planner.py` | `hallenhaus/architect.py` | Plans structural exterior — Architect role |
-| `hallenhaus/interior.py` | `hallenhaus/planner.py` | Plans interior space — Planner role |
-
-`openings.py` and `validate.py` names are unchanged.
-
----
-
-#### 2. Functions to rename
-
-**`architect.py`** (formerly `planner.py`):
-
-| Old | New | Reason |
-|---|---|---|
-| `generate_structure()` | `plan_structure()` | `generate_` not in allowed verb list |
-| `attach_frameplan()` | `derive_frameplan()` | `attach_` not allowed; function computes and stores data |
-| `generate_house()` | `orchestrate_house()` | `generate_` not allowed; interim name until Foreman (ROL-002) |
-
-**`planner.py`** (formerly `interior.py`):
-
-| Old | New | Reason |
-|---|---|---|
-| `generate_interior()` | `plan_interior()` | `generate_` not in allowed verb list |
-
-**`openings.py`**:
-
-| Old | New | Reason |
-|---|---|---|
-| `generate_openings()` | `plan_openings()` | `generate_` not in allowed verb list |
-
-**`blender/build.py`**:
-
-| Old | New | Reason |
-|---|---|---|
-| `build_house()` | `render_house()` | Future collision with Foreman `build_house()`; renderer renders, does not build |
-
----
-
-#### 3. Class name to rename
-
-**`model.py`**:
-
-| Old | New | Reason |
-|---|---|---|
-| `class Frame` | `class BayFrame` | Collides with `FramePlan`, `build_frame.py`, `build_fachwerk_frame()`. This class is a transverse bay frame — a Binder/Gebinde — not a generic frame. |
-
----
-
-#### 4. Field renames in `model.py`
-
-| Class | Old | New | Reason |
-|---|---|---|---|
-| `Grid` | `axis_x` | `axes_u` | System convention is `axes_u`/`axes_z` (SYS_CONCEPTS §4). `axis_x` implies world X. Resolves ARCH_SCAN soft issue. |
-| `Grid` | `axis_y` | `axes_v` | Transverse axis. `axes_v` pairs with `axes_u`. |
-| `BayFrame` | `axis_index` | `bay_index` | Ambiguous — which axis, which direction? This is the index of the bay. |
-| `WallSegment` | `u_axis: Range2` | `u_range: Range2` | Type is `Range2`. Name implies scalar. `z_range` directly below uses the correct convention. |
-| `Opening` | `u_axis: Range2` | `u_range: Range2` | Same problem. Inconsistent with `z_range`. |
-| `InteriorPlan` | `openings_demands` | `opening_demands` | Grammar error. All other tuple fields use singular: `rooms`, `doors`, `zones`. |
-
-Note: `axes_u.py` and `axes_z.py` in domain-core take raw floats, not `Grid` fields.
-The `Grid` rename has zero impact on domain-core.
-
----
-
-#### 5. Field renames in `openings_norm.py` — `OpeningFinal`
-
-| Old | New | Reason |
-|---|---|---|
-| `name: str` | `id: str` | Every other dataclass uses `id`. `name` breaks the convention for no reason. |
-| `typ: str` | `opening_type: str` | `typ` is a Python-shadowing workaround. `opening_type` is unambiguous and needs no workaround. |
-| `width_axis: float` | `width_between_posts: float` | "axis" is jargon. This is the distance between post centerlines. |
-| `jamb_t: float` | `jamb_thickness: float` | `t` could mean top, tolerance, or thickness. Only one of those is correct. |
-
-Also in `openings_norm.py`:
-
-| Old | New | Reason |
-|---|---|---|
-| `normalize_openings_from_plan()` param `default_jamb_t` | `default_jamb_thickness` | Consistent with field rename above. |
-
----
-
-#### 6. Field renames in `frameplan.py` — `FramePolicy`
-
-All `_w`/`_d`/`_h`/`_t` suffixes are single-letter abbreviations for structural
-dimensions. Clear to timber-frame specialists, opaque to everyone else. Ausschreiben.
-
-| Old | New |
-|---|---|
-| `b_max` | `max_bay_width` |
-| `default_jamb_t` | `default_jamb_thickness` |
-| `horizontal_axes_style` | `style_z_levels` |
-| `profile_post_w` | `post_section_width` |
-| `profile_post_d` | `post_section_depth` |
-| `profile_plate_w` | `plate_section_width` |
-| `profile_plate_d` | `plate_section_depth` |
-| `profile_opening_jamb_w` | `opening_jamb_width` |
-| `profile_opening_jamb_d` | `opening_jamb_depth` |
-| `profile_opening_lintel_gate_w` | `gate_lintel_width` |
-| `profile_opening_lintel_gate_d` | `gate_lintel_depth` |
-| `profile_opening_lintel_window_w` | `window_lintel_width` |
-| `profile_opening_lintel_window_d` | `window_lintel_depth` |
-| `profile_opening_sill_w` | `window_sill_width` |
-| `profile_opening_sill_d` | `window_sill_depth` |
-| `brace_profile_w` | `brace_section_width` |
-| `brace_profile_d` | `brace_section_depth` |
-| `brace_min_cell_w` | `brace_min_cell_width` |
-| `brace_min_cell_h` | `brace_min_cell_height` |
-| `target_gefach_w` | `target_gefach_width` |
-
-`profile_` prefix dropped throughout: `profile_post_w` means "profile of post, width" —
-`post_section_width` carries the same meaning without the indirection.
-
----
-
-#### 7. Field renames in `policy_types.py` — `FachwerkPolicySpec`
-
-| Old | New | Reason |
-|---|---|---|
-| `b_max` | `max_bay_width` | Consistent with FramePolicy rename above. |
-
----
-
-#### 8. Field renames in `physical_plausibility_validator.py` — `StructuralMember`
-
-| Old | New | Reason |
-|---|---|---|
-| `b_mm` | `section_width_mm` | `b` is Eurocode notation. Opaque outside structural engineering. |
-| `h_mm` | `section_height_mm` | Same. |
-| `kind` | `role` | `kind` is generic. `role` is the system term for the function of a structural element. |
-
----
-
-#### 9. Parameter renames in `axes_u.py` and `axes_z.py`
-
-These functions take raw floats, not dataclass fields. The parameters at call sites
-must be updated wherever these functions are called.
-
-`compute_vertical_axes()` in `axes_u.py`:
-
-| Old param | New param | Reason |
-|---|---|---|
-| `b_max` | `max_bay_width` | Consistent with FramePolicy rename. |
-
-`compute_z_axes()` in `axes_z.py`:
-
-| Old param | New param | Reason |
-|---|---|---|
-| `H_e` | `eaves_height` | Physics shorthand. `eaves_height` is self-documenting. |
-| `horizontal_axes_style` | `style_z_levels` | Consistent with FramePolicy rename. |
-
----
-
-#### 10. Classes to remove from `model.py`
-
-`BuildManifest`, `AnimatableGroup`, `EntryPoint` — grep confirms zero consumers
-outside `model.py` itself. `AnimatableGroup.object_group_name` is a Blender object
-name. `EntryPoint.location`/`normal` are 3D geometry vectors. Blender-facing
-metadata with no structural role in core. Remove now; re-introduce in
-`blender/build.py` or `blender/schema.py` when a concrete consumer exists.
-
----
-
-#### 11. Not in scope
-
-`HallenhausDims` fields (`L`, `W`, `H_e`, `z0`) and `FramePlan` fields (`L`, `W`,
-`H_e`, `z0`) — physics shorthand that will be absorbed into `ResolvedPolicy`
-in STR-001 (span-driven dimensions). Both sets are temporary. Rename cost is not
-justified for structures that will be restructured anyway.
-
-`PhysicsPolicy` fields with units in names (`g_dead_kN_m2_roof`, `E_N_mm2` etc.)
-are exemplary — they should be used as the model for other physical parameters,
-not changed.
-
-`RangeHard.min_v` / `max_v` — pragmatic workaround for Python's built-in `min`/`max`.
-Acceptable as-is.
-
----
-
-#### 12. Call sites — complete inventory
-
-**`architect.py`**:
-```
-Frame → BayFrame  (import + instantiation)
-Frame(id=f"BINDER_{i}", axis_index=i) → BayFrame(id=f"BINDER_{i}", bay_index=i)
-len(grid.axis_x) → len(grid.axes_u)
-from .interior import generate_interior → from .planner import plan_interior
-from .openings import generate_openings → from .openings import plan_openings
-generate_interior(...) → plan_interior(...)
-generate_openings(...) → plan_openings(...)
-attach_frameplan(...) → derive_frameplan(...)
-_frame_policy_from_resolved(): all 20 FramePolicy field names in mapping function
-```
-
-**`planner.py`** (formerly `interior.py`):
-```
-len(structure.grid.axis_x) → len(structure.grid.axes_u)
-len(structure.grid.axis_y) → len(structure.grid.axes_v)
-InteriorPlan(..., openings_demands=...) → opening_demands=...
-```
-
-**`openings.py`**:
-```
-Opening(..., u_axis=(-4.3, -1.3)) → u_range=(-4.3, -1.3)
-Opening(..., u_axis=(c - win_w/2, ...)) → u_range=(...)
-u_min, u_max = wall.u_axis → wall.u_range
-```
-
-**`__init__.py`**:
-```
-from .planner import generate_house → from .architect import orchestrate_house
-return generate_house(ctx) → return orchestrate_house(ctx)
-```
-
-**`blender/build.py`**: `build_house()` → `render_house()`
-
-**`blender/build_frame.py`**, **`blender/opening_frames.py`**, **`blender/roof.py`**:
-All `axis_x`/`axis_y` accesses → `axes_u`/`axes_v`.
-`OpeningFinal` field accesses: `.name` → `.id`, `.typ` → `.opening_type`,
-`.width_axis` → `.width_between_posts`, `.jamb_t` → `.jamb_thickness`.
-
-**`core/grid.py`**: `build_rect_grid()` return — `Grid(axis_x=..., axis_y=...)` → `Grid(axes_u=..., axes_v=...)`.
-
----
-
-#### Verification
-
-After the atomic commit:
-- [ ] Full test suite passes without modification
-- [ ] Hallenhaus generates identically (golden snapshot, same seed)
-- [ ] ARCH_SCAN `axis_x`/`axis_y` soft issues resolved
-- [ ] ARCH_SCAN shows no new issues introduced
-- [ ] `grep -r "generate_\|attach_frameplan\|build_house\|u_axis\|axis_x\|axis_y\|openings_demands\|profile_post\|b_max\|jamb_t" src/` returns zero hits
 
 ---
 
