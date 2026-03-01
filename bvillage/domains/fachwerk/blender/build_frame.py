@@ -1,4 +1,5 @@
 # bvillage/domains/fachwerk/blender/build_frame.py
+
 """
 Fachwerk frame builder (Blender layer).
 

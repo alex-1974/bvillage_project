@@ -1,4 +1,5 @@
 # bvillage/core/errors.py
+
 """
 BVILLAGE exception hierarchy.
 
