@@ -5,15 +5,20 @@
 Dokument-Typ:  Research Foundation
 Achse:         7 von 7
 Scope:         BVILLAGE — alle Domains, alle Haustypen
-Status:        v1.0
+               Zeitraum: 500–1750 (Kern: 950–1500)
+               Raum: Westeuropa und Byzanz
+Status:        v2.0
 Referenziert von:
-  MEDIEVAL_WORLD_OVERVIEW.md
+  [MEDIEVAL_WORLD_OVERVIEW](MEDIEVAL_WORLD_OVERVIEW.md)
   ARCH_POLICIES.md (StylePolicy, CulturePolicy)
   DEV_ROADMAP.md (RES-001)
 Referenziert:
   mittelalterliche_baupraxis_v2.md
   RESEARCH_FACHWERK_HISTORISCH.md
   RESEARCH_FACHWERKBAU.md
+  [MEDIEVAL_05 — Wissen](MEDIEVAL_05_KNOWLEDGE_CRAFT.md#6-epochale-entwicklung-der-wissensinfrastruktur)
+  [MEDIEVAL_01 — Physische Welt](MEDIEVAL_01_PHYSICAL_WORLD.md)
+  [MEDIEVAL_04 — Wirtschaft](MEDIEVAL_04_ECONOMY_TRADE.md)
 Evidenzgrade:
   [HART]   Direkt messbar, datierter Bestand, publizierte Messdaten
   [MITTEL] Wissenschaftlicher Konsens, erschlossen, nicht direkt messbar
@@ -22,12 +27,40 @@ Evidenzgrade:
 
 ---
 
+## Inhaltsverzeichnis
+
+- [Vorbemerkung](#vorbemerkung-warum-achse-7-das-rückgrat-ist)
+- [1. Das Grundmodell: Phasen und Brüche](#1-das-grundmodell-phasen-und-brüche)
+- [2. Die Epochenphasen](#2-die-epochenphasen)
+  - [Phase 0 — Spätantike und Frühmittelalter (ca. 500–950)](#phase-0--spätantike-und-frühmittelalter-ca-500950)
+  - [Phase 1 — Hochmittelalter: Entstehung (ca. 950–1150)](#phase-1--hochmittelalter-entstehung-ca-9501150)
+  - [Phase 2 — Hochmittelalter: Reife (ca. 1150–1300)](#phase-2--hochmittelalter-reife-ca-11501300)
+  - [Phase 3 — Hochmittelalterliche Typenbildung (ca. 1300–1347)](#phase-3--hochmittelalterliche-typenbildung-ca-13001347)
+  - [BRUCH 1 — Die Pest (1347–1353)](#bruch-1--die-pest-13471353)
+  - [Phase 4 — Spätmittelalterliche Blüte (ca. 1360–1500)](#phase-4--spätmittelalterliche-blüte-ca-13601500)
+  - [BRUCH 2 — Holzmangel und Bauordnungen (ca. 1400–1520)](#bruch-2--holzmangel-und-bauordnungen-ca-14001520)
+  - [Phase 5 — Übergang: Renaissance und Reformation (ca. 1500–1618)](#phase-5--übergang-renaissance-und-reformation-ca-15001618)
+  - [BRUCH 3 — Der Dreißigjährige Krieg (1618–1648)](#bruch-3--der-dreißigjährige-krieg-16181648)
+  - [Phase 6 — Frühe Neuzeit: Rationalfachwerk (ca. 1650–1750)](#phase-6--frühe-neuzeit-rationalfachwerk-ca-16501750)
+  - [BRUCH 4 — Statuswandel und Industrialisierung (ca. 1750–1900)](#bruch-4--statuswandel-und-industrialisierung-ca-17501900)
+- [3. Die Epochenmatrix: Schnellreferenz](#3-die-epochenmatrix-schnellreferenz)
+- [4. Regionale Schichtung der Zeitachse](#4-regionale-schichtung-der-zeitachse)
+  - [4.1 Konstruktionssystemwechsel](#41-konstruktionssystemwechsel)
+  - [4.2 Pestbetroffenheit (1347–1353)](#42-pestbetroffenheit-13471353)
+  - [4.3 Dreißigjähriger Krieg (1618–1648)](#43-dreißigjähriger-krieg-16181648)
+  - [4.4 Reformationsbruch: regionale Differenzierung](#44-reformationsbruch-regionale-differenzierung)
+- [5. Zeitliche Schocks als BVILLAGE-Systemkonzept](#5-zeitliche-schocks-als-bvillage-systemkonzept)
+- [6. Offene Forschungsfragen für BVILLAGE](#6-offene-forschungsfragen-für-bvillage)
+- [7. Quellen und wissenschaftliche Grundlage](#7-quellen-und-wissenschaftliche-grundlage)
+
+---
+
 ## Vorbemerkung: Warum Achse 7 das Rückgrat ist
 
-Die sechs anderen Achsen beschreiben Zustände — wie war die physische Welt,
-wie war die Gesellschaft, wie funktionierte Handel. Achse 7 beschreibt die
-Bewegung: wie diese Zustände sich veränderten, wann sie sprangen, was die
-Sprünge auslöste.
+Die sechs anderen Achsen (→ [Wissen als Zentrum](MEDIEVAL_05_KNOWLEDGE_CRAFT.md#vorbemerkung-warum-achse-5-das-zentrum-ist))
+beschreiben Zustände — wie war die physische Welt, wie war die Gesellschaft,
+wie funktionierte Handel. Achse 7 beschreibt die Bewegung: wie diese
+Zustände sich veränderten, wann sie sprangen, was die Sprünge auslöste.
 
 Für BVILLAGE ist das die kritischste Achse, weil sie die Zeitdimension aller
 Policy-Parameter strukturiert. Ein `epoch_band`-Parameter ohne Kenntnis der
@@ -37,6 +70,13 @@ Geraden — zwischen ihnen liegt die Pest.
 
 Diese Achse liefert die Diskontinuitäten, die das System explizit modellieren
 muss. Nicht als Sonderfälle, sondern als Strukturelement.
+
+**Scope dieses Dokuments**: Gesamteuropa und Byzanz, 500–1750. Die
+Phasierungen sind gesamteuropäisch formuliert; regionale Abweichungen —
+und sie sind erheblich — werden in [Abschnitt 4](#4-regionale-schichtung-der-zeitachse)
+differenziert. Die Epochenbezeichnungen folgen der wissenschaftlichen
+Konvention: Frühmittelalter (ca. 500–1000), Hochmittelalter (ca. 1000–1250),
+Spätmittelalter (ca. 1250–1500), Frühe Neuzeit (ca. 1500–1800).
 
 ---
 
@@ -65,116 +105,269 @@ Innerhalb einer Phase: graduelle Parameter. Über einen Bruch: Sprung.
 Die `StylePolicy`-Zeitachse ist kein Gradient — sie ist stückweise linear
 mit definierten Unstetigkeitsstellen.
 
----
-
-## 2. Die sieben Epochenphasen
-
-### Phase 0 — Vorgeschichte: Pfostenbau (bis ca. 1150)
-*Nicht BVILLAGE-Domain, aber Kontext für den Übergang*
-
-Der Pfostenbau dominiert. Holzpfosten direkt in der Erde eingespannt,
-keine Schwelle, keine laterale Aussteifung durch Streben. Lebensdauer
-30–80 Jahre. Kein Mehrgeschossbau möglich.
-[MITTEL — Zimmermann 1998; Klein 2012]
-
-Was bleibt: lokales Handwerkswissen, Klöster als Wissensinseln,
-Stabkirchen (Norwegen ab ca. 9. Jh.) als Beweis des holzbautechnisch
-Möglichen. [HART für Stabkirchen — erhaltene Bauten; MITTEL für
-Wissensinfrastruktur]
-
-**BVILLAGE-Status**: Vorläufer der Domain. Kein Planer vorgesehen.
-Relevant als Ausgangszustand für die Parameterinitialisierung der
-Frühphase.
+**Wichtig**: Die Phasengrenzen sind gesamteuropäische Orientierungswerte.
+Regional verschieben sich die Grenzen um Jahrzehnte. England 1066
+(Normanneneinfall) ist ein lokaler BRUCH ohne kontinentaleuropäisches
+Äquivalent. Die karolingische Renaissance um 800 ist ein Strukturmoment
+für Westeuropa, ohne direkte Bedeutung für Byzanz. Achse 7 kartiert
+das Gemeinsame; Abschnitt 4 hält die Differenzen fest.
 
 ---
 
-### Phase 1 — Frühphase: Entstehung des Ständerbaus (ca. 1150–1300)
+## 2. Die Epochenphasen
 
-#### Der entscheidende Schritt
+### Phase 0 — Spätantike und Frühmittelalter (ca. 500–950)
+
+*Hintergrundphase. Nicht BVILLAGE-Domain, aber Kontext für alles Folgende.*
+
+#### Das Ende der antiken Bauordnung
+
+Der Zusammenbruch des Weströmischen Reichs (476) ist kein Ereignis,
+sondern ein Prozess, der sich über Jahrhunderte erstreckt. Für das Bauen
+bedeutet er: der Verlust der antiken Wissensinfrastruktur — Architekturschulen,
+Lehrtradition der Vitruv-Nachfolge, staatliche Bauprogramme, professionelle
+Bauorganisation. [MITTEL — Ward-Perkins 2005; Wickham 2009]
+
+Nicht alles geht verloren. Der Steinbau in Italien, Südfrankreich und der
+Iberischen Halbinsel persistiert, getragen von der Kirche. Klöster werden
+im 6.–8. Jahrhundert zu den wichtigsten Bauhütten Westeuropas — sie
+bewahren antike Messtechniken, Mörtelmischungen, Gewölbewissen.
+[MITTEL — Horn/Born 1979]
+
+Im Norden und Osten dominiert der Holzbau. Germanische Hallenhäuser,
+skandinavische Langhäuser, angelsächsische *halls* — alle in Pfostenbauweise.
+Kein Mehrgeschossbau möglich, Lebensdauer 30–80 Jahre.
+[HART — Beresford/Hurst 1990; Zimmermann 1998]
+
+#### Das byzantinische Kontinuum
+
+Byzanz ist in dieser Phase kein Übergang, sondern ein Kontinuum. Die
+oströmische Tradition bricht nicht ab. Konstantinopel bleibt bis ins
+13. Jahrhundert die größte Stadt Europas. Hagia Sophia (532–537) ist der
+technologische Höhepunkt der Epoche — Pendentifkuppel über einem Quadrat,
+bis dahin ohne Präzedenz. [HART — Krautheimer 1986; Mainstone 1988]
+
+Byzantinische Baupraxis: kaiserlicher Auftrag, professionelle Architekten
+(*mechanikoi*), keine Zünfte im westeuropäischen Sinne. Wissenstransfer
+über kaiserliche Werkstätten. [MITTEL — Mango 1976]
+
+#### Die karolingische Renaissance (ca. 750–900)
+
+Karl der Große versucht eine bewusste Restituierung antiker Baukenntnisse.
+Die Pfalzkapelle Aachen (792–805) kopiert explizit San Vitale in Ravenna —
+einschließlich der Spolien (antike Säulen, direkt aus Italien importiert).
+[HART — bauarchäologisch; Binding 1996]
+
+Die karolingische Renaissance betrifft eine Handvoll Großbauten, hat aber
+strukturelle Wirkung: Klosterschulen (Tours, Fulda, St. Gallen) werden
+zu Knoten einer emergierenden Wissensinfrastruktur. Der St.-Galler
+Klosterplan (820) ist das erste erhaltene maßstäbliche
+Bauplanungsdokument Westeuropas. [HART — Horn/Born 1979]
+
+#### Islamische Baukulturen als Kontaktzone
+
+Ab dem 7. Jahrhundert verändert der islamische Aufstieg die Kontaktzonen
+Europas. Die Iberische Halbinsel (ab 711 arabisch) und Sizilien
+(ab 827 arabisch) werden zu Transferräumen: arabische Geometrie,
+Bogentechnik, Gipsstuck-Tradition fließen in die europäischen Grenzregionen.
+[MITTEL — Dodds 1990; Bloom/Blair 2009]
+
+Al-Andalus produziert in dieser Phase die architektonisch ausgefeiltesten
+Bauten der westlichen Hemisphäre — Mezquita Córdoba (784ff.), Medina
+Azahara (936ff.). [HART für Bestand; MITTEL für Transferrichtung]
+
+#### BVILLAGE-Status
+
+Vorläuferphase. Kein Planer vorgesehen. Relevant als:
+- Ausgangszustand für Parameterinitialisierung der Frühphase
+- Quelle der Wissensinfrastruktur (Klosterschulen) für Phase 1
+- Byzantinisches Referenzmodell für orthodoxe Baukulturen
+
+---
+
+### Phase 1 — Hochmittelalter: Entstehung (ca. 950–1150)
+
+#### Bevölkerungswachstum als Bautreiber
+
+Die Bevölkerung Westeuropas verdoppelt sich zwischen 950 und 1300 annähernd —
+von ca. 25 auf ca. 55–60 Millionen. [MITTEL — Russell 1958; McEvedy/Jones 1978]
+Dieser Druck erzeugt Bautätigkeit in einem Ausmaß, das in den Jahrhunderten
+davor undenkbar war: neue Städte, Rodung, Kirchenneubau im Massenprogramm.
+
+Romanischer Kirchenbau ist das Leitprogramm der Phase. In Frankreich,
+Deutschland, England, Spanien und Italien entstehen innerhalb von zwei
+Jahrhunderten Tausende von Kirchen — regional sehr verschieden: normannische
+Schwere (England, Sizilien), rheinische Eleganz (Speyer, Worms, Mainz),
+burgundische Klarheit (Cluny). [MITTEL — Conant 1959]
+
+#### Der entscheidende Schritt im Holzbau
 
 Der Ständer verlässt die Erde. Er steht auf Stein oder auf einer Schwelle.
 Diese minimale Verschiebung hat maximale Konsequenz: keine Bodenfäulnis,
 Mehrgeschossbau möglich, Verbindungen statt Einbettung als Stabilitätsprinzip.
 [MITTEL — Zimmermann 1998]
 
-Dendrochronologisch fassbar: Die ältesten erhaltenen deutschen Fachwerkhäuser
-datieren auf 1262/63 (Heugasse 3, Esslingen) und 1266/67 (Webergasse 8,
-Esslingen). In Limburg an der Lahn sind sechs Häuser aus 1289–1296 bekannt.
-[HART — dendrochronologisch: Großmann 2009; Eißing/Furrer 2023]
+Für England früher fassbar als auf dem Kontinent: Cressing Temple Barns,
+Essex — Barley Barn 1205–1235, Wheat Barn 1257–1280.
+[HART — dendrochronologisch: Hewett; VAG]
 
-Für England früher: Cressing Temple Barns, Essex — Barley Barn 1205–1235,
-Wheat Barn 1257–1280. [HART — dendrochronologisch: Cecil Hewett; VAG]
+Auf dem Kontinent: Die ältesten erhaltenen deutschen Fachwerkhäuser datieren
+auf 1262/63 (Heugasse 3, Esslingen) und 1266/67 (Webergasse 8, Esslingen).
+[HART — Großmann 2009; Eißing/Furrer 2023]
 
-#### Konstruktiver Charakter der Phase
+England vollzieht den Schritt vom Pfostenbau zum Ständerbau ca. 50–80
+Jahre früher als Deutschland. [MITTEL]
 
-- Ständerbau: Ständer laufen von Schwelle bis Traufrähm durch, über
-  alle Geschosse. [HART — Klein 2012]
-- Kein Schmuck. Keine Bemalung. Konstruktion pur.
-- Massive Querschnitte: Unsicherheit über Materialverhalten erzeugt
-  Überdimensionierung. [MITTEL — Eißing/Furrer 2023]
-- Klein (2012) belegt für den Grabungsbefund Romrod (Hessen, ca. 1170/80):
-  Blockbau, Rahmenbau und Ständerbau kommen nebeneinander vor.
-  Domänenreinheit ist eine spätere Entwicklung. [HART — Klein 2012]
-
-#### Gleichzeitigkeit: Romanik als Lernprozess
+#### Romanik als Lernprozess
 
 Frühe romanische Gewölbe kollabierten häufig. Die Reaktion war empirisch:
 dickere Wände, kleinere Fenster. Romanische Schwere ist materialisierter
 Sicherheitspuffer, kein Stilmittel. [MITTEL — Binding 1993; Fitchen 1961]
 
-Ab ca. 1150: permanente Bauhütten an großen Baustellen — Werkstatt, Schule,
-Archiv. Wissenstransfer beginnt sich zu institutionalisieren.
+Ab ca. 1050 entstehen permanente Bauhütten an großen Baustellen —
+Werkstatt, Schule, Archiv. Wissenstransfer beginnt sich zu institutionalisieren.
 [MITTEL — Recht 1989; Binding 1993]
+
+#### Normannische Synthese (England, Sizilien)
+
+Der Normanneneinfall in England (1066) ist für die englische Baugeschichte
+ein scharfer lokaler Bruch. Die Normannen bringen kontinentale Steinkauarchitektur
+mit — massive Kathedralen und Burgen ersetzen angelsächsische Holzbauten.
+Das englische Steinbauhandwerk entwickelt sich in der Folge schneller
+als das kontinentale, weil der normannische Adel Steinbau als
+Machtdemonstration einsetzt. [HART — Brown 1984]
+
+In Sizilien entsteht unter normannischer Herrschaft (ab 1061) eine
+einzigartige Synthese: arabische Geomerien, byzantinische Mosaike und
+normannische Raumstruktur verbinden sich in Bauten wie der Cappella
+Palatina in Palermo (1143). [HART für Bestand; MITTEL für Synthese-Deutung]
+
+#### Reconquista und islamischer Transfer (Iberische Halbinsel)
+
+In der Iberischen Halbinsel läuft die Reconquista — die sukzessive
+christliche Rückeroberung maurischer Territorien. Maurische Handwerker
+(Mudéjares) bauen für christliche Auftraggeber weiter in maurischer Technik.
+Der Mudéjar-Stil — islamische Geometrie und Ornamentik in christlichem
+Kontext — ist das Ergebnis. Er persistiert bis ins 16. Jahrhundert.
+[MITTEL — Dodds 1990]
 
 #### BVILLAGE-Parameter dieser Phase
 
-| Parameter | Wert | Evidenz |
-|---|---|---|
-| `construction_system` | Ständerbau, Pfostenbau koexistierend | HART |
-| `post_height_mode` | durchgehend (geschossübergreifend) | HART |
-| `ornament_level` | 0 — keine Ornamentik | HART |
-| `infill_type` | Flechtwerk + Lehmbewurf dominant | MITTEL |
-| `section_overdimension` | 1.5–2.0× (hoher Sicherheitspuffer) | MITTEL |
-| `knowledge_tier` | rural vernacular / frühe Zunftansätze | MITTEL |
+| Parameter | Wert | Region | Evidenz |
+|---|---|---|---|
+| `construction_system` | Pfostenbau → Ständerbau | Nordwesteuropa | MITTEL |
+| `construction_system` | Steinbau dominant | Südeuropa, Kirchenbauten | HART |
+| `ornament_level` | 0 | Holzbau | HART |
+| `ornament_level` | 1–3 | Kirchensteinbau | MITTEL |
+| `section_overdimension` | 1.5–2.0× | Holzbau | MITTEL |
+| `knowledge_tier` | Klöster + frühe Zünfte | alle | MITTEL |
 
 ---
 
-### Phase 2 — Hochmittelalterliche Reife: Typenbildung (ca. 1300–1350)
+### Phase 2 — Hochmittelalter: Reife (ca. 1150–1300)
 
-#### Stabilisierung und Differenzierung
+#### Gotik als Wissensrevolution
 
-Die Ständerbaukonstruktion ist etabliert. Regionale Grammatiken beginnen
-sich herauszubilden: Das norddeutsche Hallenhaus nimmt seine kanonische
-dreischiffige Form an. Das mitteldeutsche Ernhaus differenziert sich.
-Der städtische Giebelständer entwickelt sich zur dominanten Stadtform
-auf schmalen Parzellen. [MITTEL — Großmann 2009; Stiewe 2007]
+Die Gotik ist nicht primär ein Stilwechsel, sondern eine konstruktive
+Revolution: Kreuzrippengewölbe, Spitzbogen und Strebewerk ermöglichen es,
+den Schub aus dem Gewölbe punktuell abzuleiten statt flächig in dicke Wände
+zu verteilen. Das Ergebnis: höhere, schlankere, hellere Räume.
+[HART — Fitchen 1961; Mark 1993]
 
-Der Übergang zum Stockwerksbau beginnt — regional unterschiedlich, im
-Süden früher als im Norden. Klein (2012) datiert den Prozess ins
-Spätmittelalter; bis ins 16. Jahrhundert wird das Gebindeprinzip
-beibehalten. [HART — Klein 2012]
+Frankreich ist das Ursprungsland. Saint-Denis (1135–1144) gilt als erstes
+gotisches Bauwerk. Chartres (1194ff.), Reims (1211ff.), Amiens (1220ff.)
+vollziehen die Entwicklung in drei Generationen. [HART — Binding 1996]
 
-Erste Vorkragungen erscheinen. Zunächst konstruktiv begründbar
-(mehr Wohnfläche), bald repräsentativ. [MITTEL — Großmann 2009]
+Die Bauhütten dieser Kathedralen sind supraregionale Netzwerke. Villard de
+Honnecourts Bauhüttenbuch (ca. 1230) dokumentiert Beobachtungen in Chartres,
+Reims, Laon, Lausanne — direktes Zeugnis des Transfernetzwerks.
+[HART — Hahnloser 1972]
 
-Erste einfache Schmuckelemente: Knaggen, Profilierungen, Ziegelinfill
-in Norddeutschland häufiger. [MITTEL — Stiewe 2007]
+#### Regionale Differenzierung der Gotik
 
-Wassersägemühlen ab ca. 13.–14. Jahrhundert regional verfügbar —
-standardisiertere Querschnitte, höheres Volumen, aber strukturell
-schwächeres Holz (Schnitt quer zur Faser). Kompensiert durch leichte
-Überdimensionierung. [MITTEL — Eißing/Furrer 2023]
+Frankreich als Ursprung, England als erste Empfängerregion mit eigenständiger
+Weiterentwicklung (Early English, Decorated, Perpendicular). Deutschland
+adaptiert mit starkem lokalen Beitrag (Hallenkirche als Alternative zum
+Querschiff). Italien nimmt die Gotik als importiertes System auf — die
+toskanischen Stadtstaaten zeigen eine hybride Form, in der romanische
+Tradition und gotische Struktur koexistieren. [MITTEL — Bony 1983; Crossley 1988]
+
+Skandinavien übernimmt Gotik über norddeutsche und englische Vermittlung
+mit erheblicher zeitlicher Verzögerung (50–100 Jahre) und starker lokaler
+Adaption. Backsteinbau (Ziegelgotik) analog zur norddeutschen Tradition.
+[MITTEL — Andersson 1991]
+
+#### Städtewachstum und Holzbau
+
+Die Stadtgründungswelle des 12.–13. Jahrhunderts erzeugt einen Bauboom.
+Neue Städte brauchen Bürgerhäuser — schnell, aus lokalem Material.
+Der Ständerbau etabliert sich als Standardlösung für den städtischen
+Wohnbau nördlich der Alpen. [MITTEL — Schock-Werner 1999]
+
+Klein (2012) belegt für den Grabungsbefund Romrod (Hessen, ca. 1170/80):
+Blockbau, Rahmenbau und Ständerbau kommen nebeneinander vor.
+Domänenreinheit ist eine spätere Entwicklung. [HART — Klein 2012]
+
+#### Byzantinische Entwicklung: Komnenen-Blüte und Lateinisches Intermezzo
+
+Byzanz erlebt unter den Komnenen (1081–1185) eine Glanzzeit.
+Der Vierte Kreuzzug (1204) durchbricht das: Konstantinopel wird von
+Kreuzfahrern besetzt; das Lateinische Kaiserreich besteht bis 1261.
+Eine Generation Unterbrechung der kaiserlichen Bauprogramme,
+Verlust von Werkzeug und Werkstätten. [HART — Harris 2003]
 
 #### BVILLAGE-Parameter dieser Phase
 
-| Parameter | Wert | Evidenz |
-|---|---|---|
-| `construction_system` | Ständerbau dominant, Stockwerksbau beginnend | HART |
-| `ornament_level` | 1 — einfach (Profilierung, Knaggen) | MITTEL |
-| `infill_type` | Lehm + zunehmend Ziegel (regional) | MITTEL |
-| `jetty_allowed` | ja, einfach | MITTEL |
-| `section_overdimension` | 1.3–1.6× | MITTEL |
-| `knowledge_tier` | städtische Zünfte etabliert | MITTEL |
+| Parameter | Wert | Region | Evidenz |
+|---|---|---|---|
+| `construction_system` | Ständerbau etabliert | Nordwesteuropa | HART |
+| `construction_system` | Gotischer Steinbau | überall für Kirchen | HART |
+| `ornament_level` | 0 | städtischer Holzbau | HART |
+| `ornament_level` | 3–5 | Kirchensteinbau | HART |
+| `section_overdimension` | 1.4–1.8× | Holzbau | MITTEL |
+| `knowledge_tier` | Zunft entstehend (N), Bauhütte aktiv | regional | MITTEL |
+
+---
+
+### Phase 3 — Hochmittelalterliche Typenbildung (ca. 1300–1347)
+
+#### Stabilisierung und regionale Differenzierung
+
+Die Ständerbaukonstruktion ist etabliert. Regionale Grammatiken
+kristallisieren sich: Das norddeutsche Hallenhaus nimmt seine kanonische
+dreischiffige Form an. Das mitteldeutsche Ernhaus differenziert sich.
+In England kristallisieren sich *cruck frame* und *box frame* als die
+beiden Hauptsysteme heraus. [MITTEL — Großmann 2009; Stiewe 2007; Alcock 1981]
+
+In Frankreich entwickelt sich das *pan de bois* als Standardsystem für
+den städtischen Bürgerhausbau — strukturell dem deutschen Fachwerk verwandt,
+aber in Ornamentik und Gefügegeometrie eigenständig. Normandie und Elsass
+sind die Kernregionen. [MITTEL — Chapelot/Fossier 1985]
+
+#### Vorkrisensignale: Agrarkrise und Kleine Eiszeit
+
+Die Phase endet nicht ruhig. Ab ca. 1315 trifft die Große Hungersnot
+(1315–1322) weite Teile Nordwesteuropas — ausgelöst durch eine Serie
+nasser, kalter Sommer, die den Beginn der Kleinen Eiszeit markieren.
+Das ist kein Baubruch — aber eine demographische und ökonomische
+Schwächung, die die Gesellschaft geschwächt in die Pest von 1347 führt.
+[HART — Jordan 1996]
+
+Gleichzeitig: Erste einfache Schmuckelemente im Holzbau — Knaggen,
+Profilierungen, Ziegelinfill in Norddeutschland häufiger. Erste
+Vorkragungen erscheinen. [MITTEL — Stiewe 2007; Großmann 2009]
+
+#### BVILLAGE-Parameter dieser Phase
+
+| Parameter | Wert | Region | Evidenz |
+|---|---|---|---|
+| `construction_system` | Ständerbau dominant | Nordwesteuropa | HART |
+| `construction_system` | Stockwerksbau beginnend | Süddeutschland | MITTEL |
+| `ornament_level` | 1 — einfach (Profilierung, Knaggen) | Städte | MITTEL |
+| `infill_type` | Lehm + zunehmend Ziegel (regional) | HRR | MITTEL |
+| `jetty_allowed` | ja, einfach | Städte | MITTEL |
+| `section_overdimension` | 1.3–1.6× | Holzbau | MITTEL |
+| `knowledge_tier` | städtische Zünfte etabliert | Nordwesteuropa | MITTEL |
 
 ---
 
@@ -191,8 +384,10 @@ Die Pest erreicht Westeuropa 1347 über sizilianische Häfen. Bis 1353
 ist sie durch den Kontinent gezogen. Sterblichkeit: 30–60 % der Bevölkerung.
 [MITTEL — Benedictow 2004 für obere Grenze; breite Debatte]
 
-Für Deutschland und die deutschsprachigen Gebiete gilt eine Sterblichkeit
-von ca. 25–40 % als Konsens. [MITTEL — Herlihy 1997; Ziegler 1969]
+England: 40–50 % (besser dokumentiert, da Kirchenregister erhalten).
+Frankreich: 30–50 %. Italiens Städte: bis zu 60 % lokal (Florenz, Siena).
+HRR: 25–40 %. Byzanz und der Balkan: früh betroffen — die Pest kommt
+von Caffa (Krim) über Konstantinopel. [MITTEL — Herlihy 1997; Benedictow 2004]
 
 Rückfälle: 1360–1363, 1374, 1400, 1438, weitere bis ins 16. Jahrhundert.
 Die Pest ist kein einmaliges Ereignis — sie ist ein demographisches Regime,
@@ -214,93 +409,123 @@ Häufung von Bauakten aus den 1360er–1390er Jahren.
 Rationalisierung. Das beschleunigt die Verbreitung von Vorfertigung
 (Abbund) und effizienter Konstruktionsgrammatik. [MITTEL — Epstein 1998]
 
+**Regionaler Sonderfall Italien**: Florenz verliert ca. 50–60 %
+der Bevölkerung. Die institutionalisierte Dombauhütte läuft weiter —
+Kontinuität trotz hohem Personalverlust, weil die Institution die Personen
+übersteht. [MITTEL — Goldthwaite 1980]
+
+**Byzantinischer Sonderfall**: Byzanz ist bereits strukturell geschwächt
+(osmanischer Druck, territoriale Verluste). Der Wiederaufbaueffekt bleibt
+schwächer als in Westeuropa. [MITTEL — Nicol 1993]
+
+→ Wissensinfrastruktur-Konsequenzen: [MEDIEVAL_05, Phase 3](MEDIEVAL_05_KNOWLEDGE_CRAFT.md#phase-3-pestschock-und-nachwirkung-1347ca-1430)
+
 **Wichtig für BVILLAGE**: Die Pest ist kein `StylePolicy`-Gradient. Sie ist
 ein Unstetigkeitspunkt. Parameter, die 1346 galten, gelten 1355 nicht mehr —
-nicht weil sich Technik entwickelt hat, sondern weil die soziale Trägermasse
-zusammengebrochen ist und neu aufgebaut wird.
+nicht wegen technischer Entwicklung, sondern wegen demographischer und
+ökonomischer Disruption.
 
 ---
 
-### Phase 3 — Spätmittelalterliche Blüte: Stockwerksbau und Ornament (ca. 1360–1520)
+### Phase 4 — Spätmittelalterliche Blüte (ca. 1360–1500)
 
-#### Der Wiederaufbau als Innovationsschub
+#### Der Wiederaufbau als Innovationsschub (HRR)
 
 Die Jahrzehnte nach der Pest sind, paradoxerweise, eine Blütezeit des
-städtischen Bauens. Konzentriertes Kapital bei weniger Eigentümern,
-freie Bauplätze, erfahrene Handwerker mit höheren Löhnen — die Bedingungen
-für ambitioniertere Bauten sind günstig. [MITTEL — Boockmann 1987; Herlihy 1997]
+städtischen Bauens in Nordwesteuropa. Konzentriertes Kapital bei weniger
+Eigentümern, freie Bauplätze, erfahrene Handwerker mit höheren Löhnen.
+[MITTEL — Boockmann 1987; Herlihy 1997]
 
-#### Stockwerksbau setzt sich durch
+#### Stockwerksbau setzt sich durch (Nordwesteuropa)
 
 Jedes Stockwerk als eigenständige Rahmenkonstruktion — Schwelle, Ständer,
 Rähm — wird zur dominanten Bauweise. Kurze Hölzer genügen; das erleichtert
-Beschaffung in zunehmend entwaldetem Stadtumland. Mehrgeschossige Gebäude
-(4–8 Stockwerke) werden problemlos möglich. [HART — Klein 2012]
+Beschaffung in zunehmendem entwaldeten Stadtumland. Mehrgeschossige Gebäude
+(4–8 Stockwerke) werden möglich. [HART — Klein 2012]
 
 Vorkragungen nehmen zu: jedes Stockwerk leicht nach vorn auskragend,
-Flächengewinn im Obergeschoss. Großmann (2009) und Stiewe (2007)
-dokumentieren dies als etablierte Praxis ab dem 15. Jahrhundert.
+Flächengewinn im Obergeschoss. Ab dem 15. Jahrhundert etablierte Praxis.
 [MITTEL — Großmann 2009; Stiewe 2007]
 
-#### Das ornamentale Zeitalter
+#### Das ornamentale Zeitalter (HRR)
 
 Das 15. und frühe 16. Jahrhundert ist die Hochphase der Fachwerkornamentik.
-Andreaskreuze, Fächerrosetten, Treppenfriese, Kettenbänder, Heiligenfiguren
-an Knaggen — das Fachwerk dieses Jahrhunderts ist Ausdrucksmittel für
+Andreaskreuze, Fächerrosetten, Treppenfriese — Ausdrucksmittel für
 Reichtum, Zunftzugehörigkeit und Repräsentation.
-[MITTEL — Großmann 2009; Kaspar 1986]
+Kanonische Beispiele: Knochenhaueramtshaus Hildesheim (1529), Hoppener
+Haus Celle (1532). [HART — dendrochronologisch oder urkundlich datiert]
 
-In Franken — dem mitteldeutschen Fachwerk — erreicht die Ornamentik ihren
-Höhepunkt. In Braunschweig, Hildesheim, Wernigerode entstehen die
-prachtvollsten erhaltenen Bürgerhäuser. [HART für Bestand; MITTEL für Deutung]
+#### England: Perpendicular und *great rebuilding*
 
-Kanonische Beispiele: Hoppener Haus, Celle (1532); Baumannsches Haus,
-Eppingen (1582); Knochenhaueramtshaus, Hildesheim (1529).
-[HART — dendrochronologisch oder urkundlich datiert]
+Der Perpendicular-Stil (ca. 1350–1550) ist eine rein englische Schöpfung —
+strenge Vertikalität, große Fenster, flache Bögen. Kein kontinentales
+Äquivalent. [HART — Harvey 1978]
+
+Im ländlichen Holzbau beginnt in England ab ca. 1400 das *great rebuilding* —
+ein Modernisierungsschub, bei dem ältere Häuser durch solidere *box-frame*-
+Konstruktionen ersetzt werden. Dendrochronologisch gut dokumentiert.
+[HART — Machin 1977; Dyer 1989]
+
+#### Frankreich und Niederlande: Flamboyant und städtische Blüte
+
+Frankreich erholt sich nach dem Hundertjährigen Krieg (1337–1453) langsamer.
+Flamboyante Gotik — der letzte, ornamental reichste Stil der französischen
+Gotik — datiert hauptsächlich in diese Phase. [MITTEL — Bony 1983]
+
+Die Niederlande und Flandern entwickeln eine städtische Baukultur von hoher
+Eigenständigkeit. Das flämische *vakwerkbouw* und die Backsteinarchitektur
+der Hansestädte sind die Leitformen. Antwerpens Aufstieg als
+Handelsmetropole (ab ca. 1450) erzeugt einen Bauboom mit europäischer
+Ausstrahlung. [MITTEL — Meischke 1988]
+
+#### Byzanz: Palaiologen-Renaissance und Fall
+
+Die Palaiologen-Dynastie (1261–1453) erneuert Konstantinopel nach der
+lateinischen Besatzung. Eine letzte künstlerische Blüte entsteht in einer
+politisch eingeengten Gesellschaft. 1453 fällt Konstantinopel an die Osmanen.
+Der Fall ist für Byzanz das Ende, nicht ein Bruch. Für Westeuropa ist er
+eine Erschütterung und ein Wissenstransfer-Ereignis: griechische Gelehrte
+fliehen nach Italien und tragen zur Renaissance bei. [HART — Nicol 1993]
 
 #### BVILLAGE-Parameter dieser Phase
 
-| Parameter | Wert | Evidenz |
-|---|---|---|
-| `construction_system` | Stockwerksbau dominant | HART |
-| `post_height_mode` | geschossweise | HART |
-| `ornament_level` | 2–4 (regional sehr unterschiedlich) | MITTEL |
-| `jetty_allowed` | ja, mehrfach | MITTEL |
-| `jetty_depth_m` | 0.3–0.8 (bis 1.0 in Extremfällen) | MITTEL |
-| `infill_type` | Ziegel zunehend dominant (Nord), Lehm (Mitte/Süd) | MITTEL |
-| `section_overdimension` | 1.2–1.4× | MITTEL |
-| `knowledge_tier` | städtische Zünfte vollentwickelt | MITTEL |
-| `storey_count_max` | 7–8 (Patrizier), 2–4 (Handwerker) | MITTEL |
+| Parameter | Wert | Region | Evidenz |
+|---|---|---|---|
+| `construction_system` | Stockwerksbau dominant | HRR, England, NL | HART |
+| `ornament_level` | 2–4 (regional sehr unterschiedlich) | HRR | MITTEL |
+| `ornament_level` | 1–2 | England, Frankreich | MITTEL |
+| `jetty_allowed` | ja, mehrfach | Städte NW-Europa | MITTEL |
+| `infill_type` | Ziegel zunehmend (N), Lehm (Mitte/S) | HRR | MITTEL |
+| `section_overdimension` | 1.2–1.4× | Holzbau | MITTEL |
+| `knowledge_tier` | städtische Zünfte vollentwickelt | NW-Europa | MITTEL |
 
 ---
 
 ### BRUCH 2 — Holzmangel und Bauordnungen (ca. 1400–1520, regional gestaffelt)
 
 Kein einzelnes Ereignis — ein schleichender Strukturwandel, der in manchen
-Städten früher, in anderen später zur Krise wird. Aber er ist real und
+Städten früher, in anderen später zur Krise wird. Real und
 dendrochronologisch nachweisbar als Veränderung der verwendeten Holzarten
 und Querschnitte.
 
 #### Holzmangel
 
-Städtische Wachstumsdruck entwaldet das Umland. Lange, gerade Stämme
+Städtischer Wachstumsdruck entwaldet das Umland. Lange, gerade Stämme
 für den Ständerbau werden knapper und teurer. Das beschleunigt den
 Übergang zum Stockwerksbau (kürzere Ständer) und erhöht den Anteil
 importierten Holzes. [HART — Eißing/Furrer 2023; Marstaller 2012]
 
-Eißing (2023) belegt Holztransporte über weite Distanzen auf Wasserläufen
-als normale Praxis — Gebäudestandort und Waldstandort divergieren
-zunehmend. [HART]
+In England belegen Rechnungsunterlagen Importe von Eichenholz aus der
+Normandie und dem Baltikum. [HART — Salzman 1952]
 
 #### Städtische Bauordnungen
 
-Als Reaktion auf verheerende Stadtbrände — Lübeck 1251, Wien 1258,
-und zahllose kleinere im 14.–15. Jahrhundert — erlassen Städte
-Bauordnungen: Mindestabstände, Verbote für Strohdeckungen,
-Vorkragungsbeschränkungen. [MITTEL — Stiewe 2007; Boockmann 1987]
+Als Reaktion auf verheerende Stadtbrände erlassen Städte Bauordnungen:
+Mindestabstände, Verbote für Strohdeckungen, Vorkragungsbeschränkungen.
 
-Diese Normen variieren stark zwischen Städten und entwickeln sich
-langsam. Sie sind kein uniformer Bruch, sondern lokale Diskontinuitäten.
+England ist früher als das HRR: London reagiert nach Großbränden (1087,
+1135, 1212) mit Bauordnungen, die Steinbau an Grundstücksgrenzen
+vorschreiben. [HART — Salzman 1952]
 
 **BVILLAGE-Implikation**: `ConstraintsPolicy` für städtische Kontexte
 muss lokale Bauordnungen als Hard-Constraints abbilden können — mit
@@ -308,104 +533,143 @@ spatiotemporaler Gültigkeit, nicht als universelle Regel.
 
 ---
 
-### Phase 4 — Renaissance und Frühbarock: Technisches Fachwerk (ca. 1520–1618)
+### Phase 5 — Übergang: Renaissance und Reformation (ca. 1500–1618)
 
-#### Standardisierung und Rationalisierung
+#### Renaissance: Konstruktionssystem oder Ornament?
 
-Die ornamentale Hochphase klingt ab. An ihre Stelle tritt ein technischeres
-Fachwerk: regelmäßigere Ständerabstände, klare Raster, reduzierte aber
-präzisere Ornamentik. Die Wassersägemühle hat sich durchgesetzt —
-Querschnitte werden normierter. [MITTEL — Eißing/Furrer 2023; Klein 2012]
+Die Renaissance beginnt in den italienischen Stadtstaaten des 14.–15.
+Jahrhunderts. In Italien selbst ist sie primär ein Steinbauphänomen:
+Brunelleschi, Alberti, Palladio entwickeln eine Architekturtheorie,
+die erstmals seit der Antike wieder in Traktaten kodifiziert wird.
+[HART — Wittkower 1971]
 
-Renaissance-Einflüsse erreichen das Fachwerk über Ornamentmotive
-(Pilaster, Medaillons, antikisierende Friese), weniger über Konstruktion.
-Das Baumansche Haus in Eppingen (1582) zeigt diese Verbindung.
+Nördlich der Alpen kommt die Renaissance als Ornamentmotiv, nicht als
+Konstruktionssystem: Pilaster, Medaillons, antikisierende Friese erscheinen
+auf Fachwerkhäusern, ohne deren Struktur zu verändern.
 [MITTEL — Großmann 2009]
 
-In der Schweiz: das Riegelhaus als schlichtes, konstruktionsbetontes
-Fachwerk setzt sich durch. Ornament tritt zurück, Präzision wächst.
-[MITTEL — Eißing/Furrer 2023]
+Frankreich adaptiert die Renaissance früher als Deutschland — direkter
+Kontakt über Feldzüge Karls VIII. und Franz I. nach Italien.
+Châteaux de la Loire (1490–1560) sind das früheste nordfranzösische
+Renaissancekorpus. [HART — Babelon 1989]
+
+#### Standardisierung und Rationalisierung (HRR)
+
+Die ornamentale Hochphase klingt ab. An ihre Stelle tritt ein technischeres
+Fachwerk: regelmäßigere Ständerabstände, klare Raster, reduzierte
+Ornamentik. Die Wassersägemühle hat sich durchgesetzt — Querschnitte
+werden normierter. In der Schweiz setzt sich das Riegelhaus durch:
+Ornament tritt zurück, Präzision wächst. [MITTEL — Eißing/Furrer 2023]
+
+#### Reformation als Baubruch: nur im protestantischen Raum
+
+Die Reformation (ab 1517) ist für das Bauen ein asymmetrischer Bruch.
+Sie betrifft den Kirchenbau massiv — und nur dort, und nur im
+protestantischen Einflussbereich. Für den Profanholzbau ist sie kein Bruch.
+
+Im protestantischen Raum: Klöster werden säkularisiert, Kathedralbauprogramme
+verlieren ihre institutionelle Grundlage. Die Bauhütte verliert ihren
+Auftraggeber. [MITTEL — Prak 2011]
+
+Im katholischen Raum (Bayern, Österreich, Spanien, Italien, Frankreich):
+kein Bruch. Kirchenbau läuft weiter, Bauhütten bleiben aktiv.
+
+**BVILLAGE-Implikation**: Die Reformation erfordert eine `religion_context`-
+Dimension in der `CulturePolicy` — als institutionellen Rahmenparameter
+für Bauhüttenexistenz und Kirchenbaukapazität, nicht als Stilparameter.
+Ausprägungen mindestens: `catholic`, `lutheran`, `reformed`, `anglican`.
+
+#### England: Tudors und *great rebuilding* II
+
+England unter den Tudors (1485–1603) erlebt eine zweite Phase des *great
+rebuilding*. Wohlstand aus Wollhandel fließt in Landhausbau. Das *country
+house* — das englische Landhaus — entwickelt sich als Typus. Die englische
+Architektur dieser Phase zeigt eine eigenständige Mischung: Gotische
+Struktur, flämische und italienische Ornamentmotive, einheimische
+Holzbautradition. [MITTEL — Girouard 1978]
 
 #### BVILLAGE-Parameter dieser Phase
 
-| Parameter | Wert | Evidenz |
-|---|---|---|
-| `construction_system` | Stockwerksbau, vollständig standardisiert | HART |
-| `ornament_level` | 1–3 (reduziert, aber präziser) | MITTEL |
-| `section_variation` | geringer (Säge normiert Querschnitte) | MITTEL |
-| `knowledge_tier` | Zunftsystem vollentwickelt, erste Regelwerke | MITTEL |
+| Parameter | Wert | Region | Evidenz |
+|---|---|---|---|
+| `construction_system` | Stockwerksbau, standardisiert | HRR, England | HART |
+| `ornament_level` | 1–3 (reduziert, aber präziser) | HRR | MITTEL |
+| `ornament_level` | 1–2 | England | MITTEL |
+| `section_variation` | geringer (Säge normiert Querschnitte) | NW-Europa | MITTEL |
+| `church_building_active` | ja / nein nach Konfession | regional | MITTEL |
+| `knowledge_tier` | Zunftsystem vollentwickelt | NW-Europa | MITTEL |
 
 ---
 
 ### BRUCH 3 — Der Dreißigjährige Krieg (1618–1648)
 
 Der schwerste politische Schock der frühen Neuzeit in Mitteleuropa.
-Für die Baugeschichte ist er der zweite große Diskontinuitätspunkt
-nach der Pest — und in seinen Baukonsequenzen präzise dokumentiert.
+Für die Baugeschichte der zweite große Diskontinuitätspunkt nach der Pest.
+
+**Wichtig**: Der Dreißigjährige Krieg ist ein HRR-selektiver Schock.
+England, Skandinavien (Heimatgebiet), Niederlande, Iberische Halbinsel,
+Italien sind nicht oder nur randlich betroffen. Außerhalb des HRR kein
+Sprung im Parameterraum.
 
 #### Was geschah
 
-Flächendeckende Kriegszüge, systematische Brandschatzung, Seuchenzüge
-in der Folge. Bevölkerungsverluste in Deutschland: regional 20–60 %.
-Manche Landstriche verloren mehr als die Hälfte ihrer Einwohner.
-[MITTEL — Brzezinski 2001; Parker 1984]
-
-Für Württemberg sind 57 % Bevölkerungsverlust belegt. Für Pommern,
-Mecklenburg, Teile Thüringens ähnliche Größenordnungen.
-[MITTEL — Wilson 2009]
+Flächendeckende Kriegszüge, systematische Brandschatzung, Seuchenzüge.
+Bevölkerungsverluste in Deutschland: regional 20–60 %.
+Für Württemberg sind 57 % Bevölkerungsverlust belegt. [MITTEL — Wilson 2009]
 
 #### Bauliche Konsequenzen
 
-**Direkte Zerstörung**: Viele Städte brennen vollständig nieder —
-Magdeburg 1631 (nahezu vollständige Vernichtung), Heidelberg, zahlreiche
-kleinere Orte. [HART — historisch dokumentiert]
+**Direkte Zerstörung**: Magdeburg 1631 (nahezu vollständige Vernichtung),
+Heidelberg, zahlreiche kleinere Orte. [HART — historisch dokumentiert]
 
 **Ressourcenknappheit**: Holz knapper, Kapital vernichtet, Arbeitskraft
-dezimiert. Das Fachwerk reagiert sichtbar: Querschnitte werden schlanker,
-Ständerabstände größer, Ornamentik massiv reduziert.
-[MITTEL — Stiewe 2007; Großmann 2009]
+dezimiert. Querschnitte werden schlanker, Ständerabstände größer,
+Ornamentik massiv reduziert. [MITTEL — Stiewe 2007]
 
-**Wiederaufbau unter anderen Bedingungen**: Nach 1648 entsteht vieles
-neu — aber rationaler, schlichter. Das Rasterfachwerk des späten
-17. Jahrhunderts ist Effizienzfachwerk. [MITTEL — Stiewe 2007]
+**Wiederaufbau**: Nach 1648 rationaler, schlichter. Das Rasterfachwerk
+des späten 17. Jahrhunderts ist Effizienzfachwerk. [MITTEL — Stiewe 2007]
 
-**BVILLAGE-Implikation**: Der Dreißigjährige Krieg erzeugt zwei
-voneinander zu trennende Parameterzustände: Vorkrieg (Phase 4) und
-Nachkrieg (Phase 5) — mit einem expliziten Sprung, nicht einem Gradient.
-Regional variiert der Schock stark: Nordseeküste und Schweiz weniger
-betroffen; Mitteldeutschland am stärksten.
+**BVILLAGE-Implikation**: Vorkrieg (Phase 5) und Nachkrieg (Phase 6) —
+expliziter Sprung, nicht Gradient. Regional variiert der Schock stark:
+Nordseeküste und Schweiz kaum betroffen; Mitteldeutschland am stärksten.
 
 ---
 
-### Phase 5 — Wiederaufbau und Rationalfachwerk (ca. 1650–1750)
+### Phase 6 — Frühe Neuzeit: Rationalfachwerk (ca. 1650–1750)
 
-#### Schlankeres Bauen
+#### Schlankeres Bauen (HRR)
 
 Die Konstruktion bleibt dieselbe. Aber das System wirtschaftet mit weniger
-Material. Querschnitte schlanker. Ständerabstände größer. Keine aufwendigen
-Schnitzereiarbeiten. Das Fachwerk wird zum Zweckbau.
-[MITTEL — Stiewe 2007; Großmann 2009]
+Material: Querschnitte schlanker, Ständerabstände größer, keine aufwendigen
+Schnitzereien. Das technische Rasterfachwerk — regelmäßige Gefache,
+zurückliegende Ziegelausfachung — setzt sich in Südwestdeutschland und der
+Schweiz durch. [MITTEL — Stiewe 2007; Eißing/Furrer 2023]
 
-In manchen Regionen — besonders Südwestdeutschland, Schweiz — entsteht
-nach dem Krieg das technische Rasterfachwerk: regelmäßige Gefache,
-zurückliegende Sichtziegelausfachung, kein Schmuck. [MITTEL — Eißing/Furrer 2023]
+Das Verputzen der Außenwände breitet sich aus: Witterungsschutz und
+Statusanspruch (Putz wirkt wie Steinbau) gleichzeitig. [MITTEL — Stiewe 2007]
 
-#### Verputzen als Statusgeste
+#### Barock in Westeuropa: Kirche und Residenz
 
-Das Verputzen der Außenwände beginnt sich zu verbreiten — aus zwei
-unterschiedlichen Gründen gleichzeitig: Witterungsschutz für das
-geschädigte Gefüge und Statusanspruch (Putz wirkt wie Steinbau).
-[MITTEL — Stiewe 2007]
+Jenseits des HRR erlebt diese Phase eine andere Dynamik. Der Barock
+erreicht Frankreich unter Ludwig XIV. als Staatsstil: Versailles (1661–1710)
+prägt die europäische Residenzbaukultur für ein Jahrhundert.
+[HART — Berger 1985]
+
+In England ist die Phase durch den Wiederaufbau nach dem Großen Brand von
+London (1666) definiert: Christopher Wren baut 51 Kirchen sowie St. Paul's
+Cathedral. Die intensivste institutionalisierte Baukampagne der englischen
+Baugeschichte des 17. Jahrhunderts. [HART — Summerson 1953]
 
 #### BVILLAGE-Parameter dieser Phase
 
-| Parameter | Wert | Evidenz |
-|---|---|---|
-| `construction_system` | Stockwerksbau | HART |
-| `ornament_level` | 0–1 | MITTEL |
-| `section_overdimension` | 1.0–1.2× (Sparsamkeit) | MITTEL |
-| `facade_treatment` | zunehmend verputzt | MITTEL |
-| `infill_type` | Ziegel dominant | MITTEL |
+| Parameter | Wert | Region | Evidenz |
+|---|---|---|---|
+| `construction_system` | Stockwerksbau | HRR | HART |
+| `ornament_level` | 0–1 | HRR | MITTEL |
+| `section_overdimension` | 1.0–1.2× (Sparsamkeit) | HRR | MITTEL |
+| `facade_treatment` | zunehmend verputzt | HRR, Süddt. | MITTEL |
+| `infill_type` | Ziegel dominant | NW-Europa | MITTEL |
+| `architectural_style` | Barock | Frankreich, England, Spanien | HART |
 
 ---
 
@@ -415,8 +679,8 @@ Kein einzelnes Ereignis, sondern ein kultureller und technologischer
 Strukturwandel, der das Ende des historischen Fachwerkbaus herbeiführt.
 
 **Statuswandel**: Im 18. und 19. Jahrhundert gilt sichtbares Fachwerk
-als Zeichen von Armut und Rückständigkeit. Wer es sich leisten kann,
-verputzt oder baut in Stein. [MITTEL — Stiewe 2007]
+als Rückständigkeit. Wer es sich leisten kann, verputzt oder baut in Stein.
+[MITTEL — Stiewe 2007]
 
 **Brandschutzgesetzgebung**: Stadtbrände (Hamburg 1842 u. a.) erzwingen
 Verbote für Holzfassaden in Städten. [HART — gesetzlich dokumentiert]
@@ -431,28 +695,36 @@ obere Grenze der `epoch_band`-Parameter.
 
 ---
 
-## 3. Die Epochenmatrix: Schnellreferenz für Policy-Parameter
+## 3. Die Epochenmatrix: Schnellreferenz
+→ [↑ Epochenphasen](#2-die-epochenphasen) | [↓ Regionale Schichtung](#4-regionale-schichtung-der-zeitachse)
 
-Diese Matrix fasst die wichtigsten Parametersprünge zusammen. Sie ist
-keine vollständige Parametertabelle — die liegt in den Domain- und
-Policy-Dokumenten. Sie ist eine Navigationshilfe: Wo sind die
-Diskontinuitäten, die explizit modelliert werden müssen?
+### Gesamteuropäische Phasierungsmatrix
 
-| Epoche | Construction | Ornament | Infill | Section | Jetty | Trigger |
-|---|---|---|---|---|---|---|
-| ~1150–1300 | Ständer | 0 | Flechtwerk/Lehm | 1.5–2.0× | nein | — |
-| 1300–1347 | Ständer→Stockwerk | 1 | Lehm+Ziegel | 1.3–1.6× | einfach | Wachstum |
-| **BRUCH: PEST 1347** | | | | | | **−30–60% Bevölkerung** |
-| 1360–1520 | Stockwerk | 2–4 | Ziegel/Lehm | 1.2–1.4× | mehrfach | Wiederaufbau |
-| 1520–1618 | Stockwerk | 1–3 | Ziegel | norm. | mehrfach | Rationalisierung |
-| **BRUCH: 30J. KRIEG 1618** | | | | | | **−20–60% regional** |
-| 1650–1750 | Stockwerk | 0–1 | Ziegel | 1.0–1.2× | selten | Effizienz |
-| >1750 | Stockwerk (auslauf.) | Revival | Ziegel/Putz | dünn | — | Statuswandel |
+| Epoche | Leitform Steinbau | Leitform Holzbau | Hauptregion | Trigger |
+|---|---|---|---|---|
+| 500–950 | Klosterbau / Byzantinisch | Pfostenbau | alle | Transformation der Antike |
+| 950–1150 | Romanik entstehend | Ständerbau beginnend | W-Europa | Bevölkerungswachstum |
+| 1150–1300 | Gotik (Frankreich → N) | Ständerbau etabliert | W-Europa | Städtewachstum |
+| 1300–1347 | Spätgotik | Typenbildung, Ornament I | W-Europa | Reife |
+| **BRUCH: PEST 1347** | | | **alle** | **−30–60 % Bevölkerung** |
+| 1360–1500 | Flamboyant / Perpendicular | Stockwerksbau, Ornament II | W-Europa | Wiederaufbau |
+| 1500–1618 | Renaissance (S nach N) | Standardisierung | W-Europa | Rationalisierung |
+| **BRUCH: 30J. KRIEG 1618** | | | **HRR** | **−20–60 % regional** |
+| 1650–1750 | Barock | Rationalfachwerk | HRR / Frankreich | Effizienz / Hofstil |
+| >1750 | Klassizismus | Fachwerk auslaufend | — | Statuswandel |
 
-**Lesehinweis**: Die Brüche sind keine Parameterübergänge — sie sind
-Unstetigkeitsstellen. Ein Gebäude, das 1346 gebaut wurde, hat andere
-Parameter als eines, das 1355 gebaut wurde — nicht wegen technischer
-Entwicklung, sondern wegen demographischer und ökonomischer Disruption.
+### HRR-spezifische Holzbaumatrix
+
+| Epoche | Construction | Ornament | Infill | Section | Jetty |
+|---|---|---|---|---|---|
+| ~1150–1300 | Ständer | 0 | Flechtwerk/Lehm | 1.5–2.0× | nein |
+| 1300–1347 | Ständer→Stockwerk | 1 | Lehm+Ziegel | 1.3–1.6× | einfach |
+| **BRUCH: PEST 1347** | | | | | |
+| 1360–1520 | Stockwerk | 2–4 | Ziegel/Lehm | 1.2–1.4× | mehrfach |
+| 1520–1618 | Stockwerk | 1–3 | Ziegel | norm. | mehrfach |
+| **BRUCH: 30J. KRIEG 1618** | | | | | |
+| 1650–1750 | Stockwerk | 0–1 | Ziegel | 1.0–1.2× | selten |
+| >1750 | Stockwerk (auslauf.) | Revival | Ziegel/Putz | dünn | — |
 
 ---
 
@@ -461,46 +733,73 @@ Entwicklung, sondern wegen demographischer und ökonomischer Disruption.
 Die Epochenphasen verlaufen nicht uniform über Europa. Sie sind regional
 geshiftet. Das ist kein Makel der Datenbasis — es ist historische Realität.
 
-### Konstruktionssystemwechsel (Ständer → Stockwerk)
+### 4.1 Konstruktionssystemwechsel
 
-| Region | Beginn | Dominanz | Quelle |
+#### Holzbau: Pfostenbau → Ständerbau → Stockwerksbau
+
+| Region | Ständerbau Beginn | Stockwerksbau Beginn | Quelle |
 |---|---|---|---|
-| Süddeutschland (Esslingen, Ulm) | ~1300 | ~1400 | MITTEL — Klein 2012 |
-| Mitteldeutschland (Hessen, Thüringen) | ~1350 | ~1450 | MITTEL |
-| Norddeutschland (Städte) | ~1400 | ~1500 | MITTEL |
-| Norddeutschland (ländlich) | ~1450 | ~1600 | MITTEL |
-| Niederdeutsches Hallenhaus (ländlich) | persistiert bis 19. Jh. | — | HART |
+| England | ~1150–1200 | ~1250 | HART — VAG, Hewett |
+| Frankreich (Normandie, Elsass) | ~1200 | ~1300 | MITTEL — Chapelot/Fossier |
+| Niederlande / Flandern | ~1250 | ~1350 | MITTEL — Meischke 1988 |
+| Süddeutschland (Esslingen, Ulm) | ~1250 | ~1300 | MITTEL — Klein 2012 |
+| Mitteldeutschland (Hessen, Thüringen) | ~1270 | ~1350 | MITTEL |
+| Norddeutschland (Städte) | ~1300 | ~1400 | MITTEL |
+| Skandinavien (städtisch) | ~1350 | ~1450 | SCHWACH |
+| Iberische Halbinsel | — | — | Steinbau dominant |
+| Italien | — | — | Steinbau dominant |
 
-Das niederdeutsche Hallenhaus ist ein Sonderfall: Es behält den Ständerbau
-(hier als Bauweise für Großräume, nicht als Rückständigkeit) bis weit ins
-19. Jahrhundert. Das zeigt, dass Konstruktionssystemwechsel funktional
-motiviert sind, nicht zeitlich deterministisch. [HART — Stiewe 2007]
+Das niederdeutsche Hallenhaus behält den Ständerbau bis weit ins
+19. Jahrhundert. Konstruktionssystemwechsel sind funktional motiviert,
+nicht zeitlich deterministisch. [HART — Stiewe 2007]
 
-### Pestbetroffenheit (1347–1353)
+### 4.2 Pestbetroffenheit (1347–1353)
 
 | Region | Geschätzte Sterblichkeit | Quelle |
 |---|---|---|
-| Städtische Zentren | 40–60 % | MITTEL |
-| Ländliche Gebiete | 20–40 % | MITTEL |
-| Nordseeküste/Friesland | 15–25 % (geringer) | MITTEL |
+| Italienische Städte (Florenz, Siena) | 50–60 % | MITTEL — Benedictow 2004 |
+| England | 40–50 % | MITTEL — Benedictow 2004 |
+| Frankreich | 30–50 % | MITTEL |
+| HRR, städtisch | 40–60 % | MITTEL |
+| HRR, ländlich | 20–40 % | MITTEL |
+| Iberische Halbinsel | 30–40 % | MITTEL |
 | Skandinavien | 30–50 % | MITTEL |
+| Byzantinisches Reich | 30–50 % | MITTEL — byzantinische Chroniken |
+| Nordseeküste / Friesland | 15–25 % (geringer) | MITTEL |
 
-### Dreißigjähriger Krieg (1618–1648)
+### 4.3 Dreißigjähriger Krieg (1618–1648)
 
 | Region | Betroffenheit | Baukonsequenz |
 |---|---|---|
-| Württemberg, Pfalz | sehr hoch (>50% Verlust) | starke Schlankung | 
-| Sachsen, Thüringen | hoch (30–50%) | deutliche Schlankung |
-| Bayern | mittel (20–30%) | moderate Schlankung |
-| Nordseeküste, Schweiz | gering (<15%) | kaum verändert |
-| Österreich | mittel | — |
+| Württemberg, Pfalz | sehr hoch (>50 % Verlust) | starke Schlankung |
+| Sachsen, Thüringen | hoch (30–50 %) | deutliche Schlankung |
+| Bayern | mittel (20–30 %) | moderate Schlankung |
+| Nordseeküste, Schweiz | gering (<15 %) | kaum verändert |
+| England | nicht betroffen | kein Sprung |
+| Frankreich | randlich (ab 1635) | kein Sprung im Holzbau |
+| Niederlande | Achtzigjähriger Krieg (1568–1648), anderer Charakter | Sonderfall |
+| Skandinavien | militärisch aktiv (Schweden), Heimatgebiet wenig betroffen | kein Sprung |
 
 [Alle Werte: MITTEL — Wilson 2009; Parker 1984]
 
-**BVILLAGE-Implikation**: Der `epoch_band`-Parameter allein reicht nicht.
-Er braucht eine `region`-Dimension, um die regionale Schichtung
-abzubilden. Die `StylePolicy`-Lookup-Logik muss `(epoch, region)` als
-kombiniertes Tupel auflösen, nicht als unabhängige Parameter.
+### 4.4 Reformationsbruch: regionale Differenzierung
+
+Der Reformationsbruch (ca. 1517–1560) ist der am stärksten regional
+differenzierte Bruch des gesamten Zeitraums.
+
+| Region | Konfession | Konsequenz für Kirchenbau |
+|---|---|---|
+| Norddeutschland, Skandinavien | lutherisch | Kathedralbau stoppt, Klöster säkularisiert |
+| England | anglikanisch (ab 1534) | Klöster säkularisiert, Kathedralbau stoppt |
+| Schweiz (Zürich, Basel, Genf) | reformiert | Bilderstürme, Kirchenneubau minimal |
+| Süddeutschland, Österreich | katholisch (nach Rekatholisierung) | Jesuitenbarock ab ca. 1560 |
+| Frankreich | kath. (Hugenottenkriege 1562–1598, dann Edikt Nantes) | Kirchenbau gestört, nicht gestoppt |
+| Spanien, Portugal | streng katholisch | Gegenreformation intensiviert Kirchenbau |
+| Italien | katholisch | Kirchenbau ungebrochen |
+
+**BVILLAGE-Implikation**: `religion_context` als Parameter in `CulturePolicy`,
+mindestens mit den Ausprägungen `catholic`, `lutheran`, `reformed`, `anglican`.
+Dieser Parameter steuert `church_building_active` und `monastery_presence`.
 
 ---
 
@@ -515,9 +814,10 @@ Ein Schock im BVILLAGE-Sinne ist ein historisches Ereignis, das:
 3. Räumlich differenziert wirkt (nicht uniform über alle Regionen)
 4. Dokumentiert und datierbar ist (keine Spekulation)
 
-Die drei mittelalterlichen Hauptschocks erfüllen alle vier Kriterien:
-Pest, Dreißigjähriger Krieg, und — schwächer, aber real — der Holzmangel
-des 15. Jahrhunderts.
+Die mittelalterlichen Hauptschocks erfüllen alle vier Kriterien:
+Pest (gesamteuropäisch), Dreißigjähriger Krieg (HRR-selektiv),
+Holzmangel des 15. Jahrhunderts (städtisch-selektiv),
+Reformation (konfessionell-selektiv).
 
 ### Wie Schocks in Policies abgebildet werden
 
@@ -532,8 +832,8 @@ resolve_policy(epoch, region) →
     return interpolate(PHASE_BEFORE, PHASE_AFTER, t)
 ```
 
-Die Schockzonen sind nicht scharf datiert — sie haben Unsicherheits-
-bänder. Die Pest erreicht verschiedene Regionen zu verschiedenen Zeiten
+Die Schockzonen sind nicht scharf datiert — sie haben Unsicherheitsbänder.
+Die Pest erreicht verschiedene Regionen zu verschiedenen Zeiten
 (1347–1351 für den Kern, bis 1353 für die Peripherie). Das Modell
 muss diese Unschärfe explizit repräsentieren, nicht weginterpolieren.
 
@@ -542,7 +842,7 @@ muss diese Unschärfe explizit repräsentieren, nicht weginterpolieren.
 Schocks haben Nachwirkungen, die länger dauern als der Schock selbst.
 Die Pest erzeugt 150 Jahre demographische Instabilität (Wiederholungsepidemien
 bis ins 16. Jahrhundert). Der Dreißigjährige Krieg braucht in manchen
-Regionen 100 Jahre, bis die Bevölkerung vorkiegsniveau erreicht.
+Regionen 100 Jahre, bis die Bevölkerung Vorkriegsniveau erreicht.
 
 In Parametertermen: Die Rückkehr zu Vorschockwerten ist nicht linear
 und nicht universell. Manche Regionen erholen sich schnell (Kapitalzufluss,
@@ -553,14 +853,10 @@ Nachschockzustand.
 
 ## 6. Offene Forschungsfragen für BVILLAGE
 
-Diese Fragen sind aus dem aktuellen Wissensstand nicht vollständig
-beantwortbar. Sie markieren die Grenzen der Datenbasis.
-
-**Frage 1 — Regionale Datierung des Konstruktionswechsels**
-Klein (2012) liefert Orientierung, aber keine vollständige regionale
-Karte. Für viele Regionen (Schleswig-Holstein, Bayern, Österreich) fehlen
-dendrochronologische Studien in ausreichender Dichte. Die MITTEL-Einstufung
-der regionalen Schichtungstabelle reflektiert das.
+**Frage 1 — Regionale Datierung des Konstruktionswechsels außerhalb des HRR**
+Klein (2012) liefert Orientierung für Deutschland. Für England existieren
+gute VAG-Daten. Für Frankreich, die Niederlande und Skandinavien fehlen
+vergleichbar dichte Studien.
 
 **Frage 2 — Pestdemographie für Baukontexte**
 Benedictow (2004) und andere liefern Gesamtsterblichkeit. Aber für die
@@ -568,16 +864,20 @@ Baupolitik relevant ist: Wie veränderte sich der Anteil der Handwerker?
 Wie die Kapitalkonzentration? Das ist für die meisten Regionen
 nicht direkt belegt.
 
-**Frage 3 — Querschnittsentwicklung über Epochen**
-Eißing/Furrer (2023) und Klein (2012) liefern Messpunkte. Aber eine
-vollständige, regionsübergreifende Querschnittskurve über die Epochen
-fehlt. Die Schlankungs-These für den Nachkriegskontext ist gut begründet,
-aber quantitativ noch nicht dicht belegt.
+**Frage 3 — Querschnittsentwicklung über Epochen, gesamteuropäisch**
+Eißing/Furrer (2023) liefern Messpunkte für das HRR. Eine
+regionsübergreifende Querschnittskurve fehlt.
 
 **Frage 4 — Erste Bauordnungen: Wann, wo, mit welchen Konsequenzen?**
 Bauordnungen sind stadtrechtlich dokumentiert, aber nicht systematisch
-für alle relevanten Städte ausgewertet. Die `ConstraintsPolicy` bräuchte
-hier eine eigene Forschungsgrundlage.
+für alle relevanten Städte ausgewertet. Besonders für englische und
+französische Städte fehlt eine BVILLAGE-taugliche Zusammenstellung.
+
+**Frage 5 — Byzantinische Epochenstruktur als BVILLAGE-Parameter**
+Die byzantinische Bautradition wird von den BVILLAGE-Policies noch nicht
+abgedeckt. Wenn das System auf orthodoxe Baukulturen ausgeweitet wird,
+braucht es eine eigene Epochenstruktur (Makedonische Renaissance,
+Komnenen-Blüte, Palaiologen-Renaissance, Osmanische Nachfolge).
 
 ---
 
@@ -585,139 +885,227 @@ hier eine eigene Forschungsgrundlage.
 
 ### 7.1 Zitierte Werke
 
-**Benedictow, Ole J.:** The Black Death 1346–1353. The Complete History.
-Woodbridge: Boydell Press, 2004. ISBN 978-0-85115-943-2.
-*Umfassendste Studie zur Pestmortalität. Argumentiert für ca. 60 %
-Gesamtsterblichkeit in Westeuropa. Wissenschaftlich kontrovers, methodisch
-am gründlichsten. Hauptreferenz für Bruch 1.*
-[MITTEL — Schätzwerte, keine direkten Messungen]
-
-**Binding, Günther:** Baubetrieb im Mittelalter. Darmstadt: WBG, 1993.
-*Bauorganisation, Maßsysteme, Bauhütten. Relevant für Phasen 1 und 2.*
-
-**Boockmann, Hartmut:** Die Stadt im späten Mittelalter. München: Beck, 1987.
-*Sozialgeschichte der spätmittelalterlichen Stadt. Relevant für Phasen 2–4.*
-
-**Brzezinski, Richard:** The Army of Gustavus Adolphus. Oxford: Osprey, 2001.
-*Für Dreißigjährigen Krieg: militärhistorischer Hintergrund.*
+**Andersson, Aron:** Medieval Sculpture in Sweden. Stockholm: Almqvist, 1991.
 [MITTEL]
 
-**Eißing, Thomas; Furrer, Benno; Kayser, Christian et al.:** Vorindustrieller
-Holzbau. Terminologie und Systematik für Südwestdeutschland und die
-deutschsprachige Schweiz. 2. Aufl. Heidelberg: Propylaeum, 2023.
-ISBN 978-3-96929-223-5.
-DOI: https://doi.org/10.11588/sbhbf.2023.1.99050 — PDF frei zugänglich.
-*Verbindliches Terminologiewerk. Dendrochronologische Methodik und Befunde.
-Primärquelle für Holztransport, Querschnittsentwicklung, Grünholzverbau.*
+**Babelon, Jean-Pierre:** Châteaux de France au siècle de la Renaissance.
+Paris: Flammarion, 1989.
+*Standardwerk zur französischen Renaissancearchitektur.*
+[MITTEL]
+
+**Benedictow, Ole J.:** The Black Death 1346–1353. The Complete History.
+Woodbridge: Boydell Press, 2004. ISBN 978-0-85115-943-2.
+*Umfassendste Studie zur Pestmortalität. Hauptreferenz für Bruch 1.*
+[MITTEL — Schätzwerte, keine direkten Messungen]
+
+**Berger, Robert W.:** Versailles: The Château of Louis XIV.
+University Park: Penn State University Press, 1985.
+[MITTEL]
+
+**Binding, Günther:** Baubetrieb im Mittelalter. Darmstadt: WBG, 1993.
+
+**Binding, Günther:** Architektonische Formenlehre. Darmstadt: WBG, 1996.
+
+**Bloom, Jonathan; Blair, Sheila:** The Grove Encyclopedia of Islamic Art
+and Architecture. Oxford: Oxford University Press, 2009.
+[MITTEL]
+
+**Bony, Jean:** French Gothic Architecture of the 12th and 13th Centuries.
+Berkeley: University of California Press, 1983.
+[MITTEL/HART]
+
+**Boockmann, Hartmut:** Die Stadt im späten Mittelalter. München: Beck, 1987.
+
+**Brown, R. Allen:** The Normans. Woodbridge: Boydell, 1984.
+[MITTEL]
+
+**Chapelot, Jean; Fossier, Robert:** The Village and House in the Middle Ages.
+London: Batsford, 1985.
+*Französische Siedlungs- und Hausgeschichte. Grundlegendes Werk für
+pan-europäische Haustypenanalyse.*
+[MITTEL]
+
+**Conant, Kenneth J.:** Carolingian and Romanesque Architecture 800–1200.
+Harmondsworth: Penguin, 1959.
+[MITTEL]
+
+**Crossley, Paul:** Gothic Architecture. London: Thames & Hudson, 1988.
+[MITTEL]
+
+**Dodds, Jerrilynn D.:** Architecture and Ideology in Early Medieval Spain.
+University Park: Penn State University Press, 1990.
+*Mudéjar-Architektur und islamisch-christliche Transferprozesse.*
+[MITTEL]
+
+**Dyer, Christopher:** Standards of Living in the Later Middle Ages.
+Cambridge: Cambridge University Press, 1989.
+
+**Eißing, Thomas; Furrer, Benno et al.:** Vorindustrieller Holzbau.
+Terminologie und Systematik. 2. Aufl. Heidelberg: Propylaeum, 2023.
+DOI: https://doi.org/10.11588/sbhbf.2023.1.99050
 [HART]
 
 **Epstein, Stephan R.:** Craft Guilds, Apprenticeship, and Technological
-Change in Preindustrial Europe. In: Journal of Economic History 58 (1998),
-H. 3, S. 684–713.
-*Zunftsystem als Wissenstransfer-Institution. Relevant für Arbeitskraft-
-reaktion nach Pestschock.*
+Change. In: Journal of Economic History 58 (1998), H. 3, S. 684–713.
 [MITTEL]
 
-**Fitchen, John:** The Construction of Gothic Cathedrals. Chicago: University
-of Chicago Press, 1961. Neuauflage 1981.
-*Ingenieurwissenschaftliche Analyse mittelalterlicher Bautechnik.
-Relevant für Phase 1 (Romanik als Lernprozess).*
+**Fitchen, John:** The Construction of Gothic Cathedrals. Chicago:
+University of Chicago Press, 1961.
 
-**Großmann, G. Ulrich:** Der Fachwerkbau in Deutschland. Petersberg: Imhof,
-2009. ISBN 978-3-86568-449-2.
-*Maßgebendes Überblickswerk. Konstruktionsgeschichte, Ornamentik, Regional-
-ausprägungen. Vorkragung als Repräsentationsmerkmal. Relevant für alle Phasen.*
+**Girouard, Mark:** Life in the English Country House. New Haven: Yale
+University Press, 1978.
+[MITTEL]
+
+**Goldthwaite, Richard A.:** The Building of Renaissance Florence.
+Baltimore: Johns Hopkins University Press, 1980.
+*Florentinische Baupraxis, Pestkonsequenzen.*
+[MITTEL/HART]
+
+**Großmann, G. Ulrich:** Der Fachwerkbau in Deutschland. Petersberg:
+Imhof, 2009.
+[MITTEL]
+
+**Hahnloser, Hans Robert (Hrsg.):** Villard de Honnecourt. Graz:
+Akademische Druck- und Verlagsanstalt, 1972.
+[HART]
+
+**Harris, Jonathan:** Byzantium and the Crusades. London: Hambledon, 2003.
+[MITTEL]
+
+**Harvey, John:** The Perpendicular Style 1330–1485. London: Batsford, 1978.
 [MITTEL]
 
 **Herlihy, David:** The Black Death and the Transformation of the West.
 Cambridge: Harvard University Press, 1997.
-*Kompakte Synthese der Pestfolgen für Wirtschaft und Gesellschaft.
-Beste Einführung für den thematischen Überblick.*
 [MITTEL]
 
-**Hewett, Cecil A.:** English Historic Carpentry. Fresno: Linden Publishing,
-1997 (Erstaufl. 1980). ISBN 978-0-941936-41-5.
-*Typologische Referenz für englischen Holzbau. Cressing Temple Barns.*
-[MITTEL — metrisch eingeschränkt belastbar]
+**Horn, Walter; Born, Ernest:** The Plan of St. Gall. 3 Bde. Berkeley:
+University of California Press, 1979.
+[HART]
+
+**Jordan, William Chester:** The Great Famine. Princeton: Princeton
+University Press, 1996.
+[MITTEL]
 
 **Kaspar, Fred:** Fachwerkbauten des 14. bis 16. Jahrhunderts in Westfalen.
-Münster: Coppenrath, 1986. ISBN 3-88547-298-8.
-*Regionalmonographie mit Bestandsaufnahme. Ornamentik und Konstruktion
-im Westfalenkontext. Relevant für Phasen 2–4.*
+Münster: Coppenrath, 1986.
 [MITTEL/HART]
 
 **Klein, Ulrich:** Zum aktuellen Forschungsstand des hoch- und
 spätmittelalterlichen Holzbaus in Deutschland. In: DGAMN-Mitteilungen,
-Bd. 24. Paderborn 2012, S. 9–38.
-DOI: https://doi.org/10.11588/dgamn.2012.1.17131 — PDF frei zugänglich.
-*Schlüsselpublikation. Dendrochronologische Datierung des Konstruktions-
-systemwechsels. Coexistenz der Baudomänen im 12./13. Jh.*
+Bd. 24. Paderborn 2012.
+DOI: https://doi.org/10.11588/dgamn.2012.1.17131
 [HART]
 
-**Marstaller, Tilmann:** Zu Lande und zu Wasser. Bauholzimporte des 12.–17.
-Jahrhunderts im mittleren Neckarraum. In: DGAMN-Mitteilungen Bd. 24.
-Paderborn 2012, S. 39–56.
-*Dendrochronologische Nachweise für überregionalen Holztransport.
-Relevant für Bruch 2 (Holzmangel).*
+**Krautheimer, Richard:** Early Christian and Byzantine Architecture.
+4. Aufl. Harmondsworth: Penguin, 1986.
+[MITTEL/HART]
+
+**Machin, R.:** The Great Rebuilding: A Reassessment. In: Past & Present
+77 (1977), S. 33–56.
+[MITTEL]
+
+**Mainstone, Rowland J.:** Hagia Sophia. London: Thames & Hudson, 1988.
 [HART]
+
+**Mango, Cyril:** Byzantine Architecture. London: Faber, 1976.
+[MITTEL]
+
+**Mark, Robert (Hrsg.):** Architectural Technology up to the Scientific
+Revolution. Cambridge: MIT Press, 1993.
+[MITTEL/HART]
+
+**Marstaller, Tilmann:** Zu Lande und zu Wasser. In: DGAMN-Mitteilungen,
+Bd. 24. Paderborn 2012.
+[HART]
+
+**McEvedy, Colin; Jones, Richard:** Atlas of World Population History.
+Harmondsworth: Penguin, 1978.
+[MITTEL]
+
+**Meischke, Rudolph et al.:** Huizen in Nederland. Zwolle: Waanders, 1988.
+*Niederländische Hausgeschichte. Standardwerk.*
+[MITTEL]
+
+**Nicol, Donald M.:** The Last Centuries of Byzantium 1261–1453.
+2. Aufl. Cambridge: Cambridge University Press, 1993.
+[MITTEL]
 
 **Parker, Geoffrey:** The Thirty Years' War. London: Routledge, 1984.
-2. Aufl. 1997. ISBN 978-0-415-12883-4.
-*Standardwerk zum Dreißigjährigen Krieg. Militärischer Verlauf,
-demographische Konsequenzen. Relevant für Bruch 3.*
 [MITTEL/HART]
+
+**Prak, Maarten:** Guilds and the Development of the Art Market During
+the Dutch Golden Age. In: Simiolus 30 (2011).
+[MITTEL]
 
 **Recht, Roland:** Les Bâtisseurs des cathédrales gothiques. Straßburg:
 Éditions des Musées de Strasbourg, 1989.
-*Bauhüttenorganisation, Meistermigration, Wissenstransfer.*
+
+**Russell, Josiah C.:** Late Ancient and Medieval Population. Philadelphia:
+American Philosophical Society, 1958.
+[MITTEL]
+
+**Salzman, Louis F.:** Building in England Down to 1540.
+Oxford: Clarendon Press, 1952.
+*Fundamentales Quellenwerk für englisches mittelalterliches Bauen:
+Materialien, Löhne, Verträge, Bauordnungen.*
+[HART]
 
 **Stiewe, Heinrich:** Fachwerkhäuser in Deutschland. Darmstadt: WBG, 2007.
-ISBN 978-3-534-18714-1.
-*Konstruktionsgeschichte und Sozialgeschichte. Niedergang und Statuswandel.
-Relevant für Phasen 4 und 5.*
+[MITTEL]
 
-**Wilson, Peter H.:** The Thirty Years War. Europe's Tragedy. Cambridge:
-Belknap Press, 2009. ISBN 978-0-674-03634-5.
-*Umfassendste neuere Darstellung des Dreißigjährigen Krieges.
-Demographische Daten, regionale Differenzierung.*
+**Summerson, John:** Architecture in Britain 1530–1830.
+Harmondsworth: Penguin, 1953. Neuauflage 1993.
+*Wren und Wiederaufbau nach Großem Brand.*
+[MITTEL]
+
+**Ward-Perkins, Bryan:** The Fall of Rome and the End of Civilization.
+Oxford: Oxford University Press, 2005.
+[MITTEL]
+
+**Wickham, Chris:** The Inheritance of Rome. London: Allen Lane, 2009.
+[MITTEL]
+
+**Wilson, Peter H.:** The Thirty Years War. Cambridge: Belknap Press, 2009.
 [MITTEL/HART]
+
+**Wittkower, Rudolf:** Architectural Principles in the Age of Humanism.
+4. Aufl. London: Academy, 1971.
+[MITTEL]
 
 **Zimmermann, W. Haio:** Pfosten, Ständer und Schwelle und der Übergang
-vom Pfosten- zum Ständerbau. Eine Studie zu Innovation und Beharrung im
-Hausbau. In: Probleme der Küstenforschung im südlichen Nordseegebiet,
-Bd. 25. Oldenburg 1998, S. 9–241.
-*Grundlegende Studie zum Übergang vom Pfostenbau zum Ständerbau.
-Relevant für Phase 0 → Phase 1.*
+vom Pfosten- zum Ständerbau. In: Probleme der Küstenforschung 25 (1998).
 [MITTEL/HART]
 
-**Ziegler, Philip:** The Black Death. London: Collins, 1969. Neuauflage
-Penguin 2003. ISBN 978-0-14-027524-7.
-*Klassische englischsprachige Darstellung der Pest. Narrativer Zugang,
-gut zugänglich. Als Einstieg geeignet; für Quantitatives: Benedictow.*
+**Ziegler, Philip:** The Black Death. London: Collins, 1969.
 
 ---
 
 ### 7.2 Weiterführende Literatur
 
-**Aston, Trevor H. (Hrsg.):** The Brenner Debate. Agrarian Class Structure
-and Economic Development in Pre-Industrial Europe.
+**Aston, Trevor H. (Hrsg.):** The Brenner Debate.
 Cambridge: Cambridge University Press, 1985.
-*Kontroverse um Feudalkrise, Bevölkerungsrückgang, agraren Wandel
-im Spätmittelalter. Strukturgeschichtlicher Hintergrund für Phase 3.*
+*Feudalkrise, Bevölkerungsrückgang, agrarer Wandel.*
 
-**Cohn, Samuel K. Jr.:** The Black Death Transformed.
-London: Arnold, 2002.
+**Beresford, Maurice; Hurst, John G.:** Wharram Percy: Deserted Medieval
+Village. London: Batsford, 1990.
+*Archäologie des frühmittelalterlichen Holzbaus in England.*
+[HART — Grabungsbefunde]
+
+**Cohn, Samuel K. Jr.:** The Black Death Transformed. London: Arnold, 2002.
 *Kritische Neubewertung. Kontrastpunkt zu Benedictow.*
 
-**Dyer, Christopher:** Standards of Living in the Later Middle Ages.
-Cambridge: Cambridge University Press, 1989.
-*Lebensstandards, Haushaltsgrößen, materielle Kultur nach der Pest.
-Quantitativer Ansatz.*
+**Dyer, Christopher:** Making a Living in the Middle Ages.
+New Haven: Yale University Press, 2002.
+
+**Goodwin, Godfrey:** A History of Ottoman Architecture.
+London: Thames & Hudson, 1971.
+*Osmanische Nachfolge byzantinischer Kuppeltradition.*
+[MITTEL]
 
 **Lamb, Hubert H.:** Climate, History and the Modern World.
-London: Routledge, 1982. 2. Aufl. 1995.
-*Historische Klimatologie. Mittelalterliche Wärmeperiode und
-Kleine Eiszeit als Hintergrund für Ressourcenveränderungen.*
+London: Routledge, 1982.
+*Historische Klimatologie. MWP und Kleine Eiszeit.*
 
 ---
 
@@ -727,23 +1115,27 @@ Kleine Eiszeit als Hintergrund für Ressourcenveränderungen.*
 
 International Tree-Ring Data Bank (ITRDB):
 https://www.ncei.noaa.gov/products/paleoclimatology/tree-ring
-*Referenzchronologien für epochale Klimarekonstruktionen.*
 
-Labor für Dendrochronologie und Gefügekunde, Universität Bamberg (T. Eißing):
+Vernacular Architecture Group (VAG) Index:
+https://www.vag.org.uk
+[HART]
+
+Labor für Dendrochronologie, Universität Bamberg (T. Eißing):
 Über 5.500 untersuchte historische Gebäude mit 45.000+ Proben.
-*Direkte Quelle für Datierungen und Holztransportnachweise.*
+
+**Primärquellen: Schriftliche Zeugnisse**
+
+Villard de Honnecourt, Bauhüttenbuch (ca. 1230):
+BnF Ms. fr. 19093. Faksimile: Hahnloser 1972.
 
 **Stadtchroniken und Ratsprotokoll-Editionen**
 
-Die Quellengrundlage für lokale Bauordnungen liegt in städtischen
-Archiven und deren Editionen. Einschlägige Reihen:
 - Quellen zur Geschichte der Stadt Köln
 - Urkundenbuch der Stadt Lübeck
 - Frankfurter Bürgerbuch
-
-Diese Quellen sind für `ConstraintsPolicy`-Forschung (Bauordnungen,
-Vorkragungsrechte, Brandschutzregeln) die primäre Datenbasis.
+- Calendar of Close Rolls (England) [HART]
+- Rotuli Hundredorum (England) [HART]
 
 ---
 
-*BVILLAGE Research Foundation — Achse 7 — v1.0*
+*BVILLAGE Research Foundation — Achse 7 — v2.0*
