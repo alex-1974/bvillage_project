@@ -51,6 +51,65 @@ def validate_posts(posts, structure) -> tuple[Issue, ...]:
     ...
 ```
 
+### Naming conventions
+
+Python naming follows standard conventions throughout. No exceptions.
+
+| What | Convention | Examples |
+|------|-----------|---------|
+| Functions | `snake_case` | `derive_posts`, `_build_opening_zones` |
+| Variables | `snake_case` | `opening_zones`, `wall_by_id` |
+| Classes | `PascalCase` | `FramePlan`, `ResolvedPolicy`, `BayFrame` |
+| Constants | `UPPER_SNAKE_CASE` | `_QUANT = 1_000`, `AXIS_MERGE_TOL` |
+| Private | leading `_` | `_derive_post_candidates`, `_QUANT` |
+| Type aliases | `PascalCase` | `WallId = str`, `AxisList = tuple[float, ...]` |
+
+`camelCase` is never used. In Python it signals foreign code — JavaScript, Java, or auto-generated bindings. BVILLAGE is Python.
+
+One subtlety: module-level constants that are implementation details of a single module take a leading underscore even in `UPPER_SNAKE_CASE` form: `_QUANT`, `_TOL`. Constants that are part of the public API of a module do not: `AXIS_MERGE_TOL` in `geom_eps.py`.
+
+File and function naming follows the `<role>_<aspect>.py` / `<verb>_<object>` convention defined in `SYS_NAMING_POLICY.md`. This section covers only Python identifier conventions.
+
+### Guard clauses and early exit
+
+Flat is better than nested. When a function must check several preconditions before doing real work, each check exits immediately on failure. The happy path runs at the outermost indentation level.
+
+```python
+# Wrong — three levels deep before real work begins
+def derive_brace(wall: Wall, policy: ResolvedPolicy) -> Brace | None:
+    if wall is not None:
+        if len(wall.posts) >= 2:
+            if policy.brace_enabled:
+                return _compute_brace(wall, policy)
+    return None
+
+# Right — guards exit early, real work is flat
+def derive_brace(wall: Wall, policy: ResolvedPolicy) -> Brace | None:
+    if wall is None:
+        return None
+    if len(wall.posts) < 2:
+        return None
+    if not policy.brace_enabled:
+        return None
+    return _compute_brace(wall, policy)
+```
+
+The rule: every guard clause is one condition, one exit. The function body that follows reads without mental stack — no open `if` blocks to track, no indentation to parse.
+
+The same principle applies in validation functions, where each failing condition appends an Issue and continues:
+
+```python
+def validate_wall(wall: Wall, structure: StructurePlan) -> tuple[Issue, ...]:
+    issues: list[Issue] = []
+    if not wall.posts:
+        issues.append(Issue(severity="HARD", message=f"Wall {wall.id!r} has no posts"))
+    if wall.width < policy.min_wall_width:
+        issues.append(Issue(severity="SOFT", message=f"Wall {wall.id!r} width below minimum"))
+    return tuple(issues)
+```
+
+Here there is no early exit — validation collects all problems. But each check is still flat: one condition, one append.
+
 ### Performance tiers
 
 Two tiers exist in BVILLAGE with different priorities:
@@ -201,7 +260,45 @@ if abs(u - axis) < geom_eps.AXIS_MERGE_TOL:
 
 ---
 
-## 6. Immutability and collections
+## 5b. String formatting
+
+Three formatting mechanisms exist in Python. BVILLAGE uses each in exactly one context.
+
+**f-strings** — everywhere except hot paths and logging.
+
+```python
+raise SchemaError(f"Unknown member role {member.role!r} on wall {member.wall!r}")
+component_id = f"{self.world}:{self.settlement}:{self.house_salt}:{component}"
+```
+
+f-strings are readable, fast enough for non-hot-path use, and the natural choice when the expression is simple. Use `!r` for values that should be quoted in output (IDs, role names, keys) — it makes the boundary between prose and value visible.
+
+**`%`-format** — logging only.
+
+```python
+log.debug("post at u=%s, wall=%s, role=%s", u, wall, role)
+log.warning("z-axis repair: snapped %.4f → %.4f (wall=%s)", original_z, snapped_z, wall)
+```
+
+The Python logging system evaluates `%`-format arguments lazily — only if the log level is active. f-strings are evaluated unconditionally at the call site. In hot paths where DEBUG may be active during development, this difference matters. The rule is absolute: all `log.*()` calls use `%`-format, never f-strings.
+
+**String concatenation** — never in loops.
+
+```python
+# Wrong — O(n²) allocations
+result = ""
+for member in members:
+    result += member.id + ", "
+
+# Right — O(n) join
+result = ", ".join(m.id for m in members)
+```
+
+String objects are immutable. Each `+=` allocates a new object. `str.join()` allocates once. Outside loops, `+=` on two or three strings is fine — the cost is negligible and the code is readable.
+
+**No string formatting in core geometry code.** String operations have no place in functions that derive axes, compute positions, or generate members. If a hot-path function is constructing strings, it is doing the wrong thing.
+
+
 
 `frozen=True` on a dataclass does not protect mutable contents. When a dataclass field contains a collection, use `tuple`, not `list`. If a field must be a dict, document why mutation protection is not required.
 
@@ -460,6 +557,309 @@ match member.role:
         raise SchemaError(f"Unknown member role: {member.role!r}")
 ```
 
+### Short-circuit evaluation
+
+Python's `and`/`or` operators evaluate left to right and stop as soon as the result is determined. Use this deliberately.
+
+```python
+# Guard with cheap check first
+if wall and wall.posts and _has_valid_span(wall, policy):
+    ...
+
+# Default without explicit None check
+section = policy.override_section or _default_section(role, policy)
+
+# First match from candidates
+first_valid = next((m for m in members if _is_corner(m)), None)
+```
+
+The ordering principle: put the cheapest check first, the most expensive last. An attribute access costs nothing; a function call costs something; a function that iterates a collection costs more. Short-circuit evaluation makes ordering matter.
+
+`next(..., None)` is the idiomatic alternative to `filter` + first element when only one result is needed. It stops at the first match — O(1) in the best case, O(n) in the worst, never allocates a filtered collection.
+
+---
+
+## 11b. Code signature — intention and clarity
+
+BVILLAGE code has a recognizable style. Not clever. Not defensive. Clear and purposeful — the code of someone who knows exactly what they are building.
+
+Three principles define it.
+
+### Intention transparency
+
+Code expresses *what it wants*, not *how it does it*. Names describe decisions, not operations.
+
+```python
+# Weak — describes mechanism
+posts = tuple(p for p in candidates if not _in_union(p.u, opening_union))
+
+# Strong — expresses intent
+free_positions = _exclude_opening_zones(candidates, opening_union)
+posts           = tuple(free_positions)
+```
+
+Function names follow the same principle: `derive_posts` not `compute_post_list`, `resolve_policy_stack` not `get_policies`, `exclude_opening_zones` not `filter_by_union`.
+
+### Structural honesty
+
+The pipeline structure must be visible at a glance. Each step in a complex function is a sentence — a named intermediate result that says what it is.
+
+```python
+def derive_frameplan(structure: StructurePlan, policy: ResolvedPolicy) -> FramePlan:
+    post_candidates = _derive_post_candidates(structure, policy)
+    opening_zones   = _build_opening_zones(structure)
+    posts           = _exclude_opening_zones(post_candidates, opening_zones)
+    rails           = _derive_rails(structure, policy, posts)
+    braces          = _derive_braces(structure, policy, posts)
+    return FramePlan(posts=posts, rails=rails, braces=braces)
+```
+
+A function that generates a building should be readable as a five-sentence summary of the generation process. A reader who knows nothing of the internals can follow it.
+
+### Symmetry for parallel concepts
+
+When functions operate on structurally similar things, they look structurally similar. Same verb, same parameter order, same indentation rhythm.
+
+```python
+posts  = _derive_posts(structure, policy, opening_zones)
+rails  = _derive_rails(structure, policy, posts)
+braces = _derive_braces(structure, policy, posts, rails)
+```
+
+Not one `derive_`, one `compute_`, one `build_` for the same operation type. The eye should land on the differences — inputs grow as the pipeline progresses — not hunt through surface variation.
+
+### Walrus operator for single-use calculations
+
+Use `:=` when a value is computed solely to be tested, and the name makes the condition readable:
+
+```python
+if not (candidates := _derive_candidates(structure, policy)):
+    raise SchemaError(f"No post candidates for structure {structure.id!r}")
+```
+
+Do not use it when the name adds no clarity over writing two separate lines.
+
+### Comprehensions — when yes, when no
+
+A comprehension is readable when the expression can be spoken aloud as a single sentence without losing meaning.
+
+```python
+# Yes — one sentence, clear intent
+posts = tuple(Post(wall=w, u=u, role=r) for w, u, r in _axis_triples(structure, policy))
+
+# No — needs explanation, should be a named function
+posts = tuple(
+    Post(wall=w, u=u, role=r)
+    for w in structure.walls
+    for u in _axes_for_wall(w, policy)
+    for r in (_role(u, w, policy),)
+    if not _in_union(u, _opening_zones(w))
+)
+```
+
+When the comprehension exceeds two logical clauses, extract the body into a named private function. The comprehension becomes the call site; the logic lives where it can be tested.
+
+### Errors as documents
+
+Every raised exception tells the reader what happened, what was expected, and what to do about it.
+
+```python
+raise PolicyError(
+    f"Unknown patch key {key!r} in {policy_name!r}. "
+    f"Valid keys: {sorted(canonical_keys)}. "
+    f"Add the key to the canonical tree or remove it from the patch."
+)
+```
+
+An error message that requires a debugger to interpret is an incomplete error message.
+
+### `__post_init__` for dataclass invariants
+
+When a dataclass has an invariant — a condition that must always hold — enforce it at construction:
+
+```python
+@dataclass(frozen=True, slots=True)
+class RangeHard:
+    min_v: float
+    max_v: float
+
+    def __post_init__(self) -> None:
+        if self.min_v >= self.max_v:
+            raise SchemaError(
+                f"RangeHard: min_v={self.min_v} must be strictly less than max_v={self.max_v}"
+            )
+```
+
+This guarantees that any instance in existence is valid. No external caller can create an invalid range and pass it deeper into the pipeline.
+
+### `@property` for derived values
+
+When a value belongs conceptually to a dataclass but is computed from its fields, use `@property` rather than a free function:
+
+```python
+@dataclass(frozen=True, slots=True)
+class WallSegment:
+    u_range: Range2
+    z_range: Range2
+
+    @property
+    def width(self) -> float:
+        return self.u_range.max_v - self.u_range.min_v
+
+    @property
+    def height(self) -> float:
+        return self.z_range.max_v - self.z_range.min_v
+```
+
+The test: if a value is always derived from the same fields in the same way and has no independent existence, it belongs on the object. If it requires additional context or policy, it belongs in a `derive_*` function.
+
+---
+
+## 11c. Algorithmic patterns
+
+These patterns apply to the specific problems BVILLAGE solves. They are not generic best practices — each one maps to a concrete recurring situation in the codebase.
+
+### Binary search for interval membership — `bisect`
+
+After building an interval union with `_union_intervals`, searching it should use binary search, not linear scan. The union is sorted and non-overlapping by construction — exactly the precondition `bisect` requires.
+
+```python
+import bisect
+
+def _in_union(u: float, zones: tuple[tuple[float, float], ...]) -> bool:
+    """Tests membership in a sorted, non-overlapping interval union.
+
+    Uses binary search — O(log n), not O(n).
+    Precondition: zones is sorted and non-overlapping (output of _build_opening_zones).
+    """
+    if not zones:
+        return False
+    lows = tuple(lo for lo, _ in zones)
+    idx  = bisect.bisect_right(lows, u) - 1
+    if idx < 0:
+        return False
+    _, hi = zones[idx]
+    return u <= hi + geom_eps.AXIS_MERGE_TOL
+```
+
+At single-house scale the difference is negligible. The pattern is documented here because it is correct regardless of scale — and because the precondition (sorted, non-overlapping) is already guaranteed by the union-build step.
+
+### Sweep-line for axis merge
+
+Merging two sorted axis sequences into one deduplicated sequence is a sweep: sort once, then walk forward keeping only values that are further than the tolerance from the last accepted value.
+
+```python
+# HOT PATH — keep allocation-free, no logging, no defensive checks
+def _merge_axes(
+    primary:   tuple[float, ...],
+    secondary: tuple[float, ...],
+    tol:       float,
+) -> tuple[float, ...]:
+    """Merges two sorted axis sequences, deduplicating within tolerance.
+
+    O(n + m) after the initial sort — single forward sweep.
+    """
+    merged = sorted(set(primary) | set(secondary))
+    if not merged:
+        return ()
+    result = [merged[0]]
+    for u in merged[1:]:
+        if u - result[-1] > tol:
+            result.append(u)
+    return tuple(result)
+```
+
+The pattern: **sort once, sweep once.** Never revisit earlier elements. This applies to every axis operation in the system — axes_u, axes_z, opening interval boundaries.
+
+### Lookup tables before the main loop
+
+When the same lookup is performed inside a loop, build the table before the loop — not inside it.
+
+```python
+# Wrong — O(walls × members) total
+for member in members:
+    wall = next(w for w in structure.walls if w.id == member.wall)
+
+# Right — O(walls) build, O(1) lookup, O(members) main pass
+wall_by_id: dict[str, Wall] = {w.id: w for w in structure.walls}
+for member in members:
+    wall = wall_by_id[member.wall]
+```
+
+This is not an optimization — it is the correct algorithm. The lookup table expresses what the code actually needs: a map from ID to object. The loop-search version obscures this.
+
+The pattern applies to every repeated lookup in the pipeline: walls by ID, sections by role, openings by wall, material variants by ID.
+
+### `accumulate` for cumulative positions
+
+Axis positions computed from spans or heights are cumulative sums. Use `itertools.accumulate` — it expresses the intent and avoids the O(n²) naive approach.
+
+```python
+from itertools import accumulate
+
+# Bay axes from span widths
+spans  = (3.2, 3.5, 3.2, 3.5, 3.2)
+axes_u = (0.0,) + tuple(accumulate(spans))
+# → (0.0, 3.2, 6.7, 9.9, 13.4, 16.6)
+
+# Z-levels from storey heights
+heights = (2.8, 2.6, 1.4)   # ground floor, upper floor, knee wall
+axes_z  = (0.0,) + tuple(accumulate(heights))
+# → (0.0, 2.8, 5.4, 6.8)
+```
+
+The naive alternative — `sum(spans[:i]) for i in range(len(spans)+1)` — recomputes the partial sum from zero each iteration: O(n²) for O(n) work.
+
+### `defaultdict` for incremental grouping
+
+When a grouped structure is built incrementally — one element at a time from a flat source — use `defaultdict` for the build phase and convert to a frozen structure before returning.
+
+```python
+from collections import defaultdict
+
+# Build phase — mutable is correct here
+openings_by_wall: defaultdict[str, list[Opening]] = defaultdict(list)
+for opening in raw_openings:
+    openings_by_wall[opening.wall].append(opening)
+
+# Freeze before returning — sorted for determinism
+return {
+    wall: tuple(sorted(ops, key=lambda o: o.u_range.min_v))
+    for wall, ops in openings_by_wall.items()
+}
+```
+
+`defaultdict` internally; `dict[str, tuple[...]]` at the boundary. The conversion also imposes the sort that determinism requires — an unsorted group is a hidden ordering dependency.
+
+### `zip` for parallel structures
+
+When two sequences correspond element-by-element, `zip` makes that relationship explicit.
+
+```python
+# Pair axis intervals with their bay IDs
+for (u_lo, u_hi), bay_id in zip(pairwise(axes_u), bay_ids):
+    width = u_hi - u_lo
+    frame = BayFrame(bay_index=bay_id, u_lo=u_lo, u_hi=u_hi, width=width)
+```
+
+`zip` signals: these two sequences are structurally coupled. A reader immediately understands the relationship without tracking an index. Never use `range(len(...))` when `zip` expresses the intent.
+
+### Float quantization for stable keys
+
+When float coordinates must be used as dictionary keys or set members — for deduplication outside the normal tolerance-based merge — quantize to an integer key rather than comparing with `==`.
+
+```python
+_QUANT = 1_000  # 1 mm precision at metre coordinates
+
+def _quantize(u: float) -> int:
+    """Converts a float coordinate to a stable integer key at 1mm precision."""
+    return round(u * _QUANT)
+```
+
+Sets and dicts have no notion of tolerance. Two floats that are geometrically identical but differ in the last bit will be treated as distinct keys. Quantization removes the ambiguity by collapsing the precision explicitly.
+
+Use only where deduplication is the goal. Geometric comparisons in validation and member placement still use `geom_eps` — the tolerance is the contract there, not the deduplication.
+
 ---
 
 ## 12. Testing
@@ -585,6 +985,37 @@ Optimize in this order. Do not skip levels.
 **2. Data structure** — `frozen=True, slots=True`, `tuple` over `list`, `set` for membership. These are defaults, not optimizations.
 
 **3. Measured** — profile first with `cProfile` or `time.perf_counter`. Optimize only what profiling identifies as a bottleneck. Document what was measured and what changed.
+
+**4. Memoization** — `@lru_cache` for pure, seed-independent functions only.
+
+`@lru_cache` caches return values by input hash. It is global state that persists across calls. In a generation pipeline that builds many houses, this means a result computed for house 1 may be returned to house 2 without recomputation — correct only if the function's output does not depend on the seed.
+
+Two categories exist:
+
+*Safe to cache* — functions whose output depends only on structural parameters, not on the seed. Material physics lookup, policy invariant validation, section area computation:
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def _section_area(width_mm: float, height_mm: float) -> float:
+    """Returns cross-sectional area. Pure, seed-independent."""
+    return width_mm * height_mm
+```
+
+*Never cache* — functions that consume `ctx.seed` directly or indirectly. `resolve_policy_stack`, any `derive_*` function, anything involving `NoisePolicy` or material sampling. Caching these would return a result computed under one seed to a caller with a different seed — silent determinism violation.
+
+The test before adding `@lru_cache`: does this function produce identical output for identical inputs regardless of which house, settlement, or world seed is active? If yes, and profiling confirms the function is called repeatedly with identical inputs, cache it. If any doubt — do not cache.
+
+Document every cached function with a comment stating why it is safe:
+
+```python
+@lru_cache(maxsize=128)
+def resolve_material_physics(material_id: str) -> MaterialPhysics:
+    # WHY: material physics are fixed by ID — no seed dependency.
+    # Safe to cache across all houses in a settlement.
+    ...
+```
 
 Micro-optimizations (local variable binding, itertools replacement of manual loops) only after profiling confirms a hot spot. Readability is not sacrificed for speculative performance gains.
 
