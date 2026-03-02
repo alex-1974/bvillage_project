@@ -30,6 +30,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import logging
+import math
 from datetime import datetime
 from typing import Any, Optional
 
@@ -239,15 +240,39 @@ def _clear_fachwerk_subtree(root_collection: bpy.types.Collection) -> int:
 # -----------------------------------------------------------------------------
 
 def _require_house_keys(house: dict[str, Any]) -> None:
-    if not house.get("axes_u") or not house.get("axes_v"):
+    """Contract gate for house metadata.
+
+    ARC-001A hardened:
+      - The Blender layer must not set defaults.
+      - All required parameters must be provided upstream (core.house_params + structure.grid).
+    """
+    required = (
+        "axes_u",
+        "axes_v",
+        "L",
+        "W",
+        "z0",
+        "z_plate",
+        "roof_pitch_deg",
+        "roof_overhang",
+        "post_section",
+        "plate_section",
+    )
+    for k in required:
+        if k not in house:
+            raise SchemaError(f"House metadata missing required key '{k}'")
+
+    axes_u = house.get("axes_u")
+    axes_v = house.get("axes_v")
+    if not axes_u or not axes_v:
         raise SchemaError("Invalid house: axes_u/axes_v missing or empty")
 
-    house.setdefault("z0", 0.0)
-    house.setdefault("z_plate", 2.2)
-    house.setdefault("roof_pitch_deg", 45.0)
-    house.setdefault("roof_overhang", 0.35)
-    house.setdefault("post_section", (0.20, 0.20))
-    house.setdefault("plate_section", (0.18, 0.18))
+    # sanity
+    if float(house["L"]) <= 0.0 or float(house["W"]) <= 0.0:
+        raise SchemaError(f"Invalid house dims: L={house['L']!r} W={house['W']!r}")
+    if float(house["roof_pitch_deg"]) <= 0.0:
+        raise SchemaError(f"Invalid roof_pitch_deg: {house['roof_pitch_deg']!r}")
+
 
 
 def _log_build_header(house_name: str, house: dict[str, Any]) -> None:
@@ -257,8 +282,8 @@ def _log_build_header(house_name: str, house: dict[str, Any]) -> None:
     lines.append("BVILLAGE FACHWERK BUILD START")
     lines.append(f"House      : {house_name}")
     try:
-        W = float(house.get("W", 0.0))
-        z_plate = float(house.get("z_plate", 2.2))
+        W = float(house["W"])
+        z_plate = float(house["z_plate"])
         fields = house.get("fields", "?")
         lines.append(f"Dims      : fields={fields} | W={W:.3f}m | plate={z_plate:.3f}m")
     except Exception:
@@ -269,85 +294,51 @@ def _log_build_header(house_name: str, house: dict[str, Any]) -> None:
 
 
 def _coerce_house(ctx: Any, structure: Any) -> dict[str, Any]:
-    """Extract `house` dict from ctx/structure notes or derive from StructurePlan grid."""
-    def _is_house(d: Any) -> bool:
-        return isinstance(d, dict) and bool(d.get("axes_u")) and bool(d.get("axes_v"))
+    """Build the `house` dict required by the Blender builder.
 
-    def _get_notes(obj: Any) -> Optional[dict[str, Any]]:
-        n = getattr(obj, "notes", None)
-        return n if isinstance(n, dict) else None
+    ARC-001A hardened:
+      - All policy/renderer parameters must come from the upstream artifact `core.house_params`.
+      - Axes come from `structure.grid` (truth of plan discretization).
+      - No fallback defaults are allowed here.
+    """
+    notes = getattr(structure, "notes", None)
+    if not isinstance(notes, dict):
+        raise SchemaError("StructurePlan.notes missing/invalid (expected dict)")
 
-    n = _get_notes(structure)
-    if n and _is_house(n.get("house")):
-        return n["house"]
-
-    n = _get_notes(ctx)
-    if n and _is_house(n.get("house")):
-        return n["house"]
-
-    if isinstance(structure, dict):
-        nn = structure.get("notes")
-        if isinstance(nn, dict) and _is_house(nn.get("house")):
-            return nn["house"]
-        if _is_house(structure.get("house")):
-            return structure["house"]
-        if _is_house(structure):
-            return structure
-
-    if isinstance(ctx, dict):
-        nn = ctx.get("notes")
-        if isinstance(nn, dict) and _is_house(nn.get("house")):
-            return nn["house"]
-        if _is_house(ctx.get("house")):
-            return ctx["house"]
-        if _is_house(ctx):
-            return ctx
-
-    h = getattr(structure, "house", None)
-    if _is_house(h):
-        return h
-    h = getattr(ctx, "house", None)
-    if _is_house(h):
-        return h
-
-    # derive from structure.grid where possible
-    grid = getattr(structure, "grid", None)
-    footprint = getattr(structure, "footprint", None)
-    if grid is not None and hasattr(grid, "axes_u") and hasattr(grid, "axes_v") and footprint is not None:
-        axes_u = list(getattr(grid, "axes_u"))
-        axes_v = list(getattr(grid, "axes_v"))
-        if axes_u and axes_v:
-            z0 = 0.0
-            H_e = 2.6
-            walls = getattr(structure, "walls", None)
-            if walls:
-                try:
-                    z0 = min(float(w.z[0]) for w in walls)   # type: ignore[attr-defined]
-                    H_e = max(float(w.z[1]) for w in walls)  # type: ignore[attr-defined]
-                except Exception:
-                    pass
-
-            fields = getattr(grid, "fields", None)
-            fields_n = len(fields) if isinstance(fields, (list, tuple)) else getattr(grid, "n_fields", None)
-
-            return {
-                "axes_u": axes_u,
-                "axes_v": axes_v,
-                "fields": fields_n if fields_n is not None else "?",
-                "L": float(getattr(footprint, "length", max(axes_u) - min(axes_u))),
-                "W": float(getattr(footprint, "width", max(axes_v) - min(axes_v))),
-                "z0": z0,
-                "H_e": H_e,
-                "z_plate": 2.2,
-                "roof_pitch_deg": 45.0,
-                "roof_overhang": 0.35,
-                "post_section": (0.20, 0.20),
-                "plate_section": (0.18, 0.18),
-            }
-
-    raise SchemaError(
-        "House metadata missing: need house with axes_u/axes_v (from ctx/structure notes OR derivable from structure.grid)."
+    hp = get_domain_artifact(
+        notes,
+        domain="core",
+        artifact="house_params",
+        legacy_aliases=("house_params", "core.house_params"),
     )
+    if not isinstance(hp, dict):
+        raise SchemaError("Missing required artifact: core.house_params")
+
+    grid = getattr(structure, "grid", None)
+    if grid is None or not hasattr(grid, "axes_u") or not hasattr(grid, "axes_v"):
+        raise SchemaError("StructurePlan.grid missing/invalid (axes_u/axes_v required)")
+
+    axes_u = list(getattr(grid, "axes_u"))
+    axes_v = list(getattr(grid, "axes_v"))
+    if not axes_u or not axes_v:
+        raise SchemaError("StructurePlan.grid axes_u/axes_v missing or empty")
+
+    # Merge into the contract object used by audit + builder
+    house: dict[str, Any] = dict(hp)
+    house["axes_u"] = axes_u
+    house["axes_v"] = axes_v
+
+    # Optional, for logs only
+    fields = getattr(grid, "fields", None)
+    if isinstance(fields, (list, tuple)):
+        house["fields"] = len(fields)
+    else:
+        n_fields = getattr(grid, "n_fields", None)
+        if n_fields is not None:
+            house["fields"] = n_fields
+
+    return house
+
 
 
 def _house_basis(house: dict[str, Any]) -> tuple[float, float, float, float]:
@@ -438,7 +429,7 @@ def _build_primary_posts_from_members(fp: dict[str, Any], house: dict[str, Any],
         if str(mm.get("role")) != "PRIMARY_POST":
             continue
         p0, p1 = _map_post_member(mm, house=house)
-        obj = _add_beam(col_frame, name=_member_name(mm, fallback="Post"), p0=p0, p1=p1, profile=mm.get("profile") or house.get("post_section"))
+        obj = _add_beam(col_frame, name=_member_name(mm, fallback="Post"), p0=p0, p1=p1, profile=mm.get("profile") or house["post_section"])
         _assign_member_material(obj, mm, ctx_view)
         built += 1
     return built
@@ -453,7 +444,7 @@ def _build_plates_from_members(fp: dict[str, Any], house: dict[str, Any], col_fr
         if not role.startswith("EAVES_PLATE_"):
             continue
         p0, p1 = _map_rail_member(m, house=house)
-        obj = _add_beam(col_frame, name=_member_name(m, fallback="Plate"), p0=p0, p1=p1, profile=m.get("profile") or house.get("plate_section"))
+        obj = _add_beam(col_frame, name=_member_name(m, fallback="Plate"), p0=p0, p1=p1, profile=m.get("profile") or house["plate_section"])
         _assign_member_material(obj, m, ctx_view)
         built += 1
     return built
@@ -478,9 +469,9 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
     if not axes_u:
         return 0
 
-    z0 = float(house.get("z0", 0.0))
+    z0 = float(house["z0"])
     # Prefer explicit ridge/hall height if present; otherwise fall back to H_e.
-    z1 = float(house.get("z_ridge", house.get("H_e", 2.6)))
+    z1 = float(house.get("z_ridge") if ("z_ridge" in house) else (float(house["z_plate"]) + math.tan(math.radians(float(house["roof_pitch_deg"]))) * (0.5 * float(house["W"]))))
 
     # Midline y=0 in house coordinates; x runs along axes_u.
     for i, x in enumerate(axes_u):
@@ -492,8 +483,8 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
             "z0": z0,
             "z1": z1,
             # allow profile override if present on house
-            "profile": {"w": float(house.get("post_section", (0.20, 0.20))[0]),
-                        "d": float(house.get("post_section", (0.20, 0.20))[1])},
+            "profile": {"w": float(house["post_section"][0]),
+                        "d": float(house["post_section"][1])},
         }
         p0 = Vector((float(x), 0.0, z0))
         p1 = Vector((float(x), 0.0, z1))
@@ -502,7 +493,7 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
             name=mm["id"],
             p0=p0,
             p1=p1,
-            profile=mm.get("profile") or house.get("post_section"),
+            profile=mm.get("profile") or house["post_section"],
         )
         _assign_member_material(obj, mm, ctx_view)
         built += 1
@@ -522,12 +513,12 @@ def _build_posts_and_plates(house: dict[str, Any], fp: dict[str, Any], col_frame
 
 def _build_roof(house: dict[str, Any], col_roof: bpy.types.Collection) -> dict[str, Any]:
     from .roof import build_roof_per_field
-    halfW = 0.5 * float(house.get("W", 0.0))
+    halfW = 0.5 * float(house["W"])
     return build_roof_per_field(
         axes_u=list(house["axes_u"]),
         half_width=halfW,
-        z_plate=float(house.get("z_plate", 2.2)),
-        roof_pitch_deg=float(house.get("roof_pitch_deg", 45.0)),
+        z_plate=float(house["z_plate"]),
+        roof_pitch_deg=float(house["roof_pitch_deg"]),
         col_roof=col_roof,
     )
 
@@ -564,11 +555,11 @@ def build_frame(
     LOG.info("BUILD START | house=%s clear=%s", getattr(structure, "name", "Structure"), clear_previous)
     LOG.debug(
         "HOUSE | L=%.3f W=%.3f z0=%.3f z_plate=%.3f pitch=%.1f",
-        float(house.get("L", 0.0)),
-        float(house.get("W", 0.0)),
-        float(house.get("z0", 0.0)),
-        float(house.get("z_plate", 0.0)),
-        float(house.get("roof_pitch_deg", 0.0)),
+        float(house["L"]),
+        float(house["W"]),
+        float(house["z0"]),
+        float(house["z_plate"]),
+        float(house["roof_pitch_deg"]),
     )
     LOG.debug("CTX | seed=%s", ctx_view.get("seed"))
 
