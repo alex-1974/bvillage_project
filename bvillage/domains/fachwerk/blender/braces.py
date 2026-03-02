@@ -1,16 +1,17 @@
 # bvillage/domains/fachwerk/blender/braces.py
 
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import bpy
 from mathutils import Vector
 from .materials_assign import assign_member_material
 
+__all__ = ['build_braces_corner_band']
+
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.braces")
 
-
-def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
+def _get_basis(fp: dict[str, Any]) -> dict[str, float]:
     basis = fp.get("basis")
     if isinstance(basis, dict):
         return {
@@ -31,13 +32,12 @@ def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
         "halfW": 0.5 * W,
     }
 
-
 def _map_wall_uvz_to_world(
     *,
     wall: str,
     u: float,
     z: float,
-    basis: Dict[str, float],
+    basis: dict[str, float],
 ) -> Vector:
     x_min = basis["x_min"]
     x_max = basis["x_max"]
@@ -53,7 +53,6 @@ def _map_wall_uvz_to_world(
     if wall == "W":
         return Vector((x_min, u, z))
     raise ValueError(f"Unknown wall '{wall}'")
-
 
 def build_braces_corner_band(
     *,

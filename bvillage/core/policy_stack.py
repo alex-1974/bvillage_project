@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Tuple, Any
+from typing import Any
 
 from .model import Context
 from .policy_types import (
@@ -13,22 +13,22 @@ from .policy_types import (
     FachwerkPolicySpec,
 )
 
-@dataclass(frozen=True)
+__all__ = ['resolve_policy_stack', 'resolve_policy_stack_with_trace', 'TraceOp', 'TraceLayer', 'ResolutionTrace']
+
+@dataclass(frozen=True, slots=True)
 class TraceOp:
     key: str
     value: Any
 
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class TraceLayer:
     layer_id: str
-    ops: Tuple[TraceOp, ...]
+    ops: tuple[TraceOp, ...]
 
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ResolutionTrace:
     schema: int
-    layers: Tuple[TraceLayer, ...]
+    layers: tuple[TraceLayer, ...]
 
 # HOT PATH — called once per house; becomes N× per house with multi-candidate search
 def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
@@ -87,7 +87,7 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
     # Constraints (minimal MVP set)
     # =========================================================
 
-    constraints: Dict[str, ConstraintSpec] = {}
+    constraints: dict[str, ConstraintSpec] = {}
 
     if house_type == "fachwerkhaus.hallenhaus":
 
@@ -122,7 +122,7 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
 def resolve_policy_stack_with_trace(ctx: Context) -> tuple[ResolvedPolicy, ResolutionTrace]:
     resolved = resolve_policy_stack(ctx)
 
-    layers: List[TraceLayer] = []
+    layers: list[TraceLayer] = []
 
     # ---- TypePolicy Layer ----
     if ctx.house_type == "fachwerkhaus.hallenhaus":

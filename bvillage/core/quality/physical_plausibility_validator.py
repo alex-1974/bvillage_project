@@ -52,7 +52,9 @@ Future checks (plugins)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple
+from typing import Any, Protocol
+
+__all__ = ['run_ppv', 'extract_members_from_notes', 'Issue', 'PhysicsPolicy', 'PhysicalPlausibilityReport', 'StructuralMember']
 
 # ---- Optional import: Material registry (keep soft dependency friendly) ----
 try:
@@ -61,21 +63,19 @@ except Exception:  # pragma: no cover
     MATERIALS = {}
     MaterialClass = Any  # type: ignore
 
-
 # =============================================================================
 # Public data structures
 # =============================================================================
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Issue:
     code: str                # e.g. "H_PHYS_BEAM_BENDING_FAIL"
     severity: str            # "H" (hard), "S" (soft), "G" (guidance)
     message: str
-    member_id: Optional[str] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    member_id: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PhysicsPolicy:
     # Serviceability limits (deflection)
     deflection_limit_ratio_floor: float = 250.0   # L/250
@@ -109,22 +109,20 @@ class PhysicsPolicy:
     # Load model fallback tributary width (m) if unknown
     default_tributary_width_m: float = 1.0
 
-
-@dataclass
+@dataclass(slots=True)
 class PhysicalPlausibilityReport:
-    issues: List[Issue]
-    metrics: Dict[str, float] = field(default_factory=dict)
-    per_member: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    issues: list[Issue]
+    metrics: dict[str, float] = field(default_factory=dict)
+    per_member: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def has_hard_fail(self) -> bool:
         return any(i.severity == "H" for i in self.issues)
-
 
 # =============================================================================
 # Internal member abstraction (adapter-friendly)
 # =============================================================================
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class StructuralMember:
     """
     A minimal structural member record PPV can evaluate.
@@ -141,18 +139,17 @@ class StructuralMember:
     section_width_mm: float
     section_height_mm: float
 
-    material_id: Optional[str] = None
+    material_id: str | None = None
 
     # load context
     usage: str = "roof"  # "roof" | "floor" | "unknown"
-    tributary_width_m: Optional[float] = None
+    tributary_width_m: float | None = None
 
     # bearing/support info (optional)
-    bearing_len_mm: Optional[float] = None  # contact length at support
+    bearing_len_mm: float | None = None  # contact length at support
 
     # allow attaching raw domain data for debugging
-    raw: Dict[str, Any] = field(default_factory=dict)
-
+    raw: dict[str, Any] = field(default_factory=dict)
 
 # =============================================================================
 # Check plugin interface
@@ -165,10 +162,9 @@ class PhysicalCheck(Protocol):
         ctx: Any,
         structure: Any,
         pol: PhysicsPolicy,
-        members: List[StructuralMember],
-    ) -> Tuple[List[Issue], Dict[str, float], Dict[str, Dict[str, Any]]]:
+        members: list[StructuralMember],
+    ) -> tuple[list[Issue], dict[str, float], dict[str, dict[str, Any]]]:
         ...
-
 
 # =============================================================================
 # Public API
@@ -178,8 +174,8 @@ def run_physical_plausibility(
     ctx: Any,
     structure: Any,
     *,
-    policy: Optional[PhysicsPolicy] = None,
-    domain_id: Optional[str] = None,
+    policy: PhysicsPolicy | None = None,
+    domain_id: str | None = None,
 ) -> PhysicalPlausibilityReport:
     """
     Run PPV for a given structure.
@@ -203,17 +199,17 @@ def run_physical_plausibility(
     pol = policy or PhysicsPolicy()
 
     members, discovery_issues = _extract_members(structure, pol, domain_id=domain_id)
-    issues: List[Issue] = list(discovery_issues)
+    issues: list[Issue] = list(discovery_issues)
 
-    checks: List[PhysicalCheck] = [
+    checks: list[PhysicalCheck] = [
         GeometrySanityCheck(),
         StructuralBeamCheck(),
         BearingCheck(),
         PostSlendernessCheck(),
     ]
 
-    metrics: Dict[str, float] = {}
-    per_member: Dict[str, Dict[str, Any]] = {}
+    metrics: dict[str, float] = {}
+    per_member: dict[str, dict[str, Any]] = {}
 
     for chk in checks:
         chk_issues, chk_metrics, chk_pm = chk.run(ctx, structure, pol, members)
@@ -229,7 +225,6 @@ def run_physical_plausibility(
 
     return PhysicalPlausibilityReport(issues=issues, metrics=metrics, per_member=per_member)
 
-
 # =============================================================================
 # Extraction helpers (domain artifact -> StructuralMember)
 # =============================================================================
@@ -238,8 +233,8 @@ def _extract_members(
     structure: Any,
     pol: PhysicsPolicy,
     *,
-    domain_id: Optional[str],
-) -> Tuple[List[StructuralMember], List[Issue]]:
+    domain_id: str | None,
+) -> tuple[list[StructuralMember], list[Issue]]:
     """
     Extract StructuralMember list from structure notes.
 
@@ -300,8 +295,8 @@ def _extract_members(
             message=f"No members found under notes['domains']['{use_domain}']['frameplan']['members'].",
         )]
 
-    members: List[StructuralMember] = []
-    issues: List[Issue] = []
+    members: list[StructuralMember] = []
+    issues: list[Issue] = []
 
     for i, m in enumerate(members_raw):
         if not isinstance(m, dict):
@@ -352,7 +347,6 @@ def _extract_members(
 
     return members, issues
 
-
 # =============================================================================
 # Check implementations
 # =============================================================================
@@ -360,10 +354,10 @@ def _extract_members(
 class GeometrySanityCheck:
     name = "GeometrySanity"
 
-    def run(self, ctx, structure, pol: PhysicsPolicy, members: List[StructuralMember]):
-        issues: List[Issue] = []
-        metrics: Dict[str, float] = {}
-        pm: Dict[str, Dict[str, Any]] = {}
+    def run(self, ctx, structure, pol: PhysicsPolicy, members: list[StructuralMember]):
+        issues: list[Issue] = []
+        metrics: dict[str, float] = {}
+        pm: dict[str, dict[str, Any]] = {}
 
         min_thk = pol.min_member_thickness_mm
         bad = 0
@@ -386,14 +380,13 @@ class GeometrySanityCheck:
         metrics["thin_members"] = float(bad)
         return issues, metrics, pm
 
-
 class StructuralBeamCheck:
     name = "StructuralBeam"
 
-    def run(self, ctx, structure, pol: PhysicsPolicy, members: List[StructuralMember]):
-        issues: List[Issue] = []
-        metrics: Dict[str, float] = {"max_utilization": 0.0, "max_deflection_mm": 0.0}
-        pm: Dict[str, Dict[str, Any]] = {}
+    def run(self, ctx, structure, pol: PhysicsPolicy, members: list[StructuralMember]):
+        issues: list[Issue] = []
+        metrics: dict[str, float] = {"max_utilization": 0.0, "max_deflection_mm": 0.0}
+        pm: dict[str, dict[str, Any]] = {}
 
         for m in members:
             if m.role not in {"beam", "purlin", "joist", "rafter", "girder", "plate"}:
@@ -492,14 +485,13 @@ class StructuralBeamCheck:
 
         return issues, metrics, pm
 
-
 class BearingCheck:
     name = "Bearing"
 
-    def run(self, ctx, structure, pol: PhysicsPolicy, members: List[StructuralMember]):
-        issues: List[Issue] = []
-        metrics: Dict[str, float] = {"max_bearing_util": 0.0}
-        pm: Dict[str, Dict[str, Any]] = {}
+    def run(self, ctx, structure, pol: PhysicsPolicy, members: list[StructuralMember]):
+        issues: list[Issue] = []
+        metrics: dict[str, float] = {"max_bearing_util": 0.0}
+        pm: dict[str, dict[str, Any]] = {}
 
         for m in members:
             if m.role not in {"beam", "purlin", "joist", "rafter", "girder", "plate"}:
@@ -560,14 +552,13 @@ class BearingCheck:
 
         return issues, metrics, pm
 
-
 class PostSlendernessCheck:
     name = "PostSlenderness"
 
-    def run(self, ctx, structure, pol: PhysicsPolicy, members: List[StructuralMember]):
-        issues: List[Issue] = []
-        metrics: Dict[str, float] = {"max_slenderness": 0.0}
-        pm: Dict[str, Dict[str, Any]] = {}
+    def run(self, ctx, structure, pol: PhysicsPolicy, members: list[StructuralMember]):
+        issues: list[Issue] = []
+        metrics: dict[str, float] = {"max_slenderness": 0.0}
+        pm: dict[str, dict[str, Any]] = {}
 
         for m in members:
             if m.role not in {"post", "column", "stud"}:
@@ -607,12 +598,11 @@ class PostSlendernessCheck:
 
         return issues, metrics, pm
 
-
 # =============================================================================
 # Physics helpers
 # =============================================================================
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class _FallbackMaterial:
     id: str = "fallback_default"
     E_N_mm2: float = 11000.0
@@ -620,7 +610,6 @@ class _FallbackMaterial:
     fb_allow_N_mm2: float = 10.0
     fv_allow_N_mm2: float = 1.0
     fc90_allow_N_mm2: float = 2.0
-
 
 def _resolve_material(m: StructuralMember, pol: PhysicsPolicy) -> Any:
     """
@@ -639,7 +628,6 @@ def _resolve_material(m: StructuralMember, pol: PhysicsPolicy) -> Any:
         fc90_allow_N_mm2=pol.default_fc90_allow_N_mm2,
     )
 
-
 def _line_load_N_per_mm(usage: str, pol: PhysicsPolicy, tributary_width_m: float) -> float:
     """
     Convert area load (kN/m²) to line load (N/mm) using tributary width (m).
@@ -656,8 +644,7 @@ def _line_load_N_per_mm(usage: str, pol: PhysicsPolicy, tributary_width_m: float
     w_N_per_mm = (w_kN_per_m * 1000.0) / 1000.0  # (kN->N) and (m->mm) cancels nicely
     return w_N_per_mm
 
-
-def _compute_global_maxima(metrics: Dict[str, float], per_member: Dict[str, Dict[str, Any]]) -> None:
+def _compute_global_maxima(metrics: dict[str, float], per_member: dict[str, dict[str, Any]]) -> None:
     """
     Convenience aggregate metrics from per-member fields.
     """
@@ -676,7 +663,6 @@ def _compute_global_maxima(metrics: Dict[str, float], per_member: Dict[str, Dict
 
     metrics["global.max_utilization"] = max_util
     metrics["global.max_deflection_mm"] = max_defl
-
 
 # =============================================================================
 # End

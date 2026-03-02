@@ -1,16 +1,17 @@
 # bvillage/domains/fachwerk/blender/integrity.py
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
+
+__all__ = ['run_integrity_checks', 'check_integrity']
 
 LOG = logging.getLogger("bvillage.domains.fachwerk.blender.integrity")
-
 
 # ---------------------------------------------------------------------
 # Helpers (canonical FramePlan-first)
 # ---------------------------------------------------------------------
 
-def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
+def _get_basis(fp: dict[str, Any]) -> dict[str, float]:
     """
     Prefer canonical fp["basis"].
     Fallback: derive from fp["dims"] (L,W).
@@ -34,13 +35,12 @@ def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
     Wf = float(W)
     return {"x_min": 0.0, "x_max": Lf, "center_x": 0.5 * Lf, "halfW": 0.5 * Wf}
 
-
-def _as_float_list(x: Any) -> List[float]:
+def _as_float_list(x: Any) -> list[float]:
     """
     Accept list/tuple of numerics; return float list.
     If dict is given, values are collected recursively (best-effort).
     """
-    vals: List[float] = []
+    vals: list[float] = []
 
     def _collect(v: Any) -> None:
         if v is None:
@@ -66,15 +66,13 @@ def _as_float_list(x: Any) -> List[float]:
     _collect(x)
     return vals
 
-
-def _is_non_decreasing(xs: List[float], *, tol: float = 1e-9) -> bool:
+def _is_non_decreasing(xs: list[float], *, tol: float = 1e-9) -> bool:
     for i in range(len(xs) - 1):
         if xs[i + 1] + tol < xs[i]:
             return False
     return True
 
-
-def _normalize_openings(fp: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _normalize_openings(fp: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Prefer canonical fp["openings_norm"] where u0/u1/z0/z1 exist as floats.
     Fallback: attempt to normalize fp["openings"].
@@ -132,15 +130,14 @@ def _normalize_openings(fp: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     return out
 
-
 # ---------------------------------------------------------------------
 # Main checks
 # ---------------------------------------------------------------------
 
 def run_integrity_checks(
     *,
-    fp: Dict[str, Any],
-    house: Dict[str, Any],  # kept for signature compatibility (not required)
+    fp: dict[str, Any],
+    house: dict[str, Any],  # kept for signature compatibility (not required)
     col_frame,
     col_roof,
     col_openings,
@@ -243,12 +240,11 @@ def run_integrity_checks(
     LOG.info("INTEGRITY done | ok=%s", ok)
     return ok
 
-
 # ---------------------------------------------------------------------
 # Compatibility wrapper (expected by build_frame.py)
 # ---------------------------------------------------------------------
 
-def check_integrity(*, fp: Dict[str, Any], house: Dict[str, Any], collections: Dict[str, Any]) -> bool:
+def check_integrity(*, fp: dict[str, Any], house: dict[str, Any], collections: dict[str, Any]) -> bool:
     """
     build_frame.py expects check_integrity(fp=..., house=..., collections=...).
 

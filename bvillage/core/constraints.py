@@ -19,16 +19,18 @@ Core-only:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple, Dict, List, Literal
+from typing import Literal
 import hashlib
 from random import Random
 
 from .model import Context, Issue
 
-Range2 = Tuple[float, float]
+__all__ = ['RangeHard', 'RangeSoft', 'CostProfile', 'ConstraintEval', 'eval_range', 'sample_soft', 'rng_for', 'penalty_soft']
+
+Range2 = tuple[float, float]
 PenaltyMode = Literal["linear", "quadratic", "hinge"]
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RangeHard:
     min_v: float
     max_v: float
@@ -36,8 +38,7 @@ class RangeHard:
     def contains(self, v: float) -> bool:
         return self.min_v <= v <= self.max_v
 
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RangeSoft:
     """
     Soft range with a preferred (ideal) band and an allowed band.
@@ -46,8 +47,7 @@ class RangeSoft:
     allowed: Range2
     weight: float = 1.0
 
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CostProfile:
     """
     How penalties grow with deviation.
@@ -62,14 +62,13 @@ class CostProfile:
     deadband: float = 0.0                # used by hinge
     outside_allowed_step: float = 2.0    # penalty multiplier when outside allowed
 
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ConstraintEval:
     value: float
-    penalties: Dict[str, float]
-    issues: Tuple[Issue, ...] = ()
+    penalties: dict[str, float]
+    issues: tuple[Issue, ...] = ()
 
-_DEFAULT_PROFILE: Tuple[CostProfile, ...] = (
+_DEFAULT_PROFILE: tuple[CostProfile, ...] = (
     CostProfile(name="default", mode="quadratic"),
 )
 
@@ -92,7 +91,6 @@ def _stable_u32(seed: int, key: str) -> int:
     h.update(key.encode("utf-8"))
     return int.from_bytes(h.digest()[:4], "little", signed=False)
 
-
 def rng_for(ctx: Context, key: str) -> Random:
     """
     Deterministic RNG factory.
@@ -100,7 +98,6 @@ def rng_for(ctx: Context, key: str) -> Random:
     Requires ctx.seed to be a Seed object.
     """
     return Random(int(ctx.seed.derive(key)))
-
 
 # ----------------------------
 # Scoring helpers
@@ -112,7 +109,6 @@ def _dist_outside(v: float, a: float, b: float) -> float:
     if v > b:
         return v - b
     return 0.0
-
 
 def _shape_cost(d: float, prof: CostProfile) -> float:
     if d <= 0.0:
@@ -151,7 +147,6 @@ def penalty_soft(v: float, soft: RangeSoft, prof: CostProfile) -> float:
     d = _dist_outside(v, aa, ab)
     return w * prof.outside_allowed_step * _shape_cost(d, prof)
 
-
 # ----------------------------
 # Public API
 # ----------------------------
@@ -162,9 +157,9 @@ def eval_range(
     *,
     name: str,
     value: float,
-    hard: Optional[RangeHard] = None,
-    soft: Optional[RangeSoft] = None,
-    profiles: Optional[Tuple[CostProfile, ...]] = None,
+    hard: RangeHard | None = None,
+    soft: RangeSoft | None = None,
+    profiles: tuple[CostProfile, ...] | None = None,
     unit: str = "m",
     code_prefix: str = "C",
 ) -> ConstraintEval:
@@ -179,8 +174,8 @@ def eval_range(
     if profiles is None:
         profiles = _DEFAULT_PROFILE
 
-    issues: List[Issue] = []
-    #penalties: Dict[str, float] = {p.name: 0.0 for p in profiles}
+    issues: list[Issue] = []
+    #penalties: dict[str, float] = {p.name: 0.0 for p in profiles}
     if len(profiles) == 1:
         p = profiles[0]
         penalties = {p.name: penalty_soft(value, soft, p)} if soft else {p.name: 0.0}
@@ -224,10 +219,7 @@ def eval_range(
 
     return ConstraintEval(value=value, penalties=penalties, issues=tuple(issues))
 
-def _u01_from_u32(x: int) -> float:
-    # Map uint32 -> [0,1). 2**32 = 4294967296
-    return (x & 0xFFFFFFFF) / 4294967296.0
-
+# WHY: duplicate _u01_from_u32 removed — canonical definition with docstring is above.
 
 # HOT PATH — may run many times per house; explodes with candidate sampling
 def sample_soft(

@@ -4,7 +4,7 @@
 bvillage.core.geom_eps
 ======================
 
-Central numeric tolerances for geometric computations.
+Central numeric tolerances and geometric utilities for coordinate computations.
 
 Why
 ---
@@ -32,6 +32,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+__all__ = [
+    "EPS_EQ",
+    "EPS_MERGE",
+    "EPS_INSIDE",
+    "approx_equal",
+    "clamp",
+    "clamp01",
+    "eps_eq",
+    "eps_le",
+    "eps_ge",
+    "sorted_unique",
+]
+
 
 # Approx equality for coordinates (meters)
 EPS_EQ: float = 1e-9
@@ -56,7 +69,8 @@ def clamp(v: float, lo: float, hi: float) -> float:
     if hi < lo:
         lo, hi = hi, lo
     return lo if v < lo else hi if v > hi else v
-    
+
+
 def clamp01(v: float) -> float:
     """Clamp value to [0, 1]."""
     return clamp(v, 0.0, 1.0)
@@ -75,3 +89,26 @@ def eps_le(a: float, b: float, *, abs_tol: float = EPS_EQ) -> bool:
 def eps_ge(a: float, b: float, *, abs_tol: float = EPS_EQ) -> bool:
     """a >= b with EPS tolerance."""
     return float(a) >= float(b) - abs_tol
+
+
+def sorted_unique(xs: list[float], eps: float = EPS_EQ) -> tuple[float, ...]:
+    """Returns a sorted, deduplicated tuple of floats.
+
+    Values closer than eps to their predecessor are dropped.
+    Returns a tuple — the result is a closed, read-only collection.
+
+    Args:
+        xs:  Input floats. May be unsorted and may contain duplicates.
+        eps: Deduplication tolerance. Values within eps of their predecessor
+             are dropped. Defaults to EPS_EQ.
+
+    Returns:
+        Sorted tuple with near-duplicates removed.
+    """
+    # HOT PATH — one sort, one linear sweep, no redundant allocation
+    ys = sorted(float(x) for x in xs)
+    out: list[float] = []
+    for v in ys:
+        if not out or abs(v - out[-1]) > eps:
+            out.append(v)
+    return tuple(out)

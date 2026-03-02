@@ -1,7 +1,7 @@
 # bvillage/domains/fachwerk/blender/opening_frames.py
 
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Any
 
 import bpy
 from mathutils import Vector
@@ -10,8 +10,9 @@ from .timber import make_beam_rect
 from .opening_profiles import OpeningProfilePolicy
 from .materials_assign import assign_member_material
 
-LOG = logging.getLogger("bvillage.domains.fachwerk.blender.opening_frames")
+__all__ = ['build_opening_frames']
 
+LOG = logging.getLogger("bvillage.domains.fachwerk.blender.opening_frames")
 
 # ------------------------------------------------------------
 # Materials (local, minimal)
@@ -19,10 +20,10 @@ LOG = logging.getLogger("bvillage.domains.fachwerk.blender.opening_frames")
 
 def _assign_member_material(
     *,
-    collection: Optional[bpy.types.Collection],
+    collection: bpy.types.Collection | None,
     obj_name: str,
-    member: Dict[str, Any],
-    ctx_view: Optional[Any],
+    member: dict[str, Any],
+    ctx_view: Any | None,
     default_material_id: str,
 ) -> None:
     if ctx_view is None or collection is None:
@@ -49,7 +50,7 @@ def _assign_member_material(
 # Mapping
 # ------------------------------------------------------------
 
-def _house_basis(house: Dict[str, Any]) -> Tuple[float, float, float, float, float, float]:
+def _house_basis(house: dict[str, Any]) -> tuple[float, float, float, float, float, float]:
     axes_u = house["axes_u"]
     axes_v = house["axes_v"]
 
@@ -63,8 +64,7 @@ def _house_basis(house: Dict[str, Any]) -> Tuple[float, float, float, float, flo
 
     return x_min, x_max, center_x, y_min, y_max, halfW
 
-
-def _map_post(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[Vector, Vector]:
+def _map_post(member: dict[str, Any], *, house: dict[str, Any]) -> tuple[Vector, Vector]:
     x_min, x_max, center_x, _, _, halfW = _house_basis(house)
     wall = member["wall"]
     u = float(member["u"])
@@ -81,8 +81,7 @@ def _map_post(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[Vector,
         return Vector((x_min, u, z0)), Vector((x_min, u, z1))
     raise ValueError(f"Unknown wall '{wall}'")
 
-
-def _map_rail(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[Vector, Vector]:
+def _map_rail(member: dict[str, Any], *, house: dict[str, Any]) -> tuple[Vector, Vector]:
     x_min, x_max, center_x, _, _, halfW = _house_basis(house)
     wall = member["wall"]
     u0 = float(member["u0"])
@@ -99,18 +98,17 @@ def _map_rail(member: Dict[str, Any], *, house: Dict[str, Any]) -> Tuple[Vector,
         return Vector((x_min, u0, z)), Vector((x_min, u1, z))
     raise ValueError(f"Unknown wall '{wall}'")
 
-
 # ------------------------------------------------------------
 # Builder
 # ------------------------------------------------------------
 
 def build_opening_frames(
     *,
-    fp: Dict[str, Any],
-    house: Dict[str, Any],
-    collection: Optional[bpy.types.Collection],
-    policy: Optional[OpeningProfilePolicy] = None,
-    ctx_view: Optional[Any] = None,
+    fp: dict[str, Any],
+    house: dict[str, Any],
+    collection: bpy.types.Collection | None,
+    policy: OpeningProfilePolicy | None = None,
+    ctx_view: Any | None = None,
     debug: bool = False,
 ):
     """

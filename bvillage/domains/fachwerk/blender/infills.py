@@ -1,21 +1,22 @@
 # bvillage/domains/fachwerk/blender/infills.py
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import bpy
 from mathutils import Vector
 
 from .materials_assign import assign_member_material
 
-LOG = logging.getLogger("bvillage.domains.fachwerk.blender.infills")
+__all__ = ['build_infills']
 
+LOG = logging.getLogger("bvillage.domains.fachwerk.blender.infills")
 
 # ---------------------------------------------------------------------
 # Canonical FramePlan-first helpers
 # ---------------------------------------------------------------------
 
-def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
+def _get_basis(fp: dict[str, Any]) -> dict[str, float]:
     """
     Prefer canonical fp["basis"].
     Fallback: derive from fp["dims"] (L,W).
@@ -39,10 +40,9 @@ def _get_basis(fp: Dict[str, Any]) -> Dict[str, float]:
     Wf = float(W)
     return {"x_min": 0.0, "x_max": Lf, "center_x": 0.5 * Lf, "halfW": 0.5 * Wf}
 
-
-def _flatten_numeric(x: Any) -> List[float]:
+def _flatten_numeric(x: Any) -> list[float]:
     """Collect numeric values from nested lists/dicts; return sorted unique floats."""
-    vals: List[float] = []
+    vals: list[float] = []
 
     def _collect(v: Any) -> None:
         if v is None:
@@ -68,8 +68,7 @@ def _flatten_numeric(x: Any) -> List[float]:
     _collect(x)
     return sorted(set(vals))
 
-
-def _get_axes_z(fp: Dict[str, Any]) -> List[float]:
+def _get_axes_z(fp: dict[str, Any]) -> list[float]:
     # Prefer canonical
     z = fp.get("axes_z_flat")
     if isinstance(z, list) and z:
@@ -77,12 +76,11 @@ def _get_axes_z(fp: Dict[str, Any]) -> List[float]:
     # Fallback: flatten anything
     return _flatten_numeric(fp.get("axes_z"))
 
-
-def _get_axes_u_flat(fp: Dict[str, Any]) -> Dict[str, List[float]]:
+def _get_axes_u_flat(fp: dict[str, Any]) -> dict[str, list[float]]:
     # Prefer canonical
     axes = fp.get("axes_u_flat")
     if isinstance(axes, dict) and axes:
-        out: Dict[str, List[float]] = {}
+        out: dict[str, list[float]] = {}
         for wall in ("N", "S", "E", "W"):
             v = axes.get(wall, [])
             out[wall] = [float(x) for x in _flatten_numeric(v)]
@@ -90,7 +88,7 @@ def _get_axes_u_flat(fp: Dict[str, Any]) -> Dict[str, List[float]]:
 
     # Fallback: flatten fp["axes_u"]
     axes_u = fp.get("axes_u") or {}
-    out: Dict[str, List[float]] = {}
+    out: dict[str, list[float]] = {}
     if not isinstance(axes_u, dict):
         return {w: [] for w in ("N", "S", "E", "W")}
 
@@ -103,8 +101,7 @@ def _get_axes_u_flat(fp: Dict[str, Any]) -> Dict[str, List[float]]:
 
     return out
 
-
-def _get_openings(fp: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _get_openings(fp: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Prefer canonical fp["openings_norm"] (u0/u1/z0/z1 floats).
     Fallback: normalize fp["openings"] best-effort.
@@ -166,8 +163,7 @@ def _get_openings(fp: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     return out
 
-
-def _cell_hits_opening(wall: str, u0: float, u1: float, z0: float, z1: float, openings: List[Dict[str, Any]]) -> bool:
+def _cell_hits_opening(wall: str, u0: float, u1: float, z0: float, z1: float, openings: list[dict[str, Any]]) -> bool:
     for op in openings:
         if op.get("wall") != wall:
             continue
@@ -181,11 +177,9 @@ def _cell_hits_opening(wall: str, u0: float, u1: float, z0: float, z1: float, op
                 return True
     return False
 
-
 # ---------------------------------------------------------------------
 # Materials (local, deterministic)
 # ---------------------------------------------------------------------
-
 
 def _make_infill_quad(
     collection: bpy.types.Collection,
@@ -195,7 +189,7 @@ def _make_infill_quad(
     v11: Vector,
     v01: Vector,
     *,
-    member_for_material: Optional[Dict[str, Any]] = None,
+    member_for_material: dict[str, Any] | None = None,
     ctx_view: Any = None,
 ) -> bpy.types.Object:
     mesh = bpy.data.meshes.new(name)
@@ -225,15 +219,14 @@ def _make_infill_quad(
 
     return obj
 
-
 # ---------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------
 
 def build_infills(
     *,
-    fp: Dict[str, Any],
-    house: Dict[str, Any],  # kept for signature compatibility
+    fp: dict[str, Any],
+    house: dict[str, Any],  # kept for signature compatibility
     collection: bpy.types.Collection,
     ctx_view: Any = None,   # optional (dict view, preferred; ctx may be frozen)
 ):
