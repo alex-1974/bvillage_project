@@ -13,7 +13,7 @@ from bvillage.core.seed import Seed
 
 SchemaVersion = Literal["1.0"]
 Severity = Literal["HARD", "SOFT", "SUGGEST"]
-EpochBand = Literal["E1", "E2", "E3"]
+EpochBand = Literal["early_medieval", "high_medieval", "late_medieval"]
 
 Vec2 = tuple[float, float]
 Vec3 = tuple[float, float, float]
@@ -26,7 +26,7 @@ class Context:
     seed: Seed = field(default_factory=lambda: Seed(0))
 
     region: str = "unknown"
-    epoch_band: EpochBand = "E2"
+    epoch_band: EpochBand = "high_medieval"
     settlement_type: str = "rural"  # rural / village / town
     wealth: float = 0.5            # 0..1
     occupants: int = 4
