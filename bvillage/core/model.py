@@ -32,7 +32,7 @@ class Context:
     occupants: int = 4
     climate_hint: str = "temperate"
 
-    house_type: str = "hallenhaus"  # plugin id
+    house_type: str = "fachwerkhaus.hallenhaus"  # plugin id
 
 
 @dataclass(frozen=True, slots=True)

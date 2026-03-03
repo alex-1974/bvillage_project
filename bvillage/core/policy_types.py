@@ -34,45 +34,48 @@ class FachwerkPolicySpec:
     """
     Domain inputs for the Fachwerk stack.
 
-    Defaults mirror current bvillage.domains.fachwerk.core.frameplan.FramePolicy defaults
-    (plus renderer-facing fields that are currently defaulted in the Blender layer).
+    All defaults must be policy-level defaults.
+    Blender must not invent structural/material defaults.
     """
 
-    # --- structural rhythm / subdivision ---
+    # --- structural rhythm ---
     binder_max: float
 
-    # --- openings normalization (domain) ---
-    default_jamb_thickness: float = 0.20  # m  :contentReference[oaicite:3]{index=3}
+    # --- openings normalization ---
+    default_jamb_thickness: float = 0.20
 
-    # --- member profile defaults (domain) ---
-    post_section_width: float = 0.20  # m  :contentReference[oaicite:4]{index=4}
-    post_section_depth: float = 0.20  # m  :contentReference[oaicite:5]{index=5}
+    # --- member profile defaults ---
+    post_section_width: float = 0.20
+    post_section_depth: float = 0.20
 
-    plate_section_width: float = 0.18  # m  :contentReference[oaicite:6]{index=6}
-    plate_section_depth: float = 0.18  # m  (matches pattern; depth used by members) :contentReference[oaicite:7]{index=7}
+    plate_section_width: float = 0.18
+    plate_section_depth: float = 0.18
 
-    opening_jamb_width: float = 0.18  # m  :contentReference[oaicite:8]{index=8}
-    opening_jamb_depth: float = 0.18  # m  :contentReference[oaicite:9]{index=9}
+    opening_jamb_width: float = 0.18
+    opening_jamb_depth: float = 0.18
 
-    # --- braces (domain) ---
-    braces_enable: bool = True  # :contentReference[oaicite:10]{index=10}
-    brace_section_width: float = 0.12  # m :contentReference[oaicite:11]{index=11}
-    brace_section_depth: float = 0.12  # m :contentReference[oaicite:12]{index=12}
-    brace_min_cell_width: float = 0.80  # m :contentReference[oaicite:13]{index=13}
-    brace_min_cell_height: float = 0.80  # m :contentReference[oaicite:14]{index=14}
+    # --- braces ---
+    braces_enable: bool = True
+    brace_section_width: float = 0.12
+    brace_section_depth: float = 0.12
+    brace_min_cell_width: float = 0.80
+    brace_min_cell_height: float = 0.80
 
-    # --- historical gefach targeting (domain) ---
-    target_gefach_width: float = 1.35  # m :contentReference[oaicite:15]{index=15}
-    target_gefach_jitter: float = 0.10  # m :contentReference[oaicite:16]{index=16}
+    # --- historical gefach targeting ---
+    target_gefach_width: float = 1.35
+    target_gefach_jitter: float = 0.10
 
-    # --- numerics / merge thresholds (domain) ---
-    z_merge_tol: float = 0.01  # m (FramePolicy has z_merge_tol; used in normalization/merging) :contentReference[oaicite:17]{index=17}
+    # --- numerics ---
+    z_merge_tol: float = 0.01
 
-    # --- renderer-facing (currently defaulted in Blender layer; must become policy-driven) ---
-    roof_pitch_deg: float = 50.0  # deg (Blender roof currently uses defaults; move policy-side)
-    # Fallback profile tuple for Blender mapping when a member lacks explicit "profile"
-    post_section: Tuple[float, float] = (0.20, 0.20)  # (w, d) meters
+    # --- renderer-facing (policy-driven) ---
+    roof_pitch_deg: float = 50.0
 
+    # fallback member profile tuple (used by Blender mapping only)
+    post_section: Tuple[float, float] = (0.20, 0.20)
+
+    # NEW: infill material default (policy-driven, not Blender literal)
+    default_infill_material_role: str = "INFILL_BRICK"
 
 @dataclass(frozen=True, slots=True)
 class ResolvedPolicy:

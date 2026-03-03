@@ -256,17 +256,29 @@ def _attach_house_params_artifact(structure: StructurePlan, pol: ResolvedPolicy)
     roof_overhang = max(0.25, min(0.45, 0.05 * W))
 
     payload = {
-        "schema": 1,
+        "schema": 2,  # <-- schema bump (war 1)
         # geometry
         "L": float(fp.length),
         "W": float(fp.width),
         "z0": float(z0_min),
         "z_plate": float(z1_max),
+
         # policy-driven / renderer-facing
         "roof_pitch_deg": roof_pitch_deg,
         "roof_overhang": float(roof_overhang),
+
         "post_section": [float(post_w), float(post_d)],
         "plate_section": [float(plate_section[0]), float(plate_section[1])],
+
+        # ---- NEW (ARC-001A hardening) ----
+        # brace fallback profile (used only if brace.profile missing)
+        "brace_section": [
+            float(fw.brace_section_width),
+            float(fw.brace_section_depth),
+        ],
+
+        # infill default material role (policy-driven, not Blender constant)
+        "default_infill_material_role": str(fw.default_infill_material_role),
     }
 
     set_domain_artifact(

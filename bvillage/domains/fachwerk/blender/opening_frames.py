@@ -9,6 +9,7 @@ from mathutils import Vector
 from .timber import make_beam_rect
 from .opening_profiles import OpeningProfilePolicy
 from .materials_assign import assign_member_material
+from bvillage.core.errors import SchemaError
 
 __all__ = ['build_opening_frames']
 
@@ -33,7 +34,8 @@ def _assign_member_material(
         return
 
     mm = dict(member) if isinstance(member, dict) else {"role": "OPENING_FRAME"}
-    mm.setdefault("id", obj_name)  # deterministic salt fallback
+    if "id" not in mm or not mm["id"]:
+        mm["id"] = obj_name  # deterministic, but explicit (no setdefault)
 
     try:
         assign_member_material(
@@ -150,21 +152,33 @@ def build_opening_frames(
                 "OPENING_SILL": "SILL",
             }
 
-            # Posts
+            # --------------------------
+            # Posts (opening jambs only)
+            # --------------------------
             for m in posts:
+                role = m.get("role")
+                if not isinstance(role, str) or not role:
+                    raise SchemaError("opening_frames: member missing required string field 'role'")
+
+                # Skip non-opening posts (e.g. PRIMARY_POST)
+                if role not in ("OPENING_JAMB_L", "OPENING_JAMB_R"):
+                    continue
+
+                opening = m.get("opening")
+                if not isinstance(opening, str) or not opening:
+                    raise SchemaError("opening_frames: opening-post missing required string field 'opening'")
+
                 try:
                     p0, p1 = _map_post(m, house=house)
                 except Exception:
-                    LOG.exception("OpeningFrames: invalid post member: %s", m)
+                    LOG.exception("OpeningFrames: invalid opening post member: %s", m)
                     continue
 
                 prof = m.get("profile") or {}
                 w = float(prof.get("w", policy.jamb_post[0]))
                 d = float(prof.get("d", policy.jamb_post[1]))
 
-                opening = m.get("opening", "OPEN")
-                suffix = role_suffix.get(m.get("role"), m.get("role", "PART"))
-                nm = f"{opening}_{suffix}"
+                nm = f"{opening}_{role_suffix[role]}"
 
                 make_beam_rect(nm, p0, p1, width=w, depth=d, collection=collection)
                 _assign_member_material(
@@ -175,21 +189,33 @@ def build_opening_frames(
                     default_material_id="timber.oak",
                 )
 
-            # Rails
+            # --------------------------
+            # Rails (lintel/sill only)
+            # --------------------------
             for m in rails:
+                role = m.get("role")
+                if not isinstance(role, str) or not role:
+                    raise SchemaError("opening_frames: member missing required string field 'role'")
+
+                # Skip non-opening rails
+                if role not in ("OPENING_LINTEL", "OPENING_SILL"):
+                    continue
+
+                opening = m.get("opening")
+                if not isinstance(opening, str) or not opening:
+                    raise SchemaError("opening_frames: opening-rail missing required string field 'opening'")
+
                 try:
                     p0, p1 = _map_rail(m, house=house)
                 except Exception:
-                    LOG.exception("OpeningFrames: invalid rail member: %s", m)
+                    LOG.exception("OpeningFrames: invalid opening rail member: %s", m)
                     continue
 
                 prof = m.get("profile") or {}
                 w = float(prof.get("w", policy.window_lintel[0]))
                 d = float(prof.get("d", policy.window_lintel[1]))
 
-                opening = m.get("opening", "OPEN")
-                suffix = role_suffix.get(m.get("role"), m.get("role", "PART"))
-                nm = f"{opening}_{suffix}"
+                nm = f"{opening}_{role_suffix[role]}"
 
                 make_beam_rect(nm, p0, p1, width=w, depth=d, collection=collection)
                 _assign_member_material(
@@ -253,7 +279,7 @@ def build_opening_frames(
             y0 = u0
             y1 = u1
         else:
-            LOG.warning("Opening %s has unknown wall '%s'", o["name"], wall)
+            raise SchemaError(f"opening_frames: unknown wall '{wall}' for opening '{name}'")
             continue
 
         if debug:
@@ -282,7 +308,12 @@ def build_opening_frames(
         make_beam_rect(nmR, pR0, pR1, width=w, depth=d, collection=collection)
 
         # synthetic member for legacy part
-        mem_base = {"role": "OPENING_FRAME", "opening": o.get("name", "OPEN"), "wall": wall}
+        name = o.get("name")
+        if not isinstance(name, str) or not name:
+            raise SchemaError("opening_frames: opening missing required string field 'name'")
+
+        mem_base = {"role": "OPENING_FRAME", "opening": name, "wall": wall}
+        
         _assign_member_material(collection=collection, obj_name=nmL, member={**mem_base, "id": nmL}, ctx_view=ctx_view, default_material_id="timber.oak")
         _assign_member_material(collection=collection, obj_name=nmR, member={**mem_base, "id": nmR}, ctx_view=ctx_view, default_material_id="timber.oak")
 
