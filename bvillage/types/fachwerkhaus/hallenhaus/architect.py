@@ -488,6 +488,13 @@ def derive_frameplan(
 # ============================================================
 
 def orchestrate_house(ctx: Context):
+    # Grammar Guard (SGA)
+    # Hallenhaus is a Hall / Aisled grammar archetype. No mixing allowed.
+    if ctx.grammar != "hall":
+        raise SchemaError(
+            f"Hallenhaus requires grammar='hall', got '{ctx.grammar}'."
+        )
+
     logger.debug(
         "Hallenhaus.orchestrate_house() start (seed=%s wealth=%s)",
         getattr(ctx, "seed", None),
