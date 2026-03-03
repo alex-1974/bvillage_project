@@ -72,6 +72,19 @@ _DEFAULT_PROFILE: tuple[CostProfile, ...] = (
     CostProfile(name="default", mode="quadratic"),
 )
 
+# ----------------------------
+# Hot Path Tagging (zero overhead)
+# ----------------------------
+
+def hot(func):
+    """
+    Zero-overhead marker for performance-critical functions.
+    Does NOT wrap the function.
+    """
+    func.__bv_hot__ = True
+    return func
+
+@hot
 def _u01_from_u32(x: int) -> float:
     """Maps a uint32 to a uniform float in [0, 1)."""
     return (x & 0xFFFFFFFF) / 4294967296.0  # 2**32
@@ -80,6 +93,7 @@ def _u01_from_u32(x: int) -> float:
 # Deterministic RNG
 # ----------------------------
 
+@hot
 def _stable_u32(seed: int, key: str) -> int:
     """
     Stable (process-independent) 32-bit hash from seed+key.
@@ -122,6 +136,7 @@ def _shape_cost(d: float, prof: CostProfile) -> float:
     return dd
 
 # HOT PATH — may run many times per house; explodes with candidate sampling
+@hot
 def penalty_soft(v: float, soft: RangeSoft, prof: CostProfile) -> float:
     """
     Piecewise penalty:
@@ -152,6 +167,7 @@ def penalty_soft(v: float, soft: RangeSoft, prof: CostProfile) -> float:
 # ----------------------------
 
 # HOT PATH — may run many times per house; explodes with candidate sampling
+@hot
 def eval_range(
     ctx: Context,
     *,
@@ -222,6 +238,7 @@ def eval_range(
 # WHY: duplicate _u01_from_u32 removed — canonical definition with docstring is above.
 
 # HOT PATH — may run many times per house; explodes with candidate sampling
+@hot
 def sample_soft(
     ctx: Context,
     *,
