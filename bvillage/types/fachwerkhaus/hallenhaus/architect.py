@@ -489,7 +489,6 @@ def derive_frameplan(
 
 def orchestrate_house(ctx: Context):
     # Grammar Guard (SGA)
-    # Hallenhaus is a Hall / Aisled grammar archetype. No mixing allowed.
     if ctx.grammar != "hall":
         raise SchemaError(
             f"Hallenhaus requires grammar='hall', got '{ctx.grammar}'."
@@ -523,6 +522,60 @@ def orchestrate_house(ctx: Context):
 
     # 7) Domain frameplan (constructive truth) from resolved policy
     derive_frameplan(ctx, structure, openings, resolved)
+
+    # 8) PPV (non-blocking) — informational in v0.4.0
+    try:
+        from bvillage.core.quality.physical_plausibility_validator import run_physical_plausibility
+
+        report = run_physical_plausibility(ctx, structure, domain_id="fachwerk")
+
+        set_domain_artifact(
+            structure.notes,
+            domain="core",
+            artifact="ppv",
+            payload={
+                "schema": 1,
+                "domain_id": "fachwerk",
+                "issue_count": len(report.issues),
+                "issues": [
+                    {
+                        "code": i.code,
+                        "severity": i.severity,
+                        "message": i.message,
+                        "related_ids": list(i.related_ids),
+                        "suggested_repairs": list(i.suggested_repairs),
+                    }
+                    for i in report.issues
+                ],
+                "metrics": dict(report.metrics),
+                "per_member": dict(report.per_member),
+            },
+            legacy_aliases=("ppv", "core.ppv"),
+        )
+    except Exception as e:
+        # Must not block generation in v0.4.0
+        set_domain_artifact(
+            structure.notes,
+            domain="core",
+            artifact="ppv",
+            payload={
+                "schema": 1,
+                "domain_id": "fachwerk",
+                "issue_count": 1,
+                "issues": [
+                    {
+                        "code": "PPV.RUNTIME_ERROR",
+                        "severity": "SUGGEST",
+                        "message": f"PPV failed non-blocking: {type(e).__name__}: {e}",
+                        "related_ids": [],
+                        "suggested_repairs": [],
+                    }
+                ],
+                "metrics": {},
+                "per_member": {},
+            },
+            legacy_aliases=("ppv", "core.ppv"),
+        )
 
     logger.debug("Hallenhaus.orchestrate_house() done")
     return structure, interior, openings
