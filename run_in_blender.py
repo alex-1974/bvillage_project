@@ -64,7 +64,7 @@ try:
     from bvillage.core.report import report_plans
     from bvillage.core.validate import validate
     from bvillage.core.model import Context
-    from bvillage.blender.build import build_house
+    from bvillage.blender.build import render_house
     from bvillage.core.seed import Seed
 
     configure_logging(level="INFO", force=True)
@@ -86,7 +86,7 @@ try:
     rep = report_plans(ctx, structure, interior=interior, openings=openings, issues=issues, score=None)
     print(rep)
 
-    build_house(ctx, structure, interior, openings, clear_previous=CLEAR_PREVIOUS)
+    render_house(ctx, structure, interior, openings, clear_previous=CLEAR_PREVIOUS)
 
     print("=== BVILLAGE RUNNER DONE ===\n")
 
