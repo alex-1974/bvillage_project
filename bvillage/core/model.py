@@ -24,15 +24,18 @@ Range2 = tuple[float, float]
 class Context:
     schema_version: SchemaVersion = "1.0"
     seed: Seed = field(default_factory=lambda: Seed(0))
-
     region: str = "unknown"
     epoch_band: EpochBand = "high_medieval"
-    settlement_type: str = "rural"  # rural / village / town
-    wealth: float = 0.5            # 0..1
+    settlement_type: str = "rural"
+    wealth: float = 0.5
     occupants: int = 4
     climate_hint: str = "temperate"
+    house_type: str = "fachwerkhaus.hallenhaus"
 
-    house_type: str = "fachwerkhaus.hallenhaus"  # plugin id
+    # Structural Grammar Architecture (SGA)
+    # Grammar is a top-level structural contract, not a policy knob.
+    # Default is safe for v0.4.0 (only Hallenhaus exists as active type).
+    grammar: str = "hall"
 
 
 @dataclass(frozen=True, slots=True)
