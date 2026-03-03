@@ -7,13 +7,13 @@ Scope:         BVILLAGE — alle Domains, alle Epochen, alle Haustypen
 Ebene:         Systemverständnis — über den sieben Achsen
 Status:        v1.1
 Referenziert von:
-  [MEDIEVAL_01 — Physische Welt](MEDIEVAL_01_PHYSICAL_WORLD.md)
-  [MEDIEVAL_02 — Politische Geographie](MEDIEVAL_02_POLITICAL_GEOGRAPHY.md)
-  [MEDIEVAL_03 — Gesellschaft](MEDIEVAL_03_SOCIETY_HOUSEHOLD.md)
-  [MEDIEVAL_04 — Wirtschaft](MEDIEVAL_04_ECONOMY_TRADE.md)
-  [MEDIEVAL_05 — Wissen](MEDIEVAL_05_KNOWLEDGE_CRAFT.md)
-  [MEDIEVAL_06 — Bauen als Akt](MEDIEVAL_06_BUILDING_AS_ACT.md)
-  [MEDIEVAL_07 — Epochen](MEDIEVAL_07_EPOCHS_AND_BREAKS.md)
+  MEDIEVAL_01_PHYSICAL_WORLD.md
+  MEDIEVAL_02_POLITICAL_GEOGRAPHY.md
+  MEDIEVAL_03_SOCIETY_HOUSEHOLD.md
+  MEDIEVAL_04_ECONOMY_TRADE.md
+  MEDIEVAL_05_KNOWLEDGE_CRAFT.md
+  MEDIEVAL_06_BUILDING_AS_ACT.md
+  MEDIEVAL_07_EPOCHS_AND_BREAKS.md
 Evidenzgrade:
   [HART]   Direkt messbar, datierter Bestand, publizierte Messdaten
   [MITTEL] Wissenschaftlicher Konsens, erschlossen, nicht direkt messbar
@@ -349,7 +349,6 @@ Boom mit Wissensinfrastrukturen gemacht haben).
 
 Für BVILLAGE ist das die direkte Begründung, warum `knowledge_infrastructure_tier`
 in der `CulturePolicy` ein erstrangiger Parameter ist — und kein nachgeordneter.
-→ [MEDIEVAL_05, Abschnitt 7](MEDIEVAL_05_KNOWLEDGE_CRAFT.md#7-bvillage-implikationen)
 
 ### Das Resultat: Bauen als Akt (Achse 6)
 
@@ -405,16 +404,6 @@ BVILLAGE diese Domains aufnimmt.
 ---
 
 ## 9. Lektürehinweis für BVILLAGE-Arbeit
-
-| Achse | Dokument | Einstiegspunkt |
-|---|---|---|
-| 1 — Physische Welt | [MEDIEVAL_01](MEDIEVAL_01_PHYSICAL_WORLD.md) | [Rohstoffe](#3-rohstoffe) |
-| 2 — Politische Geographie | [MEDIEVAL_02](MEDIEVAL_02_POLITICAL_GEOGRAPHY.md) | [Recht als Bauparameter](#2-recht-als-bauparameter) |
-| 3 — Gesellschaft | [MEDIEVAL_03](MEDIEVAL_03_SOCIETY_HOUSEHOLD.md) | [wealth-Parameter](#4-der-wealth-parameter-operationalisierung) |
-| 4 — Wirtschaft | [MEDIEVAL_04](MEDIEVAL_04_ECONOMY_TRADE.md) | [Zunftsystem](#4-das-zunftsystem-als-wirtschaftsregulierung) |
-| 5 — Wissen | [MEDIEVAL_05](MEDIEVAL_05_KNOWLEDGE_CRAFT.md) | [Dreistufenmodell](#2-das-dreistufenmodell) |
-| 6 — Bauen als Akt | [MEDIEVAL_06](MEDIEVAL_06_BUILDING_AS_ACT.md) | [BVILLAGE-Syntheseregeln](#6-bvillage-syntheseregeln) |
-| 7 — Epochen | [MEDIEVAL_07](MEDIEVAL_07_EPOCHS_AND_BREAKS.md) | [Epochenmatrix](#3-die-epochenmatrix-schnellreferenz-für-policy-parameter) |
 
 Vor jeder neuen Policy-Implementierung, vor jeder Archetype-Entscheidung,
 vor jeder Parametergrenze die folgende Kontrollfrage:
