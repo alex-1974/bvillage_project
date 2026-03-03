@@ -1,188 +1,93 @@
 # bvillage/core/validate.py
 
 """
-bvillage.core.validate
-======================
+Central Validation Aggregation
+==============================
 
-Purpose
--------
-Generic validation of generated plans to prevent "mystery failures".
+Stable Public API:
+    validate(ctx, structure, interior) -> tuple[Issue]
 
-Design
-------
-- Core validation stays house-type agnostic.
-- Type-specific validation lives next to the type implementation.
-- `validate()` runs core checks + (optional) type hook.
-
-Type Hook Convention
---------------------
-If ctx.house_type == "fachwerkhaus.hallenhaus", we attempt to import:
-
-    bvillage.types.fachwerkhaus.hallenhaus.validate
-
-and call:
-
-    validate_type(ctx, structure, interior) -> list[Issue]
-
-If module or function does not exist, it's skipped.
-
-Units: meters (only indirectly relevant here).
-Performance: O(n) over rooms/doors/demands; tiny.
+Notes:
+- ctx and interior are accepted for API stability.
+- Currently only structure.notes artifacts are evaluated.
 """
 
 from __future__ import annotations
 
-import importlib
-from typing import Dict, List, Set
+from typing import List, Tuple, Dict, Any
 
-from .model import Context, StructurePlan, InteriorPlan, Issue
+from bvillage.core.model import Issue
 
-# HOT PATH
-def validate(ctx: Context, structure: StructurePlan, interior: InteriorPlan) -> List[Issue]:
-    """
-    Validate structure + interior plan coherence.
 
-    Returns
-    -------
-    list[Issue]
-        Empty list means "no detected issues".
-    """
+__all__ = [
+    "validate",
+]
+
+
+# ============================================================
+# Helpers
+# ============================================================
+
+def _artifact_issues_to_core(payload: Dict[str, Any]) -> List[Issue]:
     issues: List[Issue] = []
 
-    # Core (type-agnostic) checks
-    issues.extend(_validate_connectivity(interior))
-    issues.extend(_validate_opening_feasibility(structure, interior))
+    raw = payload.get("issues")
+    if not isinstance(raw, list):
+        return issues
 
-    # Optional type hook
-    issues.extend(_try_type_validation(ctx, structure, interior))
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+
+        issues.append(
+            Issue(
+                code=str(entry.get("code", "UNKNOWN")),
+                severity=str(entry.get("severity", "SUGGEST")),
+                message=str(entry.get("message", "")),
+                related_ids=tuple(entry.get("related_ids", [])),
+                suggested_repairs=tuple(entry.get("suggested_repairs", [])),
+            )
+        )
 
     return issues
 
 
+def _issue_sort_key(i: Issue) -> Tuple[str, str, str, str]:
+    rid = i.related_ids[0] if i.related_ids else ""
+    return (i.severity, i.code, rid, i.message)
+
+
 # ============================================================
-# Core Validators (agnostic)
+# Public API (STABLE)
 # ============================================================
 
-def _validate_connectivity(interior: InteriorPlan) -> List[Issue]:
+def validate(ctx: Any, structure: Any, interior: Any) -> Tuple[Issue, ...]:
     """
-    All rooms should be reachable via the door graph.
+    Central validation entry point.
+
+    Signature must remain stable:
+        validate(ctx, structure, interior)
+
+    Currently:
+        - collects PPV issues from structure.notes
+        - deterministic ordering
     """
-    rooms = {r.id for r in interior.rooms}
-    if not rooms:
-        return [Issue(code="H_NO_ROOMS", severity="HARD", message="No rooms generated.")]
 
-    adj: Dict[str, Set[str]] = {rid: set() for rid in rooms}
-    for d in interior.doors:
-        a, b = d.between
-        if a in rooms and b in rooms:
-            adj[a].add(b)
-            adj[b].add(a)
-
-    start = next(iter(rooms))
-    seen = {start}
-    q = [start]
-    while q:
-        cur = q.pop()
-        for nxt in adj[cur]:
-            if nxt not in seen:
-                seen.add(nxt)
-                q.append(nxt)
-
-    if seen != rooms:
-        missing = sorted(list(rooms - seen))
-        return [
-            Issue(
-                code="H_ROOMS_NOT_CONNECTED",
-                severity="HARD",
-                message=f"Not all rooms are reachable from {start}. Unreachable: {missing}",
-                related_ids=tuple(missing),
-                suggested_repairs=("R_ADD_CONNECTION_DOOR",),
-            )
-        ]
-
-    return []
-
-
-def _validate_opening_feasibility(structure: StructurePlan, interior: InteriorPlan) -> List[Issue]:
-    """
-    If any demand requires exterior openings, ensure the structure has WINDOW_OK segments.
-    """
     issues: List[Issue] = []
 
-    window_ok = any(("WINDOW_OK" in w.tags) for w in structure.walls)
+    notes = getattr(structure, "notes", None)
+    if isinstance(notes, dict):
 
-    for od in interior.opening_demands:
-        if od.min_count > 0 and od.wall_preference == "EXTERIOR" and not window_ok:
-            issues.append(
-                Issue(
-                    code="H_NO_WINDOW_POTENTIAL",
-                    severity="HARD",
-                    message=f"Room {od.room_id} demands exterior windows but no WINDOW_OK wall segments exist.",
-                    related_ids=(od.room_id,),
-                    suggested_repairs=("R_ENABLE_WINDOW_WALLS",),
-                )
-            )
+        domains = notes.get("domains")
+        if isinstance(domains, dict):
 
-    return issues
+            # ---- PPV artifact ----
+            core_dom = domains.get("core")
+            if isinstance(core_dom, dict):
+                ppv = core_dom.get("ppv")
+                if isinstance(ppv, dict):
+                    issues.extend(_artifact_issues_to_core(ppv))
 
+    issues.sort(key=_issue_sort_key)
 
-# ============================================================
-# Type-specific hook (optional)
-# ============================================================
-
-def _try_type_validation(ctx: Context, structure: StructurePlan, interior: InteriorPlan) -> List[Issue]:
-    """
-    Attempt to run type-specific validation.
-
-    Convention:
-      ctx.house_type = "fachwerkhaus.hallenhaus"
-      -> module "bvillage.types.fachwerkhaus.hallenhaus.validate"
-      -> function "validate_type(ctx, structure, interior) -> list[Issue]"
-
-    If not present, returns [].
-
-    Notes
-    -----
-    - Any import errors are converted into a HARD issue with details.
-      That way broken plugins are visible but don't crash batch generation.
-    """
-    ht = getattr(ctx, "house_type", None)
-    if not isinstance(ht, str) or not ht:
-        return []
-
-    mod_name = f"bvillage.types.{ht}.validate"
-    try:
-        mod = importlib.import_module(mod_name)
-    except ModuleNotFoundError:
-        return []
-    except Exception as exc:
-        return [
-            Issue(
-                code="H_TYPE_VALIDATE_IMPORT_FAIL",
-                severity="HARD",
-                message=f"Failed to import type validator {mod_name}: {exc}",
-                related_ids=(ht,),
-                suggested_repairs=("R_FIX_TYPE_VALIDATOR_IMPORT",),
-            )
-        ]
-
-    fn = getattr(mod, "validate_type", None)
-    if fn is None:
-        return []
-
-    try:
-        out = fn(ctx, structure, interior)
-    except Exception as exc:
-        return [
-            Issue(
-                code="H_TYPE_VALIDATE_CRASH",
-                severity="HARD",
-                message=f"Type validator crashed for {ht}: {exc}",
-                related_ids=(ht,),
-                suggested_repairs=("R_FIX_TYPE_VALIDATOR",),
-            )
-        ]
-
-    if out is None:
-        return []
-    return list(out)
+    return tuple(issues)
