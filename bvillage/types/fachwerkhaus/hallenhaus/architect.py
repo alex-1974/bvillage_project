@@ -1,24 +1,25 @@
 # bvillage/types/fachwerkhaus/hallenhaus/architect.py
 
 """
-bvillage.types.fachwerkhaus.hallenhaus.planner
-==============================================
+bvillage.types.fachwerkhaus.hallenhaus.architect
+================================================
 
 Type Orchestration: Fachwerkhaus – Hallenhaus
 
-Responsibilities
-----------------
-- Generate type-specific StructurePlan (semantic)
-- Generate interior + openings (semantic)
-- Resolve policy stack (ctx -> ResolvedPolicy) and store as notes artifact
-- Attach constraints-derived parameters + penalty info as notes artifact (core)
-- Attach Fachwerk frameplan into structure.notes (fachwerk domain artifact)
+ARC-001A hardened rules
+-----------------------
+- The type orchestrator must NOT invent structural defaults.
+- All culturally/structurally meaningful knobs come from the layered PolicyStack
+  (ResolvedPolicy.fachwerk + constraints).
+- Blender layer should consume artifacts and must not set defaults (next step).
 
-Layer rules
------------
-- No Blender imports.
-- Planner consumes ResolvedPolicy only (no hidden structural defaults).
-- StructurePlan is frozen; only mutate structure.notes dict via notes schema helpers.
+Artifacts produced
+------------------
+- core.resolved_policy        (debuggable policy snapshot)
+- policy_trace                (layer trace with values)
+- core.constraints            (sampled/penalized values for key constraints)
+- core.house_params           (renderer-facing params: roof_pitch_deg, post_section, dims)
+- fachwerk.frameplan          (structural truth: members, openings frames, braces, infills)
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, Final, Tuple, Optional
 
+from bvillage.core.errors import SchemaError
 from bvillage.core.model import (
     Context,
     StructurePlan,
@@ -48,7 +50,12 @@ from bvillage.core.constraints import (
 )
 
 from bvillage.core.policy_stack import resolve_policy_stack_with_trace
-from bvillage.core.policy_types import ResolvedPolicy, ConstraintSpec, RangeHardSpec, RangeSoftSpec
+from bvillage.core.policy_types import (
+    ResolvedPolicy,
+    ConstraintSpec,
+    RangeHardSpec,
+    RangeSoftSpec,
+)
 
 from bvillage.domains.fachwerk.core.frameplan import (
     build_frameplan,
@@ -81,9 +88,7 @@ DEFAULT_DIMS: Final[HallenhausDims] = HallenhausDims()
 # ============================================================
 # Cost Profiles (scoring lenses)
 # ============================================================
-# NOTE:
-# These are scoring "lenses" (auth/risk/complexity). They don't change geometry directly.
-# If you want *zero* defaults in planners, move them into ResolvedPolicy later.
+
 _DEFAULT_COST_PROFILES: Final[Tuple[CostProfile, ...]] = (
     CostProfile(name="auth", mode="quadratic", outside_allowed_step=3.0),
     CostProfile(name="risk", mode="quadratic", outside_allowed_step=6.0),
@@ -122,7 +127,6 @@ def _soft_from_spec(s: Optional[RangeSoftSpec]) -> Optional[RangeSoft]:
 
 
 def _policy_to_dict(pol: ResolvedPolicy) -> Dict[str, Any]:
-    # keep it explicit + stable for debugging; no dataclass.asdict to avoid surprises
     c_out: Dict[str, Any] = {}
     for k, spec in pol.constraints.items():
         c_out[k] = {
@@ -136,27 +140,46 @@ def _policy_to_dict(pol: ResolvedPolicy) -> Dict[str, Any]:
             },
         }
 
+    fw = pol.fachwerk
     return {
         "schema": pol.schema,
         "fachwerk": {
-            "binder_max": pol.fachwerk.binder_max,
-            "default_jamb_thickness": pol.fachwerk.default_jamb_thickness,
+            "binder_max": fw.binder_max,
+            "default_jamb_thickness": fw.default_jamb_thickness,
+            "post_section_width": fw.post_section_width,
+            "post_section_depth": fw.post_section_depth,
+            "plate_section_width": fw.plate_section_width,
+            "plate_section_depth": fw.plate_section_depth,
+            "opening_jamb_width": fw.opening_jamb_width,
+            "opening_jamb_depth": fw.opening_jamb_depth,
+            "braces_enable": fw.braces_enable,
+            "brace_section_width": fw.brace_section_width,
+            "brace_section_depth": fw.brace_section_depth,
+            "brace_min_cell_width": fw.brace_min_cell_width,
+            "brace_min_cell_height": fw.brace_min_cell_height,
+            "target_gefach_width": fw.target_gefach_width,
+            "target_gefach_jitter": fw.target_gefach_jitter,
+            "z_merge_tol": fw.z_merge_tol,
+            "roof_pitch_deg": fw.roof_pitch_deg,
+            "post_section": [fw.post_section[0], fw.post_section[1]],
         },
         "constraints": c_out,
     }
 
-def _attach_policy_trace_artifact(structure, trace):
+
+def _attach_policy_trace_artifact(structure: StructurePlan, trace) -> None:
     structure.notes["policy_trace"] = {
         "schema": trace.schema,
         "layers": [
             {
                 "layer_id": layer.layer_id,
-                "keys": [op.key for op in layer.ops],
+                "ops": [{"key": op.key, "value": op.value} for op in layer.ops],
             }
             for layer in trace.layers
         ],
     }
-    
+
+
 def _attach_resolved_policy_artifact(structure: StructurePlan, pol: ResolvedPolicy) -> None:
     set_domain_artifact(
         structure.notes,
@@ -167,90 +190,184 @@ def _attach_resolved_policy_artifact(structure: StructurePlan, pol: ResolvedPoli
     )
 
 
+def _require_constraint(pol: ResolvedPolicy, name: str) -> ConstraintSpec:
+    spec = pol.constraints.get(name)
+    if spec is None:
+        raise SchemaError(f"ResolvedPolicy missing required constraint: {name}")
+    return spec
+
+
+def _require_soft(spec: ConstraintSpec, name: str) -> RangeSoft:
+    soft = _soft_from_spec(spec.soft)
+    if soft is None:
+        raise SchemaError(f"Constraint {name} requires soft spec for sampling/targeting.")
+    return soft
+
+
+def _attach_house_params_artifact(structure: StructurePlan, pol: ResolvedPolicy) -> None:
+    """
+    Renderer-facing parameters that must be present downstream (no Blender defaults).
+
+    ARC-001A:
+    - No setdefault / no magic defaults in Blender.
+    - Derive geometric heights deterministically from StructurePlan.walls.
+    - Pull policy-driven knobs from ResolvedPolicy.fachwerk.
+    """
+    fw = pol.fachwerk
+    fp = structure.footprint
+
+    # ---- derive z0 / z_plate deterministically from walls ----
+    z0_min: float | None = None
+    z1_max: float | None = None
+
+    walls = getattr(structure, "walls", None)
+    if not isinstance(walls, (list, tuple)) or not walls:
+        raise SchemaError("Cannot derive z0/z_plate: StructurePlan.walls missing/invalid.")
+
+    for w in walls:
+        try:
+            zr = getattr(w, "z_range", None)
+            if not (isinstance(zr, (list, tuple)) and len(zr) == 2):
+                continue
+            z0w = float(zr[0])
+            z1w = float(zr[1])
+        except Exception:
+            continue
+
+        z0_min = z0w if z0_min is None else min(z0_min, z0w)
+        z1_max = z1w if z1_max is None else max(z1_max, z1w)
+
+    if z0_min is None or z1_max is None:
+        raise SchemaError("Cannot derive z0/z_plate: no valid wall.z_range entries found.")
+
+    if not (z1_max > z0_min):
+        raise SchemaError(f"Invalid derived heights: z0={z0_min} z_plate={z1_max}.")
+
+    # ---- policy-driven knobs ----
+    roof_pitch_deg = float(getattr(fw, "roof_pitch_deg"))
+    post_w, post_d = fw.post_section
+
+    # plate_section tuple (for Blender convenience) derived from policy scalars
+    plate_section = (float(fw.plate_section_width), float(fw.plate_section_depth))
+
+    # roof_overhang: deterministic geometric heuristic (NOT a hidden constant default in Blender)
+    # Tuned so W≈6.9m -> ~0.35m, and clamped to sane bounds.
+    W = float(fp.width)
+    roof_overhang = max(0.25, min(0.45, 0.05 * W))
+
+    payload = {
+        "schema": 2,  # <-- schema bump (war 1)
+        # geometry
+        "L": float(fp.length),
+        "W": float(fp.width),
+        "z0": float(z0_min),
+        "z_plate": float(z1_max),
+
+        # policy-driven / renderer-facing
+        "roof_pitch_deg": roof_pitch_deg,
+        "roof_overhang": float(roof_overhang),
+
+        "post_section": [float(post_w), float(post_d)],
+        "plate_section": [float(plate_section[0]), float(plate_section[1])],
+
+        # ---- NEW (ARC-001A hardening) ----
+        # brace fallback profile (used only if brace.profile missing)
+        "brace_section": [
+            float(fw.brace_section_width),
+            float(fw.brace_section_depth),
+        ],
+
+        # infill default material role (policy-driven, not Blender constant)
+        "default_infill_material_role": str(fw.default_infill_material_role),
+    }
+
+    set_domain_artifact(
+        structure.notes,
+        domain="core",
+        artifact="house_params",
+        payload=payload,
+        legacy_aliases=("house_params", "core.house_params"),
+    )
+
+
 def _attach_constraints_artifact(ctx: Context, structure: StructurePlan, pol: ResolvedPolicy) -> None:
     """
-    Attach constraint-derived parameters and penalty summaries into notes schema.
+    Attach constraint-derived parameters and penalty summaries.
 
-    We sample only when a soft range exists; otherwise we store a fixed value if the
-    planner already chose it (future extension).
+    ARC-001A hardening:
+    - Required constraints must exist.
+    - If we sample/derive from ideal, the constraint must define soft.
+    - No local fallback constants.
     """
     out_params: Dict[str, Any] = {}
 
+    # Fully-qualified sampling namespace (RNG label only; constraint keys remain un-prefixed)
+    ns = f"{ctx.house_type}."
+
     # ---- brustriegel_z (sampled) ----
-    spec = pol.constraints.get("brustriegel_z")
-    if spec is not None and spec.soft is not None:
-        soft = _soft_from_spec(spec.soft)
-        hard = _hard_from_spec(spec.hard)
+    spec = _require_constraint(pol, "brustriegel_z")
+    soft = _require_soft(spec, "brustriegel_z")
+    hard = _hard_from_spec(spec.hard)
 
-        # deterministic sample
-        z_brust = sample_soft(ctx, key="hallenhaus.brustriegel_z", soft=soft)
+    z_brust = sample_soft(ctx, key=f"{ns}brustriegel_z", soft=soft)
 
-        ev = eval_range(
-            ctx,
-            name="brustriegel_z",
-            value=z_brust,
-            hard=hard,
-            soft=soft,
-            profiles=_DEFAULT_COST_PROFILES,
-            unit=spec.unit,
-            code_prefix=spec.code_prefix,
-        )
+    ev = eval_range(
+        ctx,
+        name="brustriegel_z",
+        value=z_brust,
+        hard=hard,
+        soft=soft,
+        profiles=_DEFAULT_COST_PROFILES,
+        unit=spec.unit,
+        code_prefix=spec.code_prefix,
+    )
 
-        out_params["brustriegel_z"] = {
-            "value": float(ev.value),
-            "penalties": dict(ev.penalties),
-            "issues": [_issue_to_dict(x) for x in ev.issues],
-            "range_hard": None if hard is None else [hard.min_v, hard.max_v],
-            "range_soft": {
-                "ideal": [soft.ideal[0], soft.ideal[1]],
-                "allowed": [soft.allowed[0], soft.allowed[1]],
-                "weight": soft.weight,
-            },
-            "key": "hallenhaus.brustriegel_z",
-        }
+    out_params["brustriegel_z"] = {
+        "value": float(ev.value),
+        "penalties": dict(ev.penalties),
+        "issues": [_issue_to_dict(x) for x in ev.issues],
+        "range_hard": None if hard is None else [hard.min_v, hard.max_v],
+        "range_soft": {
+            "ideal": [soft.ideal[0], soft.ideal[1]],
+            "allowed": [soft.allowed[0], soft.allowed[1]],
+            "weight": soft.weight,
+        },
+        "key": f"{ns}brustriegel_z",
+    }
 
-    # ---- gefach_width_target (sampled around ideal center, or fixed if no soft) ----
-    spec = pol.constraints.get("gefach_width_target")
-    if spec is not None:
-        hard = _hard_from_spec(spec.hard)
-        soft = _soft_from_spec(spec.soft)
+    # ---- gefach_width_target (sampled) ----
+    spec = _require_constraint(pol, "gefach_width_target")
+    soft = _require_soft(spec, "gefach_width_target")
+    hard = _hard_from_spec(spec.hard)
 
-        if soft is not None:
-            # Sample within ideal most of the time.
-            target = sample_soft(ctx, key="hallenhaus.gefach_width_target", soft=soft)
-        else:
-            # Fallback (should be avoided long-term): choose mid of hard if present, else 1.35.
-            if hard is not None:
-                target = 0.5 * (hard.min_v + hard.max_v)
-            else:
-                target = 1.35
+    target = sample_soft(ctx, key=f"{ns}gefach_width_target", soft=soft)
 
-        ev = eval_range(
-            ctx,
-            name="gefach_width_target",
-            value=target,
-            hard=hard,
-            soft=soft,
-            profiles=_DEFAULT_COST_PROFILES,
-            unit=spec.unit,
-            code_prefix=spec.code_prefix,
-        )
+    ev = eval_range(
+        ctx,
+        name="gefach_width_target",
+        value=target,
+        hard=hard,
+        soft=soft,
+        profiles=_DEFAULT_COST_PROFILES,
+        unit=spec.unit,
+        code_prefix=spec.code_prefix,
+    )
 
-        out_params["gefach_width_target"] = {
-            "value": float(ev.value),
-            "penalties": dict(ev.penalties),
-            "issues": [_issue_to_dict(x) for x in ev.issues],
-            "range_hard": None if hard is None else [hard.min_v, hard.max_v],
-            "range_soft": None if soft is None else {
-                "ideal": [soft.ideal[0], soft.ideal[1]],
-                "allowed": [soft.allowed[0], soft.allowed[1]],
-                "weight": soft.weight,
-            },
-            "key": "hallenhaus.gefach_width_target" if soft is not None else None,
-        }
+    out_params["gefach_width_target"] = {
+        "value": float(ev.value),
+        "penalties": dict(ev.penalties),
+        "issues": [_issue_to_dict(x) for x in ev.issues],
+        "range_hard": None if hard is None else [hard.min_v, hard.max_v],
+        "range_soft": {
+            "ideal": [soft.ideal[0], soft.ideal[1]],
+            "allowed": [soft.allowed[0], soft.allowed[1]],
+            "weight": soft.weight,
+        },
+        "key": f"{ns}gefach_width_target",
+    }
 
     payload = {
-        "schema": 1,
+        "schema": 2,
         "profiles": [p.name for p in _DEFAULT_COST_PROFILES],
         "params": out_params,
     }
@@ -310,71 +427,42 @@ def plan_structure(ctx: Context, *, dims: HallenhausDims = DEFAULT_DIMS) -> Stru
 # Domain hookup (fachwerk)
 # ============================================================
 
-def _frame_policy_from_resolved(resolved_policy) -> FramePolicy:
+def _frame_policy_from_resolved(pol: ResolvedPolicy) -> FramePolicy:
     """
-    Map ResolvedPolicy -> domain FramePolicy (fachwerk).
-    Keep this mapping explicit to avoid defaults creeping into the domain.
+    Map ResolvedPolicy.fachwerk -> fachwerk FramePolicy.
+
+    ARC-001A hardening:
+    - no defaults here; this is a pure mapping.
     """
-    # Try common layout: resolved_policy.fachwerk.* (dataclass or namespace)
-    fw = getattr(resolved_policy, "fachwerk", resolved_policy)
-
-    def g(name: str, default):
-        v = getattr(fw, name, None)
-        return default if v is None else v
-
+    fw = pol.fachwerk
     return FramePolicy(
-        binder_max=float(g("binder_max", 2.40)),
-        default_jamb_thickness=float(g("default_jamb_thickness", 0.20)),
-        style_z_levels=list(g("style_z_levels", [0.0, 0.9, 1.6, 2.2])),
-
-        z_merge_tol=float(g("z_merge_tol", FramePolicy(binder_max=0.0).z_merge_tol)),
-        z_band_min=float(g("z_band_min", 0.15)),
-        z_band_target_min=float(g("z_band_target_min", 0.25)),
-
-        width_type=g("width_type", "axis"),
-
-        post_section_width=float(g("post_section_width", 0.20)),
-        post_section_depth=float(g("post_section_depth", 0.20)),
-        plate_section_width=float(g("plate_section_width", 0.18)),
-        plate_section_depth=float(g("plate_section_depth", 0.18)),
-
-        opening_jamb_width=float(g("opening_jamb_width", 0.18)),
-        opening_jamb_depth=float(g("opening_jamb_depth", 0.18)),
-
-        gate_lintel_width=float(g("gate_lintel_width", 0.20)),
-        gate_lintel_depth=float(g("gate_lintel_depth", 0.20)),
-        window_lintel_width=float(g("window_lintel_width", 0.16)),
-        window_lintel_depth=float(g("window_lintel_depth", 0.18)),
-        window_sill_width=float(g("window_sill_width", 0.16)),
-        window_sill_depth=float(g("window_sill_depth", 0.18)),
-
-        braces_enable=bool(g("braces_enable", True)),
-        brace_section_width=float(g("brace_section_width", 0.12)),
-        brace_section_depth=float(g("brace_section_depth", 0.12)),
-        brace_min_cell_width=float(g("brace_min_cell_width", 0.80)),
-        brace_min_cell_height=float(g("brace_min_cell_height", 0.80)),
-
-        target_gefach_width=float(g("target_gefach_width", 1.35)),
-        target_gefach_jitter=float(g("target_gefach_jitter", 0.10)),
+        binder_max=float(fw.binder_max),
+        default_jamb_thickness=float(fw.default_jamb_thickness),
+        post_section_width=float(fw.post_section_width),
+        post_section_depth=float(fw.post_section_depth),
+        plate_section_width=float(fw.plate_section_width),
+        plate_section_depth=float(fw.plate_section_depth),
+        opening_jamb_width=float(fw.opening_jamb_width),
+        opening_jamb_depth=float(fw.opening_jamb_depth),
+        braces_enable=bool(fw.braces_enable),
+        brace_section_width=float(fw.brace_section_width),
+        brace_section_depth=float(fw.brace_section_depth),
+        brace_min_cell_width=float(fw.brace_min_cell_width),
+        brace_min_cell_height=float(fw.brace_min_cell_height),
+        target_gefach_width=float(fw.target_gefach_width),
+        target_gefach_jitter=float(fw.target_gefach_jitter),
+        z_merge_tol=float(fw.z_merge_tol),
     )
-    
+
+
 def derive_frameplan(
     ctx: Context,
     structure: StructurePlan,
     openings,
     resolved: ResolvedPolicy,
 ) -> None:
-    """
-    Build and attach Fachwerk FramePlan domain artifact.
-
-    No structural defaults allowed here.
-    Mapping ResolvedPolicy → FramePolicy is explicit and centralized.
-    """
-
-    # 1) Map resolved policy → domain policy
     frame_policy = _frame_policy_from_resolved(resolved)
 
-    # 2) Build deterministic frameplan
     fp = build_frameplan(
         structure=structure,
         openings=openings,
@@ -382,7 +470,6 @@ def derive_frameplan(
         seed=int(ctx.seed.derive("fachwerk.frameplan.jitter")),
     )
 
-    # 3) Persist artifact
     payload = frameplan_to_dict(fp)
 
     set_domain_artifact(
@@ -393,7 +480,6 @@ def derive_frameplan(
         legacy_aliases=("frameplan", "fachwerk.frameplan"),
     )
 
-    # 4) Human-readable report
     logger.info("%s", frameplan_report(fp))
 
 
@@ -411,20 +497,24 @@ def orchestrate_house(ctx: Context):
     # 1) Resolve policy stack (mandatory)
     resolved, trace = resolve_policy_stack_with_trace(ctx)
 
+    # 2) Semantic structure plan
     structure = plan_structure(ctx)
 
-    # 2) Persist resolved policy for debugging + downstream consumers
+    # 3) Persist policy artifacts
     _attach_resolved_policy_artifact(structure, resolved)
     _attach_policy_trace_artifact(structure, trace)
 
-    # 3) Attach constraints-derived parameters early (independent of interior/openings)
+    # 4) Persist renderer-facing params (policy-driven)
+    _attach_house_params_artifact(structure, resolved)
+
+    # 5) Persist constraints-derived sampled values (policy-driven)
     _attach_constraints_artifact(ctx, structure, resolved)
 
-    # 4) Semantic planning
+    # 6) Semantic planning
     interior = plan_interior(ctx, structure)
     openings = plan_openings(ctx, structure, interior)
 
-    # 5) Domain frameplan (constructive truth) from resolved policy
+    # 7) Domain frameplan (constructive truth) from resolved policy
     derive_frameplan(ctx, structure, openings, resolved)
 
     logger.debug("Hallenhaus.orchestrate_house() done")
