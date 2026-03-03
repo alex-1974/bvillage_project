@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Mapping, Tuple
+from dataclasses import dataclass, replace
+from typing import Any, Iterable
 
 from .model import Context
 from .policy_types import (
@@ -14,17 +14,17 @@ from .policy_types import (
     FachwerkPolicySpec,
 )
 
+__all__ = [
+    "resolve_policy_stack",
+    "resolve_policy_stack_with_trace",
+    "TraceOp",
+    "TraceLayer",
+    "ResolutionTrace",
+]
+
+
 # ============================================================
-# Errors
-# ============================================================
-
-
-class PolicyResolutionError(RuntimeError):
-    pass
-
-
-# ============================================================
-# Trace
+# Trace (artifact contract)
 # ============================================================
 
 
@@ -46,311 +46,142 @@ class ResolutionTrace:
     layers: tuple[TraceLayer, ...]
 
 
+def _trace_layer(layer_id: str, ops: Iterable[tuple[str, Any]]) -> TraceLayer:
+    return TraceLayer(
+        layer_id=str(layer_id),
+        ops=tuple(sorted((TraceOp(k, v) for (k, v) in ops), key=lambda o: o.key)),
+    )
+
+
 # ============================================================
-# Schema & Registries
+# Guards / normalization (ARC-001A: explicit, deterministic)
 # ============================================================
 
-_POLICY_SCHEMA_VERSION = 4
+# Context.house_type may be short; resolve to namespaced plugin id.
+_TYPE_ALIASES: dict[str, str] = {
+    "hallenhaus": "fachwerkhaus.hallenhaus",
+    "fachwerkhaus.hallenhaus": "fachwerkhaus.hallenhaus",
+}
 
-_EPOCH_ALIASES = {
+# Context.epoch_band currently uses E1/E2/E3; normalize to readable internal names.
+# NOTE: this is INTERNAL ONLY; ctx.epoch_band remains the stable external contract.
+_EPOCH_ALIASES: dict[str, str] = {
     "E1": "early_medieval",
     "E2": "high_medieval",
     "E3": "late_medieval",
+    "early_medieval": "early_medieval",
+    "high_medieval": "high_medieval",
+    "late_medieval": "late_medieval",
 }
 
-_ALLOWED_EPOCHS = {"early_medieval", "high_medieval", "late_medieval"}
-_ALLOWED_SETTLEMENTS = {"rural", "village", "town"}
 
-_ALLOWED_HOUSE_TYPES = {"fachwerkhaus.hallenhaus"}
-
-_ALLOWED_CONSTRAINT_KEYS: dict[str, set[str]] = {
-    "fachwerkhaus.hallenhaus": {"brustriegel_z", "gefach_width_target"},
-}
-
-_REQUIRED_CONSTRAINT_KEYS = _ALLOWED_CONSTRAINT_KEYS
+def _norm_house_type(house_type: Any) -> str:
+    if not isinstance(house_type, str) or not house_type.strip():
+        return "unknown"
+    ht = house_type.strip()
+    return _TYPE_ALIASES.get(ht, ht)
 
 
-# ============================================================
-# Helpers
-# ============================================================
-
-
-def _normalize_epoch(epoch_raw: str) -> str:
-    epoch = _EPOCH_ALIASES.get(epoch_raw, epoch_raw)
-    if epoch not in _ALLOWED_EPOCHS:
-        raise PolicyResolutionError(f"Unsupported epoch_band: {epoch_raw}")
-    return epoch
-
-
-def _require_house_type(ctx: Context) -> str:
-    ht = ctx.house_type
-    if ht not in _ALLOWED_HOUSE_TYPES:
-        raise PolicyResolutionError(f"Unsupported house_type: {ht}")
-    return ht
-
-
-def _require_settlement(ctx: Context) -> str:
-    st = ctx.settlement_type
-    if st not in _ALLOWED_SETTLEMENTS:
-        raise PolicyResolutionError(f"Unsupported settlement_type: {st}")
-    return st
-
-
-def _trace(layer_id: str, ops: Iterable[Tuple[str, Any]]) -> TraceLayer:
-    return TraceLayer(
-        layer_id=layer_id,
-        ops=tuple(TraceOp(k, v) for k, v in sorted(ops, key=lambda x: x[0])),
-    )
-
-
-def _assert_allowed(name: str, keys, allowed):
-    unknown = set(keys) - set(allowed)
-    if unknown:
-        raise PolicyResolutionError(f"{name}: unknown keys {sorted(unknown)}")
+def _norm_epoch(epoch_band: Any) -> str:
+    if not isinstance(epoch_band, str) or not epoch_band.strip():
+        return "unknown"
+    e = epoch_band.strip()
+    return _EPOCH_ALIASES.get(e, e)
 
 
 def _clamp01(x: float) -> float:
-    return max(0.0, min(1.0, float(x)))
-
-
-def _round2(x: float) -> float:
-    return round(float(x), 3)
+    v = float(x)
+    if v < 0.0:
+        return 0.0
+    if v > 1.0:
+        return 1.0
+    return v
 
 
 # ============================================================
-# Layer Builders
+# Layers (ARC-001A: no field-loss, deltas only)
 # ============================================================
 
 
-def _baseline_layer() -> tuple[FachwerkPolicySpec, dict[str, ConstraintSpec], TraceLayer]:
-    """
-    Baseline is the "neutral, plausible" starting point.
-    Type/epoch/settlement/wealth layers will refine these.
-    """
-    fw = FachwerkPolicySpec(
-        binder_max=1.60,
-        # everything else inherits defaults from policy_types.FachwerkPolicySpec
-        # (mirrors FramePolicy defaults + renderer-facing defaults)
-    )
-
-    return (
-        fw,
-        {},
-        _trace(
-            "BaselinePolicy",
-            [
-                ("fachwerk.binder_max", fw.binder_max),
-                ("fachwerk.default_jamb_thickness", fw.default_jamb_thickness),
-                ("fachwerk.roof_pitch_deg", fw.roof_pitch_deg),
-                ("fachwerk.post_section", fw.post_section),
-                ("fachwerk.braces_enable", fw.braces_enable),
-                ("fachwerk.target_gefach_width", fw.target_gefach_width),
-                ("fachwerk.target_gefach_jitter", fw.target_gefach_jitter),
-            ],
-        ),
+def _baseline_fachwerk() -> tuple[FachwerkPolicySpec, TraceLayer]:
+    # Baseline is allowed to use PolicySpec defaults (NOT renderer defaults).
+    fw = FachwerkPolicySpec(binder_max=1.60)
+    return fw, _trace_layer(
+        "BaselinePolicy",
+        [
+            ("fachwerk.binder_max", fw.binder_max),
+            ("fachwerk.default_jamb_thickness", fw.default_jamb_thickness),
+        ],
     )
 
 
 def _epoch_layer(epoch: str, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    """
-    Epoch affects typical roof pitches, some section choices, etc.
-    Values here are a *parametric model* (not a claim of historical truth).
-    """
-    pitch = float(fw.roof_pitch_deg)
-    post_w, post_d = fw.post_section
-
-    if epoch == "early_medieval":
-        pitch += 3.0
-        post_w += 0.01
-        post_d += 0.01
-    elif epoch == "high_medieval":
-        pass
-    elif epoch == "late_medieval":
-        pitch -= 1.0
-        post_w += 0.005
-        post_d += 0.005
-    else:
-        raise PolicyResolutionError(f"Unsupported epoch_band: {epoch}")
-
-    pitch = max(35.0, min(70.0, pitch))
-    post_w = max(0.14, min(0.30, post_w))
-    post_d = max(0.14, min(0.30, post_d))
-
-    out = FachwerkPolicySpec(
-        binder_max=fw.binder_max,
-        default_jamb_thickness=fw.default_jamb_thickness,
-        post_section_width=fw.post_section_width,
-        post_section_depth=fw.post_section_depth,
-        plate_section_width=fw.plate_section_width,
-        plate_section_depth=fw.plate_section_depth,
-        opening_jamb_width=fw.opening_jamb_width,
-        opening_jamb_depth=fw.opening_jamb_depth,
-        braces_enable=fw.braces_enable,
-        brace_section_width=fw.brace_section_width,
-        brace_section_depth=fw.brace_section_depth,
-        brace_min_cell_width=fw.brace_min_cell_width,
-        brace_min_cell_height=fw.brace_min_cell_height,
-        target_gefach_width=fw.target_gefach_width,
-        target_gefach_jitter=fw.target_gefach_jitter,
-        z_merge_tol=fw.z_merge_tol,
-        roof_pitch_deg=pitch,
-        post_section=(post_w, post_d),
-    )
-
-    return out, _trace(
+    # Minimal MVP: epoch does not alter FachwerkPolicySpec fields yet (only 2 fields exist).
+    # We still trace it to keep the contract stable and extensible.
+    return fw, _trace_layer(
         f"EpochPolicy:{epoch}",
         [
-            ("fachwerk.roof_pitch_deg", out.roof_pitch_deg),
-            ("fachwerk.post_section", out.post_section),
+            ("ctx.epoch", epoch),
         ],
     )
 
 
 def _settlement_layer(settlement: str, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    """
-    Settlement can affect the structural rhythm and ornament/brace density assumptions.
-    Keep it mild for now.
-    """
-    binder = float(fw.binder_max)
-    braces_enable = bool(fw.braces_enable)
-
-    if settlement == "rural":
-        pass
-    elif settlement == "village":
-        binder += 0.01
-    elif settlement == "town":
-        binder += 0.02
-        braces_enable = True
-    else:
-        raise PolicyResolutionError(f"Unsupported settlement_type: {settlement}")
-
-    binder = max(1.20, min(2.40, binder))
-
-    out = FachwerkPolicySpec(
-        binder_max=binder,
-        default_jamb_thickness=fw.default_jamb_thickness,
-        post_section_width=fw.post_section_width,
-        post_section_depth=fw.post_section_depth,
-        plate_section_width=fw.plate_section_width,
-        plate_section_depth=fw.plate_section_depth,
-        opening_jamb_width=fw.opening_jamb_width,
-        opening_jamb_depth=fw.opening_jamb_depth,
-        braces_enable=braces_enable,
-        brace_section_width=fw.brace_section_width,
-        brace_section_depth=fw.brace_section_depth,
-        brace_min_cell_width=fw.brace_min_cell_width,
-        brace_min_cell_height=fw.brace_min_cell_height,
-        target_gefach_width=fw.target_gefach_width,
-        target_gefach_jitter=fw.target_gefach_jitter,
-        z_merge_tol=fw.z_merge_tol,
-        roof_pitch_deg=fw.roof_pitch_deg,
-        post_section=fw.post_section,
-    )
-
-    return out, _trace(
+    # Minimal MVP: settlement does not alter spec yet (kept for future).
+    return fw, _trace_layer(
         f"SettlementPolicy:{settlement}",
         [
-            ("fachwerk.binder_max", out.binder_max),
-            ("fachwerk.braces_enable", out.braces_enable),
+            ("ctx.settlement_type", settlement),
         ],
     )
 
 
-def _wealth_layer(wealth: float, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    """
-    Wealth affects section sizes and sometimes pitch/regularity assumptions.
-    """
-    w = _clamp01(wealth)
-
-    binder = float(fw.binder_max) + 0.10 * (w - 0.5)
-
-    # beef up posts slightly with wealth
-    post_w, post_d = fw.post_section
-    post_w = post_w + 0.02 * (w - 0.5)
-    post_d = post_d + 0.02 * (w - 0.5)
-
-    # roof pitch: richer -> can afford steeper/complex roofs (tiny effect)
-    pitch = float(fw.roof_pitch_deg) + 2.0 * (w - 0.5)
-
-    binder = max(1.20, min(2.40, binder))
-    post_w = max(0.14, min(0.30, post_w))
-    post_d = max(0.14, min(0.30, post_d))
-    pitch = max(35.0, min(70.0, pitch))
-
-    out = FachwerkPolicySpec(
-        binder_max=binder,
-        default_jamb_thickness=fw.default_jamb_thickness,
-        post_section_width=fw.post_section_width,
-        post_section_depth=fw.post_section_depth,
-        plate_section_width=fw.plate_section_width,
-        plate_section_depth=fw.plate_section_depth,
-        opening_jamb_width=fw.opening_jamb_width,
-        opening_jamb_depth=fw.opening_jamb_depth,
-        braces_enable=fw.braces_enable,
-        brace_section_width=fw.brace_section_width,
-        brace_section_depth=fw.brace_section_depth,
-        brace_min_cell_width=fw.brace_min_cell_width,
-        brace_min_cell_height=fw.brace_min_cell_height,
-        target_gefach_width=fw.target_gefach_width,
-        target_gefach_jitter=fw.target_gefach_jitter,
-        z_merge_tol=fw.z_merge_tol,
-        roof_pitch_deg=pitch,
-        post_section=(post_w, post_d),
-    )
-
-    return out, _trace(
-        f"WealthPolicy:{w:.3f}",
+def _wealth_layer(wealth01: float, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
+    # Minimal MVP: wealth does not alter spec yet (kept for future).
+    return fw, _trace_layer(
+        f"WealthPolicy:{wealth01:.3f}",
         [
-            ("fachwerk.binder_max", out.binder_max),
-            ("fachwerk.roof_pitch_deg", out.roof_pitch_deg),
-            ("fachwerk.post_section", out.post_section),
+            ("ctx.wealth", wealth01),
         ],
     )
 
 
-def _type_layer_hallenhaus(fw: FachwerkPolicySpec, wealth: float) -> tuple[FachwerkPolicySpec, dict[str, ConstraintSpec], TraceLayer]:
+def _type_layer(
+    house_type: str,
+    *,
+    epoch: str,
+    settlement: str,
+    wealth01: float,
+    fw: FachwerkPolicySpec,
+) -> tuple[FachwerkPolicySpec, dict[str, ConstraintSpec], TraceLayer]:
     """
-    Type-specific anchors:
-    - typical binder_max range for hallenhaus
-    - constraint specs for sampling/scoring (brustriegel_z, gefach_width_target)
+    Type-specific resolution.
+
+    ARC-001A principle:
+      - This is the ONLY place where binder_max / typological constraints are derived.
+      - Planner and Domains must NOT invent structural defaults.
     """
-    w = _clamp01(wealth)
 
-    # binder_max typical band for hallenhaus (clamped)
-    base = 1.50
-    span = 0.15
-    binder = base + span * (w - 0.5)
-    binder = max(1.40, min(1.65, binder))
+    constraints: dict[str, ConstraintSpec] = {}
 
-    # gefach target: vary mildly with wealth
-    target = 1.35 + 0.10 * (w - 0.5)
-    target = max(1.20, min(1.50, target))
-    jitter = 0.10
+    if house_type == "fachwerkhaus.hallenhaus":
+        # ---- Statics limit (hard structural max spacing) ----
+        # Wealth slightly increases span (better timber quality).
+        base = 1.50
+        span = 0.15
+        binder_max = base + span * (wealth01 - 0.5)
+        binder_max = max(1.40, min(1.65, binder_max))
 
-    # keep fw defaults except binder_max and target_gefach_*
-    fw_out = FachwerkPolicySpec(
-        binder_max=binder,
-        default_jamb_thickness=fw.default_jamb_thickness,
-        post_section_width=fw.post_section_width,
-        post_section_depth=fw.post_section_depth,
-        plate_section_width=fw.plate_section_width,
-        plate_section_depth=fw.plate_section_depth,
-        opening_jamb_width=fw.opening_jamb_width,
-        opening_jamb_depth=fw.opening_jamb_depth,
-        braces_enable=fw.braces_enable,
-        brace_section_width=fw.brace_section_width,
-        brace_section_depth=fw.brace_section_depth,
-        brace_min_cell_width=fw.brace_min_cell_width,
-        brace_min_cell_height=fw.brace_min_cell_height,
-        target_gefach_width=target,
-        target_gefach_jitter=jitter,
-        z_merge_tol=fw.z_merge_tol,
-        roof_pitch_deg=fw.roof_pitch_deg,
-        post_section=fw.post_section,
-    )
+        # ---- Cultural target gefach width (aesthetic rhythm) ----
+        target_gefach_width = 1.35 + 0.10 * (wealth01 - 0.5)
+        target_gefach_width = max(1.20, min(1.50, target_gefach_width))
 
-    constraints: dict[str, ConstraintSpec] = {
-        "brustriegel_z": ConstraintSpec(
+        # jitter is expressed via soft ideal range below; keep single source of truth here
+        jitter = 0.10
+
+        fw_out = replace(fw, binder_max=float(binder_max))
+
+        constraints["brustriegel_z"] = ConstraintSpec(
             hard=None,
             soft=RangeSoftSpec(
                 ideal=(0.95, 1.10),
@@ -358,31 +189,48 @@ def _type_layer_hallenhaus(fw: FachwerkPolicySpec, wealth: float) -> tuple[Fachw
                 weight=1.0,
             ),
             unit="m",
-            code_prefix="POL",
-        ),
-        "gefach_width_target": ConstraintSpec(
-            hard=RangeHardSpec(0.0, binder),
+            code_prefix="HALL",
+        )
+
+        constraints["gefach_width_target"] = ConstraintSpec(
+            hard=RangeHardSpec(0.0, float(binder_max)),
             soft=RangeSoftSpec(
-                ideal=(target - jitter, target + jitter),
-                allowed=(1.10, binder),
+                ideal=(float(target_gefach_width) - float(jitter), float(target_gefach_width) + float(jitter)),
+                allowed=(1.10, float(binder_max)),
                 weight=3.0,
             ),
             unit="m",
-            code_prefix="POL",
-        ),
-    }
+            code_prefix="HALL",
+        )
 
-    return fw_out, constraints, _trace(
-        "TypePolicy:fachwerkhaus.hallenhaus",
+        layer = _trace_layer(
+            "TypePolicy:fachwerkhaus.hallenhaus",
+            [
+                ("ctx.epoch", epoch),
+                ("ctx.settlement_type", settlement),
+                ("ctx.wealth", wealth01),
+                ("fachwerk.binder_max", fw_out.binder_max),
+                ("constraints.brustriegel_z", "ConstraintSpec"),
+                ("constraints.gefach_width_target", "ConstraintSpec"),
+                ("gefach.target_width", float(target_gefach_width)),
+                ("gefach.jitter", float(jitter)),
+            ],
+        )
+
+        return fw_out, constraints, layer
+
+    # Generic fallback for other types: deterministic, minimal.
+    fw_out = replace(fw, binder_max=1.65)
+    layer = _trace_layer(
+        "TypePolicy:generic",
         [
+            ("ctx.epoch", epoch),
+            ("ctx.settlement_type", settlement),
+            ("ctx.wealth", wealth01),
             ("fachwerk.binder_max", fw_out.binder_max),
-            ("fachwerk.target_gefach_width", fw_out.target_gefach_width),
-            ("fachwerk.target_gefach_jitter", fw_out.target_gefach_jitter),
-            ("constraints.brustriegel_z.soft", constraints["brustriegel_z"].soft),
-            ("constraints.gefach_width_target.hard", constraints["gefach_width_target"].hard),
-            ("constraints.gefach_width_target.soft", constraints["gefach_width_target"].soft),
         ],
     )
+    return fw_out, constraints, layer
 
 
 # ============================================================
@@ -391,17 +239,27 @@ def _type_layer_hallenhaus(fw: FachwerkPolicySpec, wealth: float) -> tuple[Fachw
 
 
 def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
-    resolved, _ = resolve_policy_stack_with_trace(ctx)
+    resolved, _trace = resolve_policy_stack_with_trace(ctx)
     return resolved
 
 
 def resolve_policy_stack_with_trace(ctx: Context) -> tuple[ResolvedPolicy, ResolutionTrace]:
-    house_type = _require_house_type(ctx)
-    epoch = _normalize_epoch(ctx.epoch_band)
-    settlement = _require_settlement(ctx)
+    """
+    ARC-001A hardened policy resolution:
+      - No renderer defaults.
+      - Type + culture inputs resolved once here.
+      - Trace returned as separate artifact (ResolvedPolicy has no 'trace' field).
+    """
 
-    fw, constraints, l0 = _baseline_layer()
-    layers = [l0]
+    house_type = _norm_house_type(ctx.house_type)
+    epoch = _norm_epoch(ctx.epoch_band)
+    settlement = str(ctx.settlement_type)
+    wealth01 = _clamp01(float(ctx.wealth))
+
+    layers: list[TraceLayer] = []
+
+    fw, l0 = _baseline_fachwerk()
+    layers.append(l0)
 
     fw, l1 = _epoch_layer(epoch, fw)
     layers.append(l1)
@@ -409,33 +267,27 @@ def resolve_policy_stack_with_trace(ctx: Context) -> tuple[ResolvedPolicy, Resol
     fw, l2 = _settlement_layer(settlement, fw)
     layers.append(l2)
 
-    fw, l3 = _wealth_layer(ctx.wealth, fw)
+    fw, l3 = _wealth_layer(wealth01, fw)
     layers.append(l3)
 
-    if house_type == "fachwerkhaus.hallenhaus":
-        fw, type_constraints, l4 = _type_layer_hallenhaus(fw, ctx.wealth)
-        layers.append(l4)
-        constraints.update(type_constraints)
-    else:
-        raise PolicyResolutionError(f"Unsupported house_type: {house_type}")
-
-    # Validation (required constraint keys present and only allowed keys used)
-    _assert_allowed(
-        f"{house_type}.constraints",
-        constraints.keys(),
-        _ALLOWED_CONSTRAINT_KEYS[house_type],
+    fw, constraints, l4 = _type_layer(
+        house_type,
+        epoch=epoch,
+        settlement=settlement,
+        wealth01=wealth01,
+        fw=fw,
     )
-    missing = _REQUIRED_CONSTRAINT_KEYS[house_type] - set(constraints.keys())
-    if missing:
-        raise PolicyResolutionError(f"{house_type}: missing required constraints {sorted(missing)}")
+    layers.append(l4)
 
     resolved = ResolvedPolicy(
-        schema=_POLICY_SCHEMA_VERSION,
+        schema=2,
         constraints=constraints,
         fachwerk=fw,
     )
 
-    return resolved, ResolutionTrace(
+    trace = ResolutionTrace(
         schema=resolved.schema,
         layers=tuple(layers),
     )
+
+    return resolved, trace
