@@ -7,6 +7,4 @@ bvillage_project.egg-info/
 
 ARCH_SCAN.txt
 
-research/Mittelalter/*/03 data/
-research/Mittelalter/*/02 drafts/
-research/Mittelalter/*/04 archived/
+research/Mittelalter/Fachwerk/0[!1]*/
