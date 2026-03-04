@@ -9,9 +9,11 @@ from mathutils import Vector
 from bvillage.core.errors import SchemaError
 from .materials_assign import assign_member_material
 
+from bvillage.core.ontology.structural_terms import INFILL_CELL
+
 __all__ = ["build_infills"]
 
-LOG = logging.getLogger("bvillage.domains.fachwerk.blender.infills")
+LOG = logging.getLogger(__name__)
 
 
 def _require_basis(fp: dict[str, Any], *, house: dict[str, Any]) -> dict[str, float]:
@@ -24,7 +26,7 @@ def _require_basis(fp: dict[str, Any], *, house: dict[str, Any]) -> dict[str, fl
             "halfW": float(basis["halfW"]),
         }
 
-    # derive renderer basis deterministically from house params
+    # deterministic fallback (should exist in emitted fp anyway)
     try:
         L = float(house["L"])
         W = float(house["W"])
@@ -34,54 +36,15 @@ def _require_basis(fp: dict[str, Any], *, house: dict[str, Any]) -> dict[str, fl
     if not (L > 0.0 and W > 0.0):
         raise SchemaError("Infills: invalid house dims for basis derivation")
 
-    x_min = 0.0
-    x_max = L
-    center_x = 0.5 * L
-    halfW = 0.5 * W
+    return {"x_min": 0.0, "x_max": L, "center_x": 0.5 * L, "halfW": 0.5 * W}
 
-    return {
-        "x_min": x_min,
-        "x_max": x_max,
-        "center_x": center_x,
-        "halfW": halfW,
-    }
 
-def _make_infill_quad(
-    collection: bpy.types.Collection,
-    name: str,
-    v00: Vector,
-    v10: Vector,
-    v11: Vector,
-    v01: Vector,
-    *,
-    member_for_material: dict[str, Any] | None = None,
-    ctx_view: Any = None,
-) -> bpy.types.Object:
-    mesh = bpy.data.meshes.new(name)
-    obj = bpy.data.objects.new(mesh.name, mesh)
+def _make_infill_quad(collection: bpy.types.Collection, name: str, v00: Vector, v10: Vector, v11: Vector, v01: Vector) -> bpy.types.Object:
+    mesh = bpy.data.meshes.new(name + "_Mesh")
+    obj = bpy.data.objects.new(name, mesh)
     collection.objects.link(obj)
-
-    verts = [
-        (v00.x, v00.y, v00.z),
-        (v10.x, v10.y, v10.z),
-        (v11.x, v11.y, v11.z),
-        (v01.x, v01.y, v01.z),
-    ]
-    mesh.from_pydata(verts, [], [(0, 1, 2, 3)])
+    mesh.from_pydata([v00, v10, v11, v01], [], [(0, 1, 2, 3)])
     mesh.update()
-
-    if member_for_material is not None and ctx_view is not None:
-        try:
-            assign_member_material(
-                obj=obj,
-                member=member_for_material,
-                ctx_view=ctx_view,
-                default_material_id="brick.historic_mid",
-                name_hint=f"BV_{name}",
-            )
-        except Exception:
-            LOG.exception("Infills: material assignment failed for %s member=%s", name, member_for_material)
-
     return obj
 
 
@@ -89,12 +52,10 @@ def _resolve_infill_material_role(*, cell: dict[str, Any], house: dict[str, Any]
     mr = cell.get("material_role")
     if isinstance(mr, str) and mr:
         return mr
-
-    default_mr = house.get("default_infill_material_role")
-    if isinstance(default_mr, str) and default_mr:
-        return default_mr
-
-    raise SchemaError("Infills: missing cell.material_role and house.default_infill_material_role")
+    dmr = house.get("default_infill_material_role")
+    if isinstance(dmr, str) and dmr:
+        return dmr
+    return "INFILL"
 
 
 def build_infills(
@@ -103,31 +64,34 @@ def build_infills(
     house: dict[str, Any],
     collection: bpy.types.Collection,
     ctx_view: Any = None,
-):
+    debug: bool = False,
+) -> int:
+    members = fp.get("members")
+    if not isinstance(members, dict):
+        LOG.info("Phase4A infills: no members dict -> nothing to build")
+        return 0
+
+    cells = members.get("infills") or []
+    if not isinstance(cells, list) or not cells:
+        LOG.info("Phase4A infills: members.infills empty -> nothing to build")
+        return 0
+
     basis = _require_basis(fp, house=house)
     x_min = basis["x_min"]
     x_max = basis["x_max"]
     center_x = basis["center_x"]
     halfW = basis["halfW"]
 
-    members = fp.get("members")
-    if not isinstance(members, dict):
-        raise SchemaError("Infills: schema requires fp['members'] dict")
-
-    cells = members.get("infills")
-    if not isinstance(cells, list):
-        raise SchemaError("Infills: schema requires fp['members']['infills'] list")
-
     built = 0
-    for c in cells:
+    for i, c in enumerate(cells):
         if not isinstance(c, dict):
             continue
-        if c.get("role") != "INFILL_CELL":
+        if c.get("tid") != INFILL_CELL:
             continue
 
         wall = c.get("wall")
         if wall not in ("N", "S", "E", "W"):
-            raise SchemaError("Infills: INFILL_CELL missing/invalid wall")
+            raise SchemaError(f"Infills: INFILL_CELL[{i}] missing/invalid wall")
 
         try:
             u0 = float(c["u0"])
@@ -135,7 +99,7 @@ def build_infills(
             z0 = float(c["z0"])
             z1 = float(c["z1"])
         except Exception:
-            raise SchemaError("Infills: INFILL_CELL missing required numeric u0/u1/z0/z1")
+            raise SchemaError(f"Infills: INFILL_CELL[{i}] missing required numeric u0/u1/z0/z1")
 
         if wall == "N":
             v00 = Vector((center_x + u0, -halfW, z0))
@@ -152,31 +116,33 @@ def build_infills(
             v10 = Vector((x_max, u1, z0))
             v11 = Vector((x_max, u1, z1))
             v01 = Vector((x_max, u0, z1))
-        else:  # "W"
+        else:  # W
             v00 = Vector((x_min, u0, z0))
             v10 = Vector((x_min, u1, z0))
             v11 = Vector((x_min, u1, z1))
             v01 = Vector((x_min, u0, z1))
 
         name = f"Infill_{wall}_{built:04d}"
+        obj = _make_infill_quad(collection, name, v00, v10, v11, v01)
 
-        # Material wrapper: role must be policy-driven (cell.material_role or house.default_infill_material_role)
-        mat_member = dict(c)
-        if "id" not in mat_member:
-            mat_member["id"] = name
-        mat_member["role"] = _resolve_infill_material_role(cell=c, house=house)
-
-        _make_infill_quad(
-            collection,
-            name,
-            v00,
-            v10,
-            v11,
-            v01,
-            member_for_material=mat_member,
-            ctx_view=ctx_view,
-        )
+        if ctx_view:
+            # Material role only (do not use for geometry)
+            mat_member = dict(c)
+            if "id" not in mat_member or not mat_member["id"]:
+                mat_member["id"] = name
+            mat_member["role"] = _resolve_infill_material_role(cell=c, house=house)
+            try:
+                assign_member_material(
+                    obj=obj,
+                    member=mat_member,
+                    ctx_view=ctx_view,
+                    default_material_id="mortar.lime_weak",
+                    name_hint=f"BV_{name}",
+                )
+            except Exception:
+                LOG.exception("Infills: material assignment failed for %s member=%s", name, mat_member)
 
         built += 1
 
     LOG.info("Phase4A infills: members-first done built=%d", built)
+    return built

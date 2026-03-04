@@ -422,47 +422,83 @@ def _add_beam(
 # -----------------------------------------------------------------------------
 
 def _build_primary_posts_from_members(fp: dict[str, Any], house: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
+    """
+    Build primary wall posts from members-first artifacts.
+
+    Structural semantics:
+      - member['tid'] == post.primary
+
+    Legacy/material metadata:
+      - member['role'] may exist but must not drive geometry.
+    """
+    from bvillage.core.ontology.structural_terms import POST_PRIMARY
+
     built = 0
     members = fp.get("members") or {}
     posts = members.get("posts") or []
     for mm in posts:
-        if str(mm.get("role")) != "PRIMARY_POST":
+        if str(mm.get("tid") or "") != POST_PRIMARY:
             continue
         p0, p1 = _map_post_member(mm, house=house)
-        obj = _add_beam(col_frame, name=_member_name(mm, fallback="Post"), p0=p0, p1=p1, profile=mm.get("profile") or house["post_section"])
+        obj = _add_beam(
+            col_frame,
+            name=_member_name(mm, fallback="Post"),
+            p0=p0,
+            p1=p1,
+            profile=mm.get("profile") or house["post_section"],
+        )
         _assign_member_material(obj, mm, ctx_view)
         built += 1
     return built
 
 
 def _build_plates_from_members(fp: dict[str, Any], house: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
+    """
+    Build eaves plates from members-first artifacts.
+
+    Structural semantics:
+      - member['tid'] == beam.eaves_plate
+
+    Note:
+      - wall orientation is carried by member['wall'] (N/S/E/W).
+    """
+    from bvillage.core.ontology.structural_terms import BEAM_EAVES_PLATE
+
     built = 0
     members = fp.get("members") or {}
     rails = members.get("rails") or []
     for m in rails:
-        role = str(m.get("role") or "")
-        if not role.startswith("EAVES_PLATE_"):
+        if str(m.get("tid") or "") != BEAM_EAVES_PLATE:
             continue
         p0, p1 = _map_rail_member(m, house=house)
-        obj = _add_beam(col_frame, name=_member_name(m, fallback="Plate"), p0=p0, p1=p1, profile=m.get("profile") or house["plate_section"])
+        obj = _add_beam(
+            col_frame,
+            name=_member_name(m, fallback="Plate"),
+            p0=p0,
+            p1=p1,
+            profile=m.get("profile") or house["plate_section"],
+        )
         _assign_member_material(obj, m, ctx_view)
         built += 1
     return built
-
-
+    
 
 def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> int:
     """Build hall posts on the midline up to ridge/roof support.
 
-    Important: In current FramePlan schema, hall posts are not necessarily present
-    in fp.members.posts. Historically, Hallenhaus requires a row of interior
-    posts (Ständer) along the building length. The builder therefore generates
-    these members deterministically from house.axes_u.
+    Current behavior:
+    - Still generates interior hall posts deterministically from house.axes_u
+      (because schemas may not emit explicit interior posts yet).
 
-    If future schemas provide explicit HALL_POST members, those will be built in
-    addition to (or instead of) generated posts depending on policy. For now we
-    generate one per axes_u entry.
+    Structural semantics:
+    - generated members use tid=post.interior (domain-neutral ontology)
+
+    If future schemas provide explicit interior posts as members:
+    - This function can be adjusted to build those first, then optionally
+      generate missing ones by policy. For now: generate one per axes_u entry.
     """
+    from bvillage.core.ontology.structural_terms import POST_INTERIOR
+
     built = 0
 
     axes_u = list(house.get("axes_u") or [])
@@ -470,22 +506,28 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
         return 0
 
     z0 = float(house["z0"])
-    # Prefer explicit ridge/hall height if present; otherwise fall back to H_e.
-    z1 = float(house.get("z_ridge") if ("z_ridge" in house) else (float(house["z_plate"]) + math.tan(math.radians(float(house["roof_pitch_deg"]))) * (0.5 * float(house["W"]))))
+    z1 = float(
+        house.get("z_ridge")
+        if ("z_ridge" in house)
+        else (float(house["z_plate"]) + math.tan(math.radians(float(house["roof_pitch_deg"]))) * (0.5 * float(house["W"])))
+    )
 
-    # Midline y=0 in house coordinates; x runs along axes_u.
     for i, x in enumerate(axes_u):
         mm: dict[str, Any] = {
+            "tid": POST_INTERIOR,
+            # legacy/material only:
             "role": "HALL_POST",
             "id": f"HallPost_{i:02d}",
             "wall": "MID",
             "u": float(x),  # interpreted as absolute x for MID
             "z0": z0,
             "z1": z1,
-            # allow profile override if present on house
-            "profile": {"w": float(house["post_section"][0]),
-                        "d": float(house["post_section"][1])},
+            "profile": {
+                "w": float(house["post_section"][0]),
+                "d": float(house["post_section"][1]),
+            },
         }
+
         p0 = Vector((float(x), 0.0, z0))
         p1 = Vector((float(x), 0.0, z1))
         obj = _add_beam(
@@ -502,12 +544,21 @@ def _build_hall_posts_to_ridge(fp: dict[str, Any], house: dict[str, Any], col_fr
 
 
 def _build_posts_and_plates(house: dict[str, Any], fp: dict[str, Any], col_frame: bpy.types.Collection, ctx_view: Any) -> None:
+    """
+    Phase STRUCT_BASE.
+
+    Requires:
+      - at least one member post.primary
+      - at least one member beam.eaves_plate
+    """
     built_posts = _build_primary_posts_from_members(fp, house, col_frame, ctx_view)
     if built_posts <= 0:
-        raise SchemaError("members-first required: missing/empty members.posts PRIMARY_POST")
+        raise SchemaError("members-first required: missing/empty members.posts tid=post.primary")
+
     built_plates = _build_plates_from_members(fp, house, col_frame, ctx_view)
     if built_plates <= 0:
-        raise SchemaError("members-first required: missing/empty members.rails EAVES_PLATE_*")
+        raise SchemaError("members-first required: missing/empty members.rails tid=beam.eaves_plate")
+
     LOG.info("Phase STRUCT_BASE: members-first posts=%d plates=%d", built_posts, built_plates)
 
 

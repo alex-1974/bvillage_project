@@ -338,24 +338,43 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
     """
     Convert FramePlan to a JSON-like dict for notes storage (stable schema).
 
-    schema_version=3: members-first enforced end-to-end (no legacy fallback).
-    Members are the structural truth (posts/rails/braces/infills).
+    schema_version=3: members-first + ontology TIDs.
+    Structural semantics use `tid` (ontology).
     """
-    # Robust policy access (older FramePlan instances may have policy=None)
+    from bvillage.core.ontology.structural_terms import (
+        POST_PRIMARY,
+        POST_JAMB,
+        BEAM_EAVES_PLATE,
+        BEAM_LINTEL,
+        BEAM_WINDOW_SILL,
+        BRACE_DIAGONAL,
+        INFILL_CELL,
+    )
+
     pol = fp.policy
     if pol is None:
-        # binder_max not needed here; only profile/threshold defaults matter for members emission
         pol = FramePolicy(binder_max=0.0)
 
-    # ---- Members v3: PRIMARY_POST + opening frames + eaves plates + infill cells + braces ----
+    # ------------------------------------------------------------
+    # Infer "z_plate" as the highest z-axis below H_e (as in v2 file)
+    # ------------------------------------------------------------
+    eps = 1e-6
+    try:
+        z_plate = max(z for z in fp.z_axes if float(z) < float(fp.H_e) - eps)
+    except Exception:
+        z_plate = float(fp.H_e)
 
-    # 1) Primary posts from vertical axes
+    # ------------------------------------------------------------
+    # 1) Primary posts
+    # ------------------------------------------------------------
     primary_posts: List[Dict[str, Any]] = []
     for wall in ("N", "S", "E", "W"):
         w = fp.vertical_axes.get(wall, {})
         for u in w.get("primary", []):
             primary_posts.append(
                 {
+                    "tid": POST_PRIMARY,
+                    # legacy/material only (do NOT drive geometry by role)
                     "role": "PRIMARY_POST",
                     "wall": wall,
                     "u": float(u),
@@ -366,15 +385,17 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 }
             )
 
-    # 2) Opening frames (jambs + lintel + optional sill)
+    # ------------------------------------------------------------
+    # 2) Opening members: jambs + lintel + optional sill
+    # ------------------------------------------------------------
     opening_posts: List[Dict[str, Any]] = []
     opening_rails: List[Dict[str, Any]] = []
-
     for o in fp.openings_final:
-        # jambs
         opening_posts.append(
             {
-                "role": "OPENING_JAMB_L",
+                "tid": POST_JAMB,
+                "role": "OPENING_JAMB_L",  # legacy/material only
+                "side": "L",
                 "wall": o.wall,
                 "u": float(o.u0),
                 "z0": float(o.z0),
@@ -386,7 +407,9 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
         )
         opening_posts.append(
             {
+                "tid": POST_JAMB,
                 "role": "OPENING_JAMB_R",
+                "side": "R",
                 "wall": o.wall,
                 "u": float(o.u1),
                 "z0": float(o.z0),
@@ -397,35 +420,26 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
             }
         )
 
-        # lintel (gate vs window profile)
-        if o.typ == "gate":
-            lintel_prof = {
-                "w": float(pol.gate_lintel_width),
-                "d": float(pol.gate_lintel_depth),
-            }
-        else:
-            lintel_prof = {
-                "w": float(pol.window_lintel_width),
-                "d": float(pol.window_lintel_depth),
-            }
-
+        # lintel
         opening_rails.append(
             {
+                "tid": BEAM_LINTEL,
                 "role": "OPENING_LINTEL",
                 "wall": o.wall,
                 "u0": float(o.u0),
                 "u1": float(o.u1),
                 "z": float(o.z1),
-                "profile": lintel_prof,
+                "profile": {"w": float(pol.window_lintel_width), "d": float(pol.window_lintel_depth)},
                 "opening": o.name,
                 "material_id": "timber.oak",
             }
         )
 
-        # sill for windows
+        # sill only for windows
         if o.typ == "window":
             opening_rails.append(
                 {
+                    "tid": BEAM_WINDOW_SILL,
                     "role": "OPENING_SILL",
                     "wall": o.wall,
                     "u0": float(o.u0),
@@ -437,191 +451,117 @@ def frameplan_to_dict(fp: FramePlan) -> Dict[str, Any]:
                 }
             )
 
-    # 3) Eaves plates as members (rails)
-    # Infer "z_plate" as the highest z-axis below H_e.
-    eps = 1e-6
-    try:
-        z_plate = max(z for z in fp.z_axes if float(z) < float(fp.H_e) - eps)
-    except Exception:
-        z_plate = float(fp.H_e)
-
+    # ------------------------------------------------------------
+    # 3) Eaves plates (N/S in current MVP)
+    # ------------------------------------------------------------
     plate_rails: List[Dict[str, Any]] = []
-    for wall, role in (("S", "EAVES_PLATE_S"), ("N", "EAVES_PLATE_N")):
+    for wall in ("S", "N"):
         w = fp.vertical_axes.get(wall, {})
-        u_all = w.get("all") or []
-        if isinstance(u_all, list) and len(u_all) >= 2:
-            u0 = float(min(u_all))
-            u1 = float(max(u_all))
-            plate_rails.append(
-                {
-                    "role": role,
-                    "wall": wall,
-                    "u0": u0,
-                    "u1": u1,
-                    "z": float(z_plate),
-                    "profile": {"w": float(pol.plate_section_width), "d": float(pol.plate_section_depth)},
-                    "material_id": "timber.oak",
-                }
-            )
+        prim = w.get("primary", [])
+        if not prim:
+            continue
+        u0 = float(min(prim))
+        u1 = float(max(prim))
+        plate_rails.append(
+            {
+                "tid": BEAM_EAVES_PLATE,
+                "role": f"EAVES_PLATE_{wall}",  # legacy/material only
+                "wall": wall,
+                "u0": u0,
+                "u1": u1,
+                "z": float(z_plate),
+                "profile": {"w": float(pol.plate_section_width), "d": float(pol.plate_section_depth)},
+                "material_id": "timber.oak",
+            }
+        )
 
-    # Shared: opening overlap test (used for infills and braces)
-    def _cell_hits_opening(wall: str, u0: float, u1: float, z0c: float, z1c: float) -> bool:
-        for op in fp.openings_final:
-            if op.wall != wall:
-                continue
-            ou0 = float(op.u0)
-            ou1 = float(op.u1)
-            oz0 = float(op.z0)
-            oz1 = float(op.z1)
-
-            # overlap in u and z (open interval-ish is fine here)
-            if not (u1 <= ou0 or u0 >= ou1):
-                if not (z1c <= oz0 or z0c >= oz1):
-                    return True
-        return False
-
-    # 4) Infill cells as members (rectangles between consecutive u & z axes)
+    # ------------------------------------------------------------
+    # 4) Infills (simple between primary posts, up to z_plate)
+    # ------------------------------------------------------------
     infills: List[Dict[str, Any]] = []
     for wall in ("N", "S", "E", "W"):
         w = fp.vertical_axes.get(wall, {})
-        u_all = w.get("all") or []
-        if not isinstance(u_all, list) or len(u_all) < 2:
+        prim = list(w.get("primary", []))
+        if len(prim) < 2:
             continue
+        prim.sort()
+        for i in range(len(prim) - 1):
+            infills.append(
+                {
+                    "tid": INFILL_CELL,
+                    "role": "INFILL_CELL",  # will be rewritten to material-role in infills builder
+                    "wall": wall,
+                    "u0": float(prim[i]),
+                    "u1": float(prim[i + 1]),
+                    "z0": float(fp.z0),
+                    "z1": float(z_plate),
+                    "material_id": "mortar.lime_weak",
+                }
+            )
 
-        for i in range(len(u_all) - 1):
-            u0 = float(u_all[i])
-            u1 = float(u_all[i + 1])
-
-            for j in range(len(fp.z_axes) - 1):
-                z0c = float(fp.z_axes[j])
-                z1c = float(fp.z_axes[j + 1])
-
-                # avoid infill cells that intersect openings
-                if _cell_hits_opening(wall, u0, u1, z0c, z1c):
-                    continue
-
-                infills.append(
-                    {
-                        "role": "INFILL_CELL",
-                        "wall": wall,
-                        "u0": u0,
-                        "u1": u1,
-                        "z0": z0c,
-                        "z1": z1c,
-                        "material_id": "mortar.lime_weak",
-                    }
-                )
-
-    # 5) Braces as members (policy-driven): historically moderated (Hallenhaus-friendly)
-    #
-    # Contract-safe:
-    # - still emits only role="BRACE_DIAG" with u0,u1,z0,z1,profile
-    # - avoids the "X wallpaper" by using sparse single diagonals
-    # - biases braces toward gables (E/W) and corners; long walls calmer
+    # ------------------------------------------------------------
+    # 5) Braces (keep existing if already present; otherwise empty)
+    # ------------------------------------------------------------
     braces: List[Dict[str, Any]] = []
-    if pol.braces_enable and isinstance(fp.z_axes, list) and len(fp.z_axes) >= 2:
-        brace_w = float(pol.brace_section_width)
-        brace_d = float(pol.brace_section_depth)
-        min_cell_w = float(pol.brace_min_cell_width)
-        min_cell_h = float(pol.brace_min_cell_height)
+    for b in getattr(fp, "braces", []) or []:
+        if not isinstance(b, dict):
+            continue
+        mm = dict(b)
+        if "tid" not in mm:
+            mm["tid"] = BRACE_DIAGONAL
+        braces.append(mm)
 
-        # choose a brace band: mid -> plate, approximates typical knee/upper bracing
-        eps = 1e-6
-        try:
-            z_plate = max(z for z in fp.z_axes if float(z) < float(fp.H_e) - eps)
-        except Exception:
-            z_plate = float(fp.H_e)
-        z_mid = float(fp.z_axes[1])  # safe: len(z_axes) >= 2
-
-        for wall in ("N", "S", "E", "W"):
-            w = fp.vertical_axes.get(wall, {})
-            u_all = w.get("all") or []
-            if not isinstance(u_all, list) or len(u_all) < 2:
-                continue
-
-            for i in range(len(u_all) - 1):
-                u0 = float(u_all[i])
-                u1 = float(u_all[i + 1])
-                if (u1 - u0) < min_cell_w:
-                    continue
-
-                # calmer long walls: brace only every 2nd bay
-                if wall in ("N", "S") and (i % 2 == 1):
-                    continue
-
-                z0c = z_mid
-                z1c = float(z_plate)
-                if (z1c - z0c) < min_cell_h:
-                    continue
-
-                if _cell_hits_opening(wall, u0, u1, z0c, z1c):
-                    continue
-
-                # alternate direction for visual + structural variety
-                if (i % 2) == 0:
-                    a_u0, a_z0, a_u1, a_z1 = u0, z0c, u1, z1c
-                else:
-                    a_u0, a_z0, a_u1, a_z1 = u1, z0c, u0, z1c
-
-                braces.append(
-                    {
-                        "role": "BRACE_DIAG",
-                        "wall": wall,
-                        "u0": float(a_u0), "z0": float(a_z0),
-                        "u1": float(a_u1), "z1": float(a_z1),
-                        "profile": {"w": brace_w, "d": brace_d},
-                        "kind": "single",
-                        "material_id": "timber.spruce",
-                    }
-                )
-
-    return {
+    # ------------------------------------------------------------
+    # Output
+    # ------------------------------------------------------------
+    out: Dict[str, Any] = {
         "schema_version": 3,
-        "dims": {"L": fp.L, "W": fp.W, "H_e": fp.H_e, "z0": fp.z0},
+        "basis": {
+            # Your current file already stores axes_u in the payload; basis is helpful for builders.
+            "x_min": 0.0,
+            "x_max": float(fp.L),
+            "center_x": 0.5 * float(fp.L),
+            "halfW": 0.5 * float(fp.W),
+        },
         "openings": [
             {
                 "name": o.name,
-                "type": o.typ,
                 "wall": o.wall,
-                "u0": o.u0,
-                "u1": o.u1,
-                "u_center": o.u_center,
-                "width_range": o.width_range,
-                "width_clear": o.width_clear,
-                "z0": o.z0,
-                "z1": o.z1,
-                "jamb_thickness": o.jamb_thickness,
+                "typ": o.typ,
+                "u0": float(o.u0),
+                "u1": float(o.u1),
+                "z0": float(o.z0),
+                "z1": float(o.z1),
             }
             for o in fp.openings_final
         ],
         "axes_u": fp.vertical_axes,
-        "axes_z": fp.z_axes,
-        "wall_tags": fp.wall_tags,
-        "front_wall": fp.front_wall,
+        "axes_z": list(fp.z_axes),
         "members": {
             "posts": primary_posts + opening_posts,
-            "rails": opening_rails + plate_rails,
+            "rails": plate_rails + opening_rails,
             "braces": braces,
             "infills": infills,
         },
-        "z_clusters": fp.z_clusters,
-        "z_repair_log": fp.z_repair_log,
     }
+    return out
 
 
 def normalize_frameplan_dict(fp: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalize frameplan dict for downstream builders.
 
-    Ensures required keys exist and have correct types.
-    Applies lightweight coercions only (no structural inference).
+    For schema_version >= 3:
+      - members.* must exist and be lists
+      - every member must have a valid 'tid' (no inference from role)
     """
+    from bvillage.core.ontology.structural_terms import VALID_TIDS
+
     if not isinstance(fp, dict):
         raise TypeError("frameplan must be a dict")
 
     out = dict(fp)
 
-    # schema_version is mandatory in v3
     sv = out.get("schema_version", 0)
     try:
         sv_i = int(sv)
@@ -629,26 +569,33 @@ def normalize_frameplan_dict(fp: Dict[str, Any]) -> Dict[str, Any]:
         sv_i = 0
     out["schema_version"] = sv_i
 
-    # Ensure axes keys exist
     if "axes_u" not in out:
         out["axes_u"] = {}
     if "axes_z" not in out:
         out["axes_z"] = []
 
-    # Ensure members dict exists and contains lists
     members = out.get("members")
     if not isinstance(members, dict):
         members = {}
     out["members"] = members
 
     for k in ("posts", "rails", "braces", "infills"):
-        v = members.get(k)
-        if not isinstance(v, list):
+        arr = members.get(k)
+        if not isinstance(arr, list):
             members[k] = []
+        else:
+            members[k] = [m for m in arr if isinstance(m, dict)]
 
-    # Basis is optional (builder computes from house anyway)
+    if sv_i >= 3:
+        for k in ("posts", "rails", "braces", "infills"):
+            for i, m in enumerate(members[k]):
+                tid = m.get("tid")
+                if not isinstance(tid, str) or not tid:
+                    raise ValueError(f"normalize_frameplan_dict: missing required 'tid' in members.{k}[{i}]")
+                if tid not in VALID_TIDS:
+                    raise ValueError(f"normalize_frameplan_dict: unknown tid '{tid}' in members.{k}[{i}]")
+
     return out
-
 
 def frameplan_report(fp: FramePlan) -> str:
     """
