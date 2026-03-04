@@ -6,6 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from .hot_path import hot
 from .culturemap_schema import CultureCandidate, CultureTrace
 from .culturemap_load import load_culture_traces_geojson
 from .culturemap_query import bbox_contains, point_in_geometry
@@ -54,7 +55,7 @@ def _load_default_catalog() -> List[CultureTrace]:
     p = Path("bvillage/data/culturemap/cultures.geojson")
     return load_culture_traces_geojson(p)
 
-# HOT PATH
+@hot
 def culture_candidates(
     lon: float,
     lat: float,

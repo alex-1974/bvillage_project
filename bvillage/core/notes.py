@@ -38,6 +38,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
+from .hot_path import hot, hot_api
 
 DOMAINS_KEY = "domains"
 
@@ -80,6 +81,7 @@ def _normalize_artifact_param(
 # ------------------------------------------------------------
 
 # HOT PATH — pipeline backbone; called frequently across stages
+@hot_api
 def ensure_domains(notes: Dict[str, Any]) -> Dict[str, Any]:
     """
     Ensure notes contains notes["domains"] as a dict and return it.
@@ -91,6 +93,7 @@ def ensure_domains(notes: Dict[str, Any]) -> Dict[str, Any]:
     return d
 
 # HOT PATH — pipeline backbone; called frequently across stages
+@hot_api
 def set_domain_artifact(
     notes: Dict[str, Any],
     *,
@@ -128,6 +131,7 @@ def set_domain_artifact(
         notes[k] = payload
 
 # HOT PATH — pipeline backbone; called frequently across stages
+@hot_api
 def get_domain_artifact(
     notes: Dict[str, Any],
     *,

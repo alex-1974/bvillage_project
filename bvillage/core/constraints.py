@@ -23,6 +23,8 @@ from typing import Literal
 import hashlib
 from random import Random
 
+from .hot_path import hot, hot_api
+
 from .model import Context, Issue
 
 __all__ = ['RangeHard', 'RangeSoft', 'CostProfile', 'ConstraintEval', 'eval_range', 'sample_soft', 'rng_for', 'penalty_soft']
@@ -71,18 +73,6 @@ class ConstraintEval:
 _DEFAULT_PROFILE: tuple[CostProfile, ...] = (
     CostProfile(name="default", mode="quadratic"),
 )
-
-# ----------------------------
-# Hot Path Tagging (zero overhead)
-# ----------------------------
-
-def hot(func):
-    """
-    Zero-overhead marker for performance-critical functions.
-    Does NOT wrap the function.
-    """
-    func.__bv_hot__ = True
-    return func
 
 @hot
 def _u01_from_u32(x: int) -> float:
@@ -167,7 +157,7 @@ def penalty_soft(v: float, soft: RangeSoft, prof: CostProfile) -> float:
 # ----------------------------
 
 # HOT PATH — may run many times per house; explodes with candidate sampling
-@hot
+@hot_api
 def eval_range(
     ctx: Context,
     *,
