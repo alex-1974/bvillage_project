@@ -75,6 +75,29 @@ Result: All API names are self-documenting. ROL-001 may begin.
 
 ---
 
+## SYS-005 — Structural Member Ontology (TID System)
+
+Status: DONE
+Version: v0.4.0
+
+Delivered:
+- Canonical structural ontology for timber frame members introduced
+- Members identified by stable TID (term identifier) instead of ad-hoc role strings
+- Architect emits ontology identifiers (e.g. `post.primary`, `beam.tie`, `brace.diagonal`)
+- Builder consumes the same identifiers without inference
+- Ontology implemented as frozen Python constants (not loaded from research YAML)
+- Research YAML remains documentation only
+
+Purpose:
+Creates a stable semantic layer between Architect and Builder
+and prevents role string drift as new house types appear.
+
+Result:
+Member semantics are explicit, deterministic and extensible.
+Required groundwork for multi-archetype support (Hallenhaus + Stadthaus).
+
+---
+
 # v0.4.0 — First House + Foundation
 
 ## Goal
@@ -377,6 +400,84 @@ Prerequisites for v0.5.0 that must be completed in v0.4.x:
 
 ---
 
+## SYS-006 — Pre-v0.5 Interface Policy (No Freeze Phase)
+
+Priority: HIGH  
+Scope: v0.4.x until v0.5.0  
+Goal: Preserve architectural refactor freedom until second archetype proves scalability.
+
+### Rationale
+
+v0.5.0 (Second House: Stadthaus) is the scalability proof.
+
+Before a second fundamentally different archetype exists, it is not yet
+clear which interfaces are truly generic and which are Hallenhaus-specific
+assumptions.
+
+Freezing a public API before this proof would prematurely harden
+incorrect abstractions.
+
+Therefore:
+
+No external API stability is guaranteed before v0.5.0.
+
+---
+
+### Policy
+
+Until v0.5.0:
+
+1. All modules are internal by default.
+2. No stable `bvillage.api` surface is declared.
+3. No import path implies long-term stability.
+4. Role interfaces (Architect / Planner / Roofer / etc.) are allowed to change.
+5. Registry and Capability mechanisms may evolve.
+6. Refactors that improve architectural clarity are explicitly allowed.
+
+---
+
+### What MUST remain stable
+
+Even during deep refactors, the following invariants are non-negotiable:
+
+- Members-only structural truth (no Blender inference)
+- Deterministic generation (same seed → identical result)
+- PolicyStack as single source of parameter truth
+- No silent fallback logic
+- Layer boundaries respected (core ≠ blender)
+
+These are architectural invariants, not API guarantees.
+
+---
+
+### Refactor Guardrails
+
+To allow structural change without chaos:
+
+- Golden snapshot for seed=123 must remain green.
+- Determinism must be verified after each major refactor.
+- Contract violations must fail hard.
+- All structural changes must be documented in the Roadmap under the relevant task.
+
+---
+
+### Exit Condition
+
+This policy ends when:
+
+- Hallenhaus and Stadthaus both generate without structural rewrite.
+- Shared role interfaces have stabilized through real multi-type use.
+- FramePlan schema supports both rural and urban topology.
+- The engine proves extensibility through at least two archetypes.
+
+At that point:
+
+SYS-004 (Pipeline Interface Freeze) may formally declare a stable public contract.
+
+Until then, architectural freedom is prioritized over interface stability.
+
+---
+
 ## Crossroads
 
 A Crossroad is a point where parallel work streams converge and a new
@@ -555,6 +656,11 @@ Requires: RES-002
 Unlocks: v0.5.0 (directly — Stadthaus cannot be built without this)
 Parallel: SYS-002 (independent, can run simultaneously)
 
+Note:
+Structural members use canonical ontology identifiers (TIDs).
+The FramePlan schema therefore treats `member.tid` as the semantic type
+of a structural element instead of informal role names.
+
 Goal:
 The FramePlan schema must support constructs the Stadthaus requires
 that the Hallenhaus does not: vertical stacking, floor-level
@@ -569,10 +675,95 @@ Tasks:
 - [ ] Design jetty/Vorkragung representation (member role + geometry contract)
 - [ ] Add schema_version guard for new fields
 - [ ] Verify Hallenhaus FramePlan is unaffected (backward compatible)
+- [x] Introduce canonical structural ontology for structural members
 
 Note:
 Schema slots must exist in v0.4.x even if content is empty.
 The Stadthaus must not require a schema_version bump at v0.5.0.
+
+---
+
+### SYS-007 — Platform Preparation (Core–Extension Architecture)
+
+Priority: HIGH  
+Scope: v0.4.x  
+Requires: ARC-001, ARC-001A  
+Feeds into: CR-2 (Architecture Stable)  
+Does NOT freeze API
+
+---
+
+### Purpose
+
+Prepare BVILLAGE for long-term platform structure
+(domains, archetypes, datasets, plugins)
+without prematurely freezing a public API.
+
+This is structural preparation, not stabilization.
+
+The scalability proof remains v0.5.0 (Second House).
+
+---
+
+### Architectural Direction
+
+BVILLAGE evolves toward a Core–Extension architecture.
+
+Core:
+- model (dataclasses + contracts)
+- pipeline / orchestration
+- PolicyStack (single parameter authority)
+- validation + Issue schema
+- registry (capability discovery)
+
+Extensions:
+- construction domains (fachwerk, masonry, ...)
+- archetypes (hallenhaus, stadthaus, ...)
+- datasets
+- research artifacts
+- blender builders (render-only)
+
+Core must not branch on archetype or domain names.
+
+---
+
+### Tasks
+
+- [ ] Make Core/Extension boundary explicit at directory level
+- [ ] Ensure registry is the only discovery mechanism for archetypes/domains
+- [ ] Remove any Core logic that switches on specific type identifiers
+- [ ] Minimize implicit public surface via `__init__.py`
+- [ ] Add short documentation note clarifying boundary (no API guarantee)
+
+---
+
+### Guardrail
+
+This task must NOT:
+
+- introduce `bvillage.api`
+- promise stable import paths
+- freeze role interfaces
+- block refactors before v0.5.0
+
+---
+
+### Verification
+
+- Hallenhaus still generates identically (snapshot check)
+- Adding a new type provider requires no Core modification
+- No Blender module performs structural inference
+- PolicyStack remains single source of parameter truth
+
+---
+
+### Relation to Crossroads
+
+SYS-007 is a prerequisite for CR-2 (Architecture Stable),
+but does not itself imply interface stability.
+
+API freeze remains part of SYS-004 and only occurs
+after two archetypes prove structural generality.
 
 ---
 
