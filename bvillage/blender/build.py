@@ -39,7 +39,7 @@ from bvillage.blender.utils import ensure_collection, clear_collection
 from bvillage.core.notes import get_domain_artifact
 
 # Domain builder: consumes explicit frameplan dict
-from bvillage.domains.fachwerk.blender.build_frame import build_fachwerk_frame
+from bvillage.domains.fachwerk.blender.build_frame import build_fachwerk_frame_from_structure_notes
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +61,19 @@ def _require_fachwerk_frameplan(structure: StructurePlan) -> dict:
         raise RuntimeError("StructurePlan.notes missing or invalid.")
 
     frameplan = get_domain_artifact(
-        notes,
+        structure.notes,
         domain="fachwerk",
         artifact="frameplan",
-        legacy_aliases=("frameplan", "fachwerk.frameplan"),
     )
+
+    if not frameplan:
+        raise RuntimeError("Missing fachwerk.frameplan artifact.")
+
+    schema_version = frameplan.get("schema_version")
+
+    # ------------------------------------------------------------------
+    # v0.4.0 guard: Blender builder still expects schema_version=3
+    # ------------------------------------------------------------------
 
     if frameplan is None:
         raise RuntimeError(
@@ -75,7 +83,6 @@ def _require_fachwerk_frameplan(structure: StructurePlan) -> dict:
         raise RuntimeError("fachwerk.frameplan must be a dict payload.")
 
     return frameplan
-
 
 def render_house(
     ctx: Context,
@@ -135,11 +142,12 @@ def render_house(
 
     frameplan = _require_fachwerk_frameplan(structure)
 
-    build_fachwerk_frame(
+    root_collection = bpy.context.scene.collection
+    
+    build_fachwerk_frame_from_structure_notes(
         ctx=ctx,
         structure=structure,
-        frameplan=frameplan,
-        root_collection=col_structure,
+        root_collection=root_collection,
         clear_previous=clear_previous,
     )
 
