@@ -124,7 +124,7 @@ def _merge_axes(primary: tuple[float, ...], secondary: tuple[float, ...], tol: f
 
 Hot path rules: no f-strings, no logging, no defensive allocation, use generators and early exit, profile before optimizing further.
 
-**Structural functions** — complex logic called once per generation (FramePlan derivation, PolicyStack resolution, InteriorPlanner). Readability first. Document invariants fully. Performance matters only at algorithmic level — correct complexity class, no O(n²) where O(n log n) is possible.
+**Structural functions** — complex logic called once per generation (FramePlan derivation, PolicyStack resolution, Joiner). Readability first. Document invariants fully. Performance matters only at algorithmic level — correct complexity class, no O(n²) where O(n log n) is possible.
 
 ### Pure functions as default
 

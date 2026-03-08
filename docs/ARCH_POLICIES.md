@@ -4,7 +4,7 @@
 tier: 2
 authority: REFERENCE
 change-frequency: on-feature
-change-rule: New axes added as optional patch slots only. No existing archetype or domain may require modification. See expansion rules below.
+change-rule: New axes added as optional patch slots only. No existing archetype, domain, or plugin may require modification. See expansion rules below.
 referenced-by: DEV_ROADMAP.md, DOCS_INDEX.md
 references: SYS_PRINCIPLES.md, SYS_CONCEPTS.md §2
 status: axes defined and stable; axis contents under active research
@@ -14,7 +14,7 @@ status: axes defined and stable; axis contents under active research
 
 The world does not offer a finite list of building types. It offers determinants — forces that shape buildings across time, geography, culture, and use. BVILLAGE models the determinants, not an exhaustive catalogue of results.
 
-This document defines the policy axes through which those determinants enter the system. Each axis carries a specific kind of knowledge. Together they produce buildings that are historically plausible, regionally distinct, and structurally coherent — without encoding that knowledge in the planner or the domain.
+This document defines the policy axes through which those determinants enter the system. Each axis carries a specific kind of knowledge. Together they produce buildings that are historically plausible, regionally distinct, and structurally coherent — without encoding that knowledge in the Topology Planner, the Frame Producer, or the domain.
 
 The axes defined here are stable. Their contents — the specific parameter values, ranges, and cultural data they carry — grow with research and are not fully specified here.
 
@@ -28,9 +28,9 @@ Before mapping axes to system layers, it helps to understand what actually shape
 
 **Spatial organization.** The second question is how the building is arranged. A longhouse organizes space linearly along a central axis. A courtyard house organizes it around an enclosed interior. A tower house stacks it vertically. These organizational families persist across regions and epochs; what changes is how they are dressed.
 
-**Household model.** Who lives in the building, and how, shapes its internal logic. A nuclear family, an extended multi-generational household, a craft workshop with live-in workers, a merchant compound with separate guest quarters — each produces a different room graph, different privacy requirements, different patterns of access and separation.
+**Function and use.** What the building does shapes its program fundamentally. Agricultural buildings integrate animal quarters, storage, and processing spaces with living areas. Trading buildings need street-facing commercial frontage. Workshop buildings integrate production and residence. A barn and a house of the same archetype are topologically identical but functionally disjoint — function is a first-class axis, not a style modifier.
 
-**Economy and function.** What the building does beyond housing shapes its program. Agricultural buildings integrate animal quarters, storage, and processing spaces with living areas. Trading buildings need street-facing commercial frontage. Workshop buildings integrate production and residence. These functional demands directly affect zoning, growth patterns, and opening placement.
+**Household model.** Who occupies the building, and how, shapes its internal logic. A nuclear family, an extended multi-generational household, a craft workshop with live-in workers, a merchant compound with separate guest quarters — each produces a different room graph, different privacy requirements, different patterns of access and separation.
 
 **Climate and environment.** Snow loads, wind exposure, rainfall, flooding risk, and solar orientation all leave marks on building form — roof pitch, overhang depth, opening size and placement, material choice, and sometimes footprint orientation.
 
@@ -46,7 +46,7 @@ Primary axes define what a building fundamentally is. Changing a primary axis pr
 
 ### 2.1 Construction Domain
 
-The construction domain defines how the building stands — its structural grammar, load paths, and member generation logic.
+The construction domain defines how the building stands — its structural grammar, load paths, and member generation logic. Each domain is implemented by one or more Frame Producer plugins.
 
 Current domain families (non-exhaustive):
 
@@ -61,7 +61,7 @@ Domain switching is not a style operation. If a regional variation requires a di
 
 ### 2.2 Archetype
 
-The archetype defines how the building is organized — its spatial family, room hierarchy, circulation logic, and opening demands.
+The archetype defines how the building is organized — its spatial family, room hierarchy, circulation logic, and opening demands. Each archetype is implemented by a Topology Planner plugin.
 
 Current archetype families (non-exhaustive):
 
@@ -79,7 +79,7 @@ Archetype selection is explicit and stable. Style modulates within an archetype;
 
 ## 3. Secondary axes — planning layer
 
-Secondary axes shape how a building is built within the identity established by the primary axes. They affect the planner directly and produce measurable differences in geometry.
+Secondary axes shape how a building is built within the identity established by the primary axes. They affect the Topology Planner and Frame Producer directly and produce measurable differences in geometry.
 
 ### 3.1 TopologyModifier
 
@@ -103,14 +103,14 @@ Controls how the building develops vertically.
 
 ### 3.3 RoofPolicy
 
-Controls the roof system independently of the structural frame below.
+Controls the roof system independently of the structural frame below. The Roof Producer implements the selected roof type within the constraints the Frame Producer has established.
 
 - roof type (gable, hip, half-hip, shed, mansard, and others)
 - pitch range
 - overhang depth
 - eaves height
 
-Roof type is not always determined by domain or archetype alone. The same Hallenhaus archetype appears with gable roofs in some regions and half-hip roofs in others; the difference is cultural and climatic, expressed through RoofPolicy.
+Roof type is not always determined by domain or archetype alone. The same Hallenhaus archetype appears with gable roofs in some regions and half-hip roofs in others; the difference is cultural and climatic, expressed through RoofPolicy. The construction grammar constrains which roof types are structurally possible — RoofPolicy selects within that space.
 
 ### 3.4 OpeningsPolicy
 
@@ -121,9 +121,23 @@ Controls the semantic opening program — what openings the building demands and
 - privacy-to-light bias
 - defensive bias (reduced ground-floor openings)
 
-OpeningsPolicy expresses intent. The domain and planner translate that intent into specific member configurations that frame the openings.
+OpeningsPolicy expresses intent. The domain and Topology Planner translate that intent into specific member configurations that frame the openings.
 
-### 3.5 Growth Pattern
+### 3.5 FunctionPolicy
+
+Controls building use and social type. This is a first-class axis — not a modifier. A barn and a residential longhouse of the same archetype are topologically identical but functionally disjoint. Without an explicit function axis, the system cannot distinguish them.
+
+- `building_use` — `RESIDENTIAL | AGRICULTURAL | STORAGE | CIVIC | RELIGIOUS | MIXED`
+- `representation_direction` — `STREET_FACING | COURTYARD_FACING | NONE`
+- `livestock_integration` — boolean; true for buildings integrating humans and animals under one roof
+- `storage_ratio` — 0.0–1.0; proportion of total volume allocated to storage
+- `commercial_frontage` — boolean; true for buildings with street-facing trade use
+
+Default: `building_use = RESIDENTIAL`, all other fields neutral.
+
+FunctionPolicy is a mandatory field in every `BuildingOrder`. See SYS_CONTRACT §5.7.
+
+### 3.6 Growth Pattern
 
 Controls how the building may expand over time or how its massing is composed.
 
@@ -144,7 +158,7 @@ StylePolicy carries the intersection of region, epoch, wealth, and settlement ty
 
 StylePolicy adjusts: material selection within available options, parameter ranges for dimensions and proportions, ornament density, roof pitch tendencies, window proportions, and finish preferences.
 
-StylePolicy must not switch construction domains. It must not replace archetypes. If a regional variation requires a different structural grammar, that is a domain or CulturePolicy question. StylePolicy answers: given this structural grammar and this spatial organization, how would builders in this place and time have expressed it?
+StylePolicy must not switch construction domains. It must not replace archetypes. It must not encode functional differences — those belong in FunctionPolicy. If a regional variation requires a different structural grammar, that is a domain or CulturePolicy question. StylePolicy answers: given this structural grammar, this spatial organization, and this function, how would builders in this place and time have expressed it?
 
 ### 4.2 CulturePolicy
 
@@ -154,23 +168,34 @@ This is distinct from StylePolicy. StylePolicy operates across domains; CultureP
 
 CulturePolicy does not change physics. It modulates how the domain exercises its structural grammar within the bounds that physics permits.
 
-### 4.3 NoisePolicy
+### 4.3 ConstraintsPolicy
+
+Hard and soft constraints with deviation cost weights. Hard constraints block generation. Soft constraints impose a scored penalty that the Appraiser weighs during candidate selection.
+
+### 4.4 NoisePolicy
 
 Deterministic micro-variation within allowed parameter bands. Its sole purpose is to prevent visually identical buildings within a settlement. It produces no structural variation — only controlled surface-level diversity within constraints already established by all other axes.
 
 ---
 
-## 5. Household model, economy, and climate
+## 5. The complete policy stack
 
-Three strong modulators sit outside the formal policy stack but inform it significantly. Their precise integration into the stack is under active development.
+Policies resolve in this order, from generic to specific. Later layers override earlier ones.
 
-**Household model** — the social unit occupying the building — strongly affects interior zoning, room graph, privacy gradients, and opening strategy. A multi-generational extended family produces different spatial demands than a nuclear family or a craft workshop.
+| Position | Policy | Scope |
+|---|---|---|
+| 1 | `BaseTypePolicy` | Archetype defaults |
+| 2 | `TopologyModifierPolicy` | Footprint modification |
+| 3 | `VerticalPolicy` | Storey count, cantilevers |
+| 4 | `RoofPolicy` | Roof type, pitch, eaves |
+| 5 | `OpeningsPolicy` | Opening program |
+| 6 | `FunctionPolicy` | Building use, social type |
+| 7 | `StylePolicy` | Region × epoch × wealth × settlement |
+| 8 | `CulturePolicy` | Domain construction culture |
+| 9 | `ConstraintsPolicy` | Hard and soft constraint weights |
+| 10 | `NoisePolicy` | Deterministic micro-variation |
 
-**Economy and functional coupling** — what the building does — affects zone sets, growth patterns, and the integration of non-residential functions. Agricultural, mercantile, craft, and purely residential programs produce fundamentally different buildings even within the same archetype.
-
-**Climate** — temperature, precipitation, snow load, wind exposure — modulates roof pitch, overhang depth, opening size, and material selection across nearly every parameter.
-
-These modulators feed into StylePolicy, OpeningsPolicy, RoofPolicy, and VerticalPolicy. They may eventually become first-class axes in their own right as the system matures.
+No layer may operate outside its defined scope. A layer that contributes nothing is empty. An empty layer changes nothing.
 
 ---
 
@@ -184,10 +209,13 @@ If a variation requires different member types, different load paths, or differe
 **Does it change spatial organization?**
 If a variation has a fundamentally different room hierarchy, circulation logic, or zone arrangement — it is a new archetype or a TopologyModifier applied to an existing one. It is not a StylePolicy variant.
 
+**Does it change building use or social type?**
+If a variation serves a fundamentally different function — barn vs. house, warehouse vs. merchant residence — that is FunctionPolicy. It is not a StylePolicy variant and it is not a new archetype, as long as the spatial organization is equivalent.
+
 **Does it change storey count, roof type, or opening program?**
 These are secondary axes — VerticalPolicy, RoofPolicy, OpeningsPolicy. They modulate geometry significantly but do not redefine spatial organization or structural grammar.
 
-**Is it region, epoch, or wealth modulation within the same structure and organization?**
+**Is it region, epoch, or wealth modulation within the same structure, organization, and function?**
 That is StylePolicy.
 
 **Is it surface-level diversity within otherwise identical parameters?**
@@ -199,8 +227,8 @@ When in doubt, classify at the higher level. Promoting a variation from Style to
 
 ## 7. Expansion rules
 
-New axes enter the system as optional patch slots. The default for any new slot is neutral — no effect on existing behavior. Adding a new axis must not require modification of any existing archetype, domain, or planner.
+New axes enter the system as optional patch slots. The default for any new slot is neutral — no effect on existing behavior. Adding a new axis must not require modification of any existing archetype, domain, Topology Planner, or Frame Producer plugin.
 
 New required global fields are prohibited without a schema version increment. If a new axis needs to be understood by all archetypes to function, the design is wrong — the axis should be expressible as an optional delta, or the schema version must be bumped explicitly.
 
-When research reveals a variation that changes structural grammar, it enters as a new domain or CulturePolicy branch — never as a style extension. When research reveals a variation that changes plan topology, it enters as a new archetype or TopologyModifier — never as a style extension. Encoding structural or topological differences as style is the primary source of long-term architectural debt in this system.
+When research reveals a variation that changes structural grammar, it enters as a new domain or CulturePolicy branch — never as a style extension. When research reveals a variation that changes plan topology, it enters as a new archetype or TopologyModifier — never as a style extension. When research reveals a variation that changes building use or social type, it enters as a FunctionPolicy variant — never as a new archetype or a style extension. Encoding structural, topological, or functional differences at the wrong level is the primary source of long-term architectural debt in this system.

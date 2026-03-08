@@ -89,7 +89,7 @@ Delivered:
 - Research YAML remains documentation only
 
 Purpose:
-Creates a stable semantic layer between Architect and Builder
+Creates a stable semantic layer between Frame Producer and Renderer
 and prevents role string drift as new house types appear.
 
 Result:
@@ -113,7 +113,7 @@ In parallel, the structural foundations are laid such that future house types,
 regions, and epochs do not require rewrites.
 
 This version is explicitly a learning phase. The pipeline will be explored,
-the InteriorPlanner will be integrated earlier than anticipated, and research
+the Joiner will be integrated earlier than anticipated, and research
 findings will continuously inform architectural decisions.
 
 ---
@@ -247,7 +247,7 @@ Tasks:
       not into a separate pipeline freeze document
 
 Note:
-The integration point found here determines how Architect and Planner roles
+The integration point found here determines how Frame Producer and Joiner roles
 coordinate in the Foreman mechanism (ROL-002). INT-001 is the exploration;
 ROL-002 is the implementation.
 
@@ -375,10 +375,10 @@ depend on v0.4.0 experience and research outcomes.
 Prerequisites for v0.5.0 that must be completed in v0.4.x:
 
 - `resolve_policy_stack(ctx)` handles multiple archetypes without branching on type
-- Foreman coordinates Architect, Planner, and Roofer without type-specific branching
-- Hallenhaus Architect and Stadthaus Architect implement the same Protocol
+- Foreman coordinates Topology Planner, Frame Producer, Roof Producer, and Joiner without type-specific branching
+- Hallenhaus and Stadthaus Topology Planners + Frame Producers implement the same Protocols
 - FramePlan schema supports vertical stacking and façade-oriented topology
-- Planner contract is frozen and supports different room programs
+- Joiner contract is frozen and supports different room programs
 - Policy axes cover Stadthaus parameters (narrow parcel, multi-storey, potential jetties)
 - All structural constants replaced by span-driven resolution
 - Pipeline interfaces frozen — no stage rewrites needed for a new type
@@ -391,7 +391,7 @@ Prerequisites for v0.5.0 that must be completed in v0.4.x:
 |--------|--------|
 | RES-   | Research |
 | SYS-   | System Architecture & Schema |
-| ROL-   | Role Architecture (Foreman / Architect / Planner / ...) |
+| ROL-   | Role Architecture (Foreman / Topology Planner / Frame Producer / Roof Producer / Joiner / Inspector / Appraiser) |
 | STR-   | Structural Physics |
 | MAT-   | Material System |
 | SEM-   | Semantics & Variation |
@@ -430,7 +430,7 @@ Until v0.5.0:
 1. All modules are internal by default.
 2. No stable `bvillage.api` surface is declared.
 3. No import path implies long-term stability.
-4. Role interfaces (Architect / Planner / Roofer / etc.) are allowed to change.
+4. Role interfaces (Topology Planner / Frame Producer / Roof Producer / Joiner / Inspector / Appraiser) are allowed to change.
 5. Registry and Capability mechanisms may evolve.
 6. Refactors that improve architectural clarity are explicitly allowed.
 
@@ -520,7 +520,7 @@ Note: SYS-001 is unlocked by SYS-002 completion, not by CR-1 directly.
 
 Reached when:
 - SYS-001: Policy axes implemented, PolicyStack is multi-archetype entry point
-- SYS-002: Fachwerk Architect is type-agnostic, Hallenhaus generates identically
+- SYS-002: Fachwerk pipeline is type-agnostic, Hallenhaus generates identically
 - SYS-003: FramePlan schema has slots for multi-storey and jetties,
   backward compatible with Hallenhaus
 - ROL-002: Foreman coordination mechanism implemented and wired for Hallenhaus
@@ -614,33 +614,34 @@ Dependency: SYS-002 (planner type-agnosticity) must be complete first.
 
 ---
 
-### SYS-002 — Fachwerk Planner Type-Agnosticity
+### SYS-002 — Fachwerk Pipeline Type-Agnosticity
 
 Priority: HIGH
 Requires: ARC-001 (v0.4.0 — planner on PolicyStack), RES-002, ROL-001
 Unlocks: SYS-001
 
 Goal:
-The Fachwerk planner must serve multiple Fachwerk types without
+The Fachwerk pipeline must serve multiple Fachwerk types without
 type-specific branching in shared code.
 
 The concrete mechanism is the role architecture defined in ROL-001 and ROL-002:
-Architect, Planner, and Roofer are Protocol implementations.
+Topology Planner, Frame Producer, Roof Producer, and Joiner are Protocol implementations.
 The Foreman coordinates them without branching on type.
-A Stadthaus provides its own Architect and Planner — the Foreman is unchanged.
+A Stadthaus provides its own Topology Planner and Frame Producer — the Foreman is unchanged.
 
 Today `architect.py` is implicitly Hallenhaus-specific — dimensions,
 opening logic, and room programs are woven into a single flow.
 Before a Stadthaus can be built, this must be factored into role implementations
-that share a common interface but carry type-specific knowledge internally.
+(`fw_longhouse/plan_topology.py`, `BoxFrameProducer`) that share a common interface
+but carry type-specific knowledge internally.
 
 Tasks:
-- [ ] Identify all Hallenhaus-specific assumptions in the shared Architect path
+- [ ] Identify all Hallenhaus-specific assumptions in the shared planner path
       (dimensions, opening logic, binder positions, wall height derivation)
-- [ ] Extract type-specific logic into the Hallenhaus Architect implementation
-      such that a Stadthaus Architect can be written without touching shared code
-- [ ] Define the minimal shared interface (Protocol) that any Fachwerk Architect
-      must implement — this is the ROL-001 Protocol extension
+- [ ] Extract type-specific logic into `fw_longhouse/plan_topology.py` and
+      `domains/fachwerk/core/derive_frameplan_boxframe.py` such that a
+      Stadthaus implementation can be written without touching shared code
+- [ ] Define the minimal shared Protocols (ROL-001) that any Fachwerk type must implement
 - [ ] Verify Hallenhaus still generates identically after refactor (determinism check)
 - [ ] Document the extension contract: what a new Fachwerk type must provide
 
@@ -687,7 +688,7 @@ The Stadthaus must not require a schema_version bump at v0.5.0.
 
 Priority: HIGH  
 Scope: v0.4.x  
-Requires: ARC-001, ARC-001A  
+Requires: ARC-001, ARC-001A, ROL-001  
 Feeds into: CR-2 (Architecture Stable)  
 Does NOT freeze API
 
@@ -709,28 +710,32 @@ The scalability proof remains v0.5.0 (Second House).
 
 BVILLAGE evolves toward a Core–Extension architecture.
 
-Core:
-- model (dataclasses + contracts)
-- pipeline / orchestration
-- PolicyStack (single parameter authority)
-- validation + Issue schema
-- registry (capability discovery)
+Core (`bvillage/core/`):
+- `schema_registry.py` — `ArchetypeBinding`, plugin registry, `BuildingOrder`
+- `schema_compatibility.py` — interface Protocols
+- `validate_physics.py` — Inspector (domain-agnostic)
+- Issue schema, policy resolution
 
-Extensions:
-- construction domains (fachwerk, masonry, ...)
-- archetypes (hallenhaus, stadthaus, ...)
-- datasets
-- research artifacts
-- blender builders (render-only)
+Foreman (`bvillage/foreman/`):
+- `plan_context.py`, `plan_dispatch.py`, `plan_conflict.py`
+
+Type plugins (`bvillage/types/<family>/`):
+- Self-registering via `register(registry)` in `__init__.py`
+- Core has no knowledge of concrete archetype IDs
+
+Domain plugins (`bvillage/domains/<domain>/`):
+- Frame Producers, Roof Producer, domain translation layer for Inspector
+- No Core imports except interfaces
 
 Core must not branch on archetype or domain names.
+Requesting an unregistered `archetype_id` produces a HARD Issue.
 
 ---
 
 ### Tasks
 
-- [ ] Make Core/Extension boundary explicit at directory level
-- [ ] Ensure registry is the only discovery mechanism for archetypes/domains
+- [ ] Implement `bvillage/core/schema_registry.py` with `ArchetypeBinding` and plugin registry (ROL-001 dependency)
+- [ ] Ensure all type plugins self-register; no static archetype dict in Core
 - [ ] Remove any Core logic that switches on specific type identifiers
 - [ ] Minimize implicit public surface via `__init__.py`
 - [ ] Add short documentation note clarifying boundary (no API guarantee)
@@ -751,7 +756,7 @@ This task must NOT:
 ### Verification
 
 - Hallenhaus still generates identically (snapshot check)
-- Adding a new type provider requires no Core modification
+- Adding a new type plugin requires no Core modification
 - No Blender module performs structural inference
 - PolicyStack remains single source of parameter truth
 
@@ -771,10 +776,10 @@ after two archetypes prove structural generality.
 
 Priority: HIGH
 Requires: CR-2 (SYS-001 + SYS-002 + SYS-003 + ROL-002 all complete),
-          INT-001 (v0.4.0 — integration point between Architect and Planner documented)
+          INT-001 (v0.4.0 — integration point between Frame Producer and Joiner documented)
 Unlocks: SEM-003
 Note: Must not be frozen before CR-2 is reached. CR-2 ensures the Foreman,
-      type-agnostic Architect, and schema slots are all stable before interfaces are frozen.
+      type-agnostic pipeline, and schema slots are all stable before interfaces are frozen.
 
 Stage interfaces are frozen. Immutability between stages is enforced.
 Multi-candidate support is scaffolded.
@@ -782,17 +787,19 @@ Multi-candidate support is scaffolded.
 The stage sequence after ROL-002 is:
 
 ```
-Foreman → Architect (plan_structure + derive_frameplan)
-        → Planner   (plan_interior)
-        → Roofer    (roof structure — currently domain-implicit)
-        → PhysicalPlausibilityValidator
-        → Evaluator
+Foreman
+  → Topology Planner   (plan_topology → SemanticPlan)
+  → Frame Producer     (derive_frameplan → FramePlan)
+  → Roof Producer      (derive_roofplan → RoofPlan)
+  → Joiner             (plan_interior → InteriorPlan)
+  → Inspector          (validate_physics → tuple[Issue, ...])
+  → Appraiser          (audit → AuditReport)
 ```
 
 Tasks:
-- [ ] Incorporate Foreman entry point from ROL-002 as the pipeline start
-- [ ] Incorporate Architect/Planner integration point from INT-001 findings
-- [ ] Freeze stage interfaces with the new role names
+- [ ] Incorporate Foreman entry point from ROL-002 (`foreman/plan_dispatch.py`) as the pipeline start
+- [ ] Incorporate Topology Planner / Frame Producer / Roof Producer / Joiner integration points from ROL-003
+- [ ] Freeze stage interfaces with the canonical role names
 - [ ] Enforce immutability between stages
 - [ ] Add stage-level reporting
 - [ ] Scaffold multi-candidate support (no full implementation yet)
@@ -834,9 +841,20 @@ Non-goals:
 
 ## Role Architecture
 
-The role architecture (Foreman, Architect, Planner, Roofer, Furnisher, Landscaper)
-is the concrete mechanism through which SYS-002 (type-agnostic planner) is achieved.
-It is documented in SYS_VISION.md §11. The tasks here implement it incrementally.
+The role architecture (Commissioner, Foreman, Topology Planner, Frame Producer,
+Roof Producer, Joiner, Inspector, Appraiser) is the concrete mechanism through
+which SYS-002 (type-agnostic pipeline) is achieved.
+It is documented in SYS_CONCEPTS.md §3. The tasks here implement it incrementally.
+
+Canonical pipeline role names (code bindings in parentheses):
+- Commissioner — `SettlementBuilder`
+- Foreman — `bvillage/foreman/plan_dispatch.py`
+- Topology Planner — `ITopologyProducer` (e.g. `fw_longhouse/plan_topology.py`)
+- Frame Producer — `IFrameProducer` (e.g. `BoxFrameProducer`, `StoreyFrameProducer`)
+- Roof Producer — `IRoofProducer` (e.g. `FachwerkRoofer`)
+- Joiner — `IJoiner` (e.g. `bvillage/interior/plan_interior.py`)
+- Inspector — `IPhysicsInspector` (`bvillage/core/validate_physics.py`)
+- Appraiser — `IAppraiser`
 
 ROL-001 may begin as soon as ENG-003 is complete. It does not require CR-1.
 ROL-002 requires SYS-002 to be in progress — the Foreman cannot be wired in
@@ -850,27 +868,25 @@ Unlocks: ROL-002, SYS-002 (provides the concrete mechanism)
 Parallel: ENG-001, ENG-002, RES-002
 
 Goal:
-Define the data structures that the role architecture rests on.
-No behavior — only frozen dataclasses in `bvillage/core/model.py`
-and a Protocol extension in `bvillage/core/registry.py`.
+Define the data structures and interface Protocols that the role architecture rests on.
+No behavior — only frozen dataclasses and Protocol definitions.
 The existing Hallenhaus generation is unchanged.
 
 Tasks:
-- [ ] Add `RoleProposal` to `model.py` — what a role offers in the Briefing phase:
-      hard requirements (non-negotiable), soft preferences, variants with cost/score
-- [ ] Add `ProposalVariant` to `model.py` — one option within a proposal
-- [ ] Add `Declaration` to `model.py` — structural elements with cross-role spatial
-      consequences (stair footprint, chimney, post positions, window openings)
-- [ ] Add `Conflict` to `model.py` — documented conflict between two roles,
-      with position and cost of conceding for each
-- [ ] Add `Resolution` to `model.py` — outcome of a conflict, with total cost
-      and whether resolved mutually or by Foreman
-- [ ] Add `BuildingBrief` to `model.py` — binding output of the Briefing phase:
-      selected variants, all declarations, resolved policy
-- [ ] Extend `HouseTypeProvider` in `registry.py` with new optional methods:
-      `propose(ctx) -> RoleProposal`, `declare(brief) -> tuple[Declaration, ...]`,
-      `resolve(conflict) -> Resolution`
-      (existing `generate()` signature unchanged — backward compatible)
+- [ ] Add `ArchetypeBinding` to `bvillage/core/schema_registry.py`:
+      `archetype_id`, `type_family`, `domain`, `construction_grammar`
+      — self-registering per plugin via `register(registry)` in plugin `__init__.py`
+- [ ] Add `BuildingOrder` to `bvillage/core/schema_registry.py` —
+      replaces `HouseRequest`: `archetype_id`, `policies`, `seed`
+- [ ] Define `ITopologyProducer` Protocol in `bvillage/core/schema_registry.py`:
+      `plan_topology(order: BuildingOrder) -> SemanticPlan`
+- [ ] Define `IFrameProducer` Protocol in `bvillage/core/schema_registry.py`:
+      `derive_frameplan(plan: SemanticPlan, policy: ResolvedPolicy) -> FramePlan`
+- [ ] Define `IRoofProducer` Protocol in `bvillage/core/schema_registry.py`:
+      `derive_roofplan(frame: FramePlan, policy: RoofPolicy) -> RoofPlan`
+- [ ] Define `IJoiner` Protocol: `plan_interior(frame: FramePlan) -> InteriorPlan`
+- [ ] Define `IPhysicsInspector` Protocol: `validate(frame: FramePlan) -> tuple[Issue, ...]`
+- [ ] Define `IAppraiser` Protocol: `audit(frame: FramePlan, interior: InteriorPlan) -> AuditReport`
 - [ ] Unit tests for all new dataclasses (construction, equality, immutability)
 
 Note:
@@ -879,7 +895,7 @@ No existing code changes. No existing tests affected.
 
 ---
 
-### ROL-002 — Briefing Mechanism + Foreman
+### ROL-002 — Foreman Implementation
 
 Priority: HIGH
 Requires: ROL-001
@@ -887,26 +903,28 @@ Unlocks: ROL-003, CR-2 (together with SYS-001, SYS-002, SYS-003)
 Parallel: SYS-002 (can run simultaneously — both build on ROL-001 interfaces)
 
 Goal:
-Implement the Foreman coordination mechanism. Two new modules:
-`bvillage/core/briefing.py` and `bvillage/core/foreman.py`.
-The existing `orchestrate_house()` in `architect.py` is replaced by the Foreman.
+Implement the Foreman coordination mechanism. Three modules under `bvillage/foreman/`:
+`plan_context.py`, `plan_dispatch.py`, `plan_conflict.py`.
+The existing `orchestrate_house()` in `architect.py` is replaced by `foreman/plan_dispatch.py`.
+
+Foreman scope: house-level only. Epoch, region, and settlement context are
+resolved by Commissioner before Foreman receives the BuildingOrder.
+Foreman dispatches specialists via plugin registry, coordinates FramePlan
+and RoofPlan production, and resolves inter-specialist conflicts within
+constraint bounds.
+
+Module responsibilities:
+- `plan_context.py` — receives BuildingOrder, resolves plugin bindings via registry
+- `plan_dispatch.py` — dispatches Topology Planner → Frame Producer → Roof Producer → Joiner → Inspector → Appraiser in sequence; returns complete BuildingResult
+- `plan_conflict.py` — resolves spatial conflicts between Frame Producer and Joiner within policy bounds; no silent resolution — unresolvable conflicts produce HARD Issue
 
 Tasks:
-- [ ] Implement `conduct_briefing(ctx, roles) -> BuildingBrief` in `briefing.py`:
-      collect proposals from all roles, resolve variant selection by min(total_cost),
-      collect all declarations into the brief
-- [ ] Implement `resolve_conflict(conflict, roles) -> Resolution` in `briefing.py`:
-      first attempt mutual resolution (both roles negotiate within soft constraints),
-      escalate to Foreman (min total_cost) if no mutual solution found
-- [ ] Implement `build_house(ctx) -> tuple[StructurePlan, InteriorPlan, OpeningsPlan]`
-      in `foreman.py`: replaces `orchestrate_house()` as the pipeline entry point
-- [ ] Wire Hallenhaus roles into the Foreman: Architect (`plan_structure` + `derive_frameplan`),
-      Planner (`plan_interior`), Roofer (stub acceptable — full implementation in ROL-003)
-      Note: Hallenhaus-specific assumptions in Architect need not be factored out yet —
-      that is SYS-002's job. ROL-002 wires what exists; SYS-002 refactors it.
+- [ ] Implement `plan_context.py`: resolve `ArchetypeBinding` from registry for given `archetype_id`; fail HARD on unknown ID
+- [ ] Implement `plan_dispatch.py`: `dispatch_house(order: BuildingOrder) -> BuildingResult`; sequential stage execution; no branching on archetype or domain
+- [ ] Implement `plan_conflict.py`: `resolve_spatial_conflict(conflict, frame, interior) -> Resolution`; escalate unresolvable to HARD Issue
+- [ ] Wire Hallenhaus roles into Foreman: `fw_longhouse` Topology Planner + `BoxFrameProducer` + Roof Producer stub + Joiner
+      Note: Hallenhaus-specific assumptions in existing architect.py need not be factored out yet — that is SYS-002's job. ROL-002 wires what exists; SYS-002 refactors it.
 - [ ] Verify Hallenhaus generates identically through the new entry point (determinism check)
-- [ ] Update `bvillage/types/fachwerkhaus/hallenhaus/__init__.py` to use `foreman.build_house()`
-      (currently calls `orchestrate_house()` — Foreman replaces this entry point)
 - [ ] Document conflict resolution decisions in generation report
 
 ---
@@ -918,23 +936,17 @@ Requires: ROL-002
 Parallel: RES-002 (Stadthaus research runs in parallel)
 
 Goal:
-The Hallenhaus Architect, Planner, and Roofer fully implement the role Protocol.
-`propose()` and `declare()` return meaningful data, not stubs.
-The Declaration Register contains all cross-role spatial claims.
+The Hallenhaus Topology Planner (`fw_longhouse`), Frame Producer (`BoxFrameProducer`),
+Roof Producer, and Joiner fully implement their respective Protocols.
+All stubs from ROL-002 are replaced with production implementations.
 
 Tasks:
-- [ ] `architect.py`: implement `propose()` — variants for footprint dimensions,
-      cost tied to deviation from policy soft ranges
-- [ ] `architect.py`: implement `declare()` — posts at their u-positions,
-      stair footprint if present, chimney if present, window openings on each wall
-- [ ] `planner.py`: implement `propose()` — room program variants, cost tied to
-      deviation from required zone areas
-- [ ] `planner.py`: implement `resolve()` — partition conflict with Architect:
-      can planner reorganize room without a wall at the contested position?
-- [ ] `architect.py`: implement `resolve()` — window conflict with Planner:
-      can window move within facade rhythm constraints?
-- [ ] Integration test: generate Hallenhaus, verify all declarations present,
-      verify no unresolved conflicts
+- [ ] `fw_longhouse/plan_topology.py`: full `SemanticPlan` output — bay count, zone layout, opening positions
+- [ ] `domains/fachwerk/core/derive_frameplan_boxframe.py` (`BoxFrameProducer`): complete member emission
+- [ ] `domains/fachwerk/core/derive_roofplan.py` (Roof Producer): full `RoofPlan` output
+- [ ] `interior/plan_interior.py` (Joiner): full `InteriorPlan` output — room zones, stair if present
+- [ ] `core/validate_physics.py` (Inspector): receives abstracted structural data via domain translation layer; domain translation lives in `domains/fachwerk/core/validate_physics.py`
+- [ ] Integration test: generate Hallenhaus, verify FramePlan + RoofPlan + InteriorPlan all present, verify no unresolved conflicts
 
 ---
 
@@ -977,7 +989,7 @@ Parallel: STR-001, MAT-001
 Universal physics (timeless) is separated from historical construction behavior (epoch-dependent).
 
 Tasks:
-- [ ] PhysicalPlausibilityValidator operates on timeless mechanics only
+- [ ] Inspector (`validate_physics.py`) operates on timeless mechanics only
 - [ ] ConstructionCulturePolicy defines overdimensioning, redundancy preference, span limits
 - [ ] Anachronistic optimization prevented
 
@@ -1058,7 +1070,7 @@ No magic constants remain.
 Tasks:
 - [ ] Replace fixed constants with RangeSoft / RangeHard
 - [ ] Implement deviation scoring
-- [ ] Integrate into Evaluator
+- [ ] Integrate into Appraiser
 
 ---
 
@@ -1068,7 +1080,7 @@ Priority: MEDIUM
 Requires: SEM-001
 Parallel: SEM-003 (can be built in parallel — integration happens at scoring)
 Note: Limited impact without SEM-003. Meaningful only once multi-candidate search exists.
-Rewrite Risk: LOW (Evaluator-only)
+Rewrite Risk: LOW (Appraiser-only)
 
 Goal:
 Introduce a qualitative intent layer that allows user-friendly inputs such as:
@@ -1080,7 +1092,7 @@ Introduce a qualitative intent layer that allows user-friendly inputs such as:
 All canonical parameters remain metric and unchanged.
 
 Architectural position:
-- Lives in the Evaluator only
+- Lives in the Appraiser only
 - Does not modify Domain or Archetype logic
 - Does not soften HARD constraints
 - Fully deterministic and seed-stable
@@ -1105,7 +1117,7 @@ Concept:
    - barely(A):    k·μ
 
 4. Score Integration
-   Preference contribution added to Evaluator score as additional component.
+   Preference contribution added to Appraiser score as additional component.
    No parameter mutation occurs.
 
 Non-goals:
@@ -1117,7 +1129,7 @@ Non-goals:
 Deliverable:
 - Membership derivation utility
 - Deterministic normalization
-- Evaluator hook for preference scoring
+- Appraiser hook for preference scoring
 - Reporting section for intent diagnostics
 
 Note: SEM-002 requires SEM-003 to have meaningful optimization impact.
@@ -1139,7 +1151,7 @@ Enable deterministic generation of multiple candidates and selection based on:
 - Diversity control
 
 Architectural position:
-- Extends Orchestrator and Evaluator only
+- Extends Foreman and Appraiser only
 - Domain remains untouched
 - Builder remains emitter-only
 - Fully seeded and reproducible
@@ -1200,7 +1212,7 @@ Tasks:
 - [ ] Document the canonical coordinate system (local → wall-local → world)
 - [ ] Extract `_house_basis()` into a shared, tested utility
 - [ ] Add unit tests for wall coordinate mapping (N/S/E/W, center_x, halfW)
-- [ ] Verify Stadthaus gable-facing orientation can be expressed in the Stadthaus Architect
+- [ ] Verify Stadthaus gable-facing orientation can be expressed in the Stadthaus Topology Planner
       implementation without special-casing in the shared coordinate utility
 
 ---
@@ -1271,7 +1283,7 @@ on upper floors. The FramePlan schema must support vertical stacking
 and floor-level differentiation.
 
 **Interior.** No Längsdiele. Different room hierarchy, staircase logic,
-merchant or craft zones. The Planner role must handle a structurally
+merchant or craft zones. The Joiner role must handle a structurally
 different program.
 
 **Policy.** Urban context, narrow plot, different wealth curve, later
@@ -1294,7 +1306,7 @@ v0.5.0 is complete when:
 3. No structural rewrite was required in the pipeline, Foreman, or domain
 4. `resolve_policy_stack(ctx)` produces a correct, distinct policy
    for the Stadthaus without branching on type inside the stack
-5. The Stadthaus Architect and Hallenhaus Architect implement the same Protocol —
+5. The Stadthaus and Hallenhaus Topology Planners + Frame Producers implement the same Protocols —
    the Foreman coordinates both without knowing which type it is building
 6. Determinism confirmed for both house types simultaneously
 
@@ -1331,13 +1343,13 @@ Research findings may promote items from Vision into v0.4.x or later.
 Qualitative intent inputs ("large house", "steep roof", "very wide gates")
 mapped to canonical parameters via fuzzy membership.
 
-Architectural position: Evaluator only. No domain or archetype changes.
+Architectural position: Appraiser only. No domain or archetype changes.
 
 Concept:
 - IntentPreferences container (optional, empty by default)
 - Fuzzy terms derived from Soft/Hard ranges
 - Linguistic hedges: very(μ²), extremely(μ³), somewhat(√μ), barely(k·μ)
-- Preference score added to Evaluator composite
+- Preference score added to Appraiser composite
 
 Non-goals:
 - No fuzzy rule base
@@ -1422,3 +1434,105 @@ Variation must be deterministic.
 No anachronistic optimization.
 Research informs architecture. Architecture does not precede understanding.
 The project is allowed to be incomplete. It is not allowed to be inconsistent.
+
+---
+
+# Additional Completed Work (Post-Roadmap Updates)
+
+## CONTRACT-001 — Contract Inventory
+
+Status: DONE  
+Version: v0.4.0
+
+Delivered:
+- System-wide contract inventory
+- Ownership analysis of all contracts
+- Mapping which modules consume which contracts
+
+Result:
+Hidden implicit contracts removed. System contract surface now visible and analyzable.
+
+
+## CONTRACT-002 — Contract Matrix
+
+Status: DONE
+
+Delivered:
+CONTRACT_MATRIX.md documenting:
+
+- Contract
+- Owner
+- Layer
+- Purpose
+- Consumers
+
+Result:
+Full transparency of contract usage across the system.
+
+
+## CONTRACT-003 — Contract Layer Separation
+
+Status: DONE
+
+Delivered architectural separation of contracts into:
+
+core contracts  
+domain contracts  
+type contracts
+
+Principle:
+
+Core → pipeline / engine contracts  
+Domain → construction grammar contracts  
+Type → archetype‑specific behavior contracts
+
+Result:
+Contract architecture now matches system layering.
+
+
+---
+
+# Newly Identified Architecture Tasks
+
+## SYS-008 — Domain / Archetype Structure
+
+Status: SUPERSEDED by session decisions 2026-03-07
+Superseded by: SYS-007 (plugin registry), ROL-001 (ArchetypeBinding), ARCH_TAXONOMY.md, SYS_NAMING_POLICY.md §2
+
+The directory structure, domain/type separation, and plugin registration
+mechanism are now defined in SYS_CONCEPTS.md §3, SYS_NAMING_POLICY.md §2,
+and ROL-001/SYS-007 tasks. No separate implementation task required.
+
+Canonical structure (for reference):
+```
+bvillage/
+├── core/           — interfaces, registry, Inspector
+├── foreman/        — plan_context, plan_dispatch, plan_conflict
+├── types/          — Topology Planner families (fw_longhouse, fw_townhouse, ...)
+├── domains/        — Frame Producers, Roof Producers, domain translation
+├── interior/       — Joiner
+└── policies/       — domain-agnostic policy definitions
+```
+
+
+## SYS-009 — Terminology Layer Separation
+
+Status: SUPERSEDED by session decisions 2026-03-07
+Superseded by: SYS_NAMING_POLICY.md §5–6, SYS_CONCEPTS.md §3
+
+Core terminology (interfaces, pipeline role names) is now defined in
+SYS_CONCEPTS.md §3 and SYS_CONTRACT.md. Domain terminology (post, brace,
+rail, tie beam) lives in domain plugins. The boundary is enforced by
+the layer rules in SYS_NAMING_POLICY.md §2.
+
+
+## SYS-010 — Construction Grammar Layer
+
+Status: SUPERSEDED by session decisions 2026-03-07
+Superseded by: ARCH_BAUGRAMMATIKEN_WISSENSCHAFT.md §4, SYS_CONCEPTS.md §3, ROL-001
+
+The construction grammar layer is now the Frame Producer role.
+The five grammars (BOX_FRAME, STOREY_FRAME, CRUCK_FRAME, AISLED_FRAME, WALL_GRID_FRAME)
+are documented in ARCH_BAUGRAMMATIKEN_WISSENSCHAFT.md §4 and bound to
+Frame Producer implementations via ArchetypeBinding in the plugin registry.
+No separate implementation task required — covered by ROL-001 and SYS-007.
