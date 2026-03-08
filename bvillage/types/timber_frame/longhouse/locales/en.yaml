@@ -1,0 +1,104 @@
+FW-LH-ND:
+  name: Lower Saxon Hall House
+  short_name: Hall House
+  description: >
+    Three-aisled Lower Saxon longhouse with longitudinal threshing floor.
+  aliases:
+    - Low German Hall House
+    - Lower Saxon Longhouse
+  keywords:
+    - hall house
+    - longhouse
+    - timber frame
+    - lower saxon
+
+FW-LH-2S:
+  name: Two-post Hall House
+  short_name: Two-post House
+  description: >
+    Longhouse with two interior post rows.
+  aliases:
+    - Two-post Longhouse
+  keywords:
+    - hall house
+    - two-post
+    - longhouse
+
+FW-LH-3S:
+  name: Three-post Hall House
+  short_name: Three-post House
+  description: >
+    Longhouse with asymmetric internal post arrangement.
+  aliases:
+    - Three-post Longhouse
+  keywords:
+    - hall house
+    - three-post
+    - longhouse
+
+FW-LH-4S:
+  name: Four-post Hall House
+  short_name: Four-post House
+  description: >
+    Longhouse with four post rows.
+  aliases:
+    - Four-post Longhouse
+  keywords:
+    - hall house
+    - four-post
+    - longhouse
+
+FW-GULF:
+  name: Gulf House
+  short_name: Gulf House
+  description: >
+    Coastal longhouse type with a large central gulf volume.
+  aliases: []
+  keywords:
+    - gulf house
+    - longhouse
+    - coastal
+
+FW-HAUB:
+  name: Haubarg
+  short_name: Haubarg
+  description: >
+    North Frisian large farm building with central support structure.
+  aliases: []
+  keywords:
+    - haubarg
+    - north frisian
+    - farm building
+
+FW-MITT:
+  name: Mittertennhaus
+  short_name: Mittertennhaus
+  description: >
+    Longhouse with central threshing floor, common in Alpine regions.
+  aliases: []
+  keywords:
+    - mittertennhaus
+    - longhouse
+    - threshing floor
+
+FW-LH-EN:
+  name: English Longhouse
+  short_name: English Longhouse
+  description: >
+    House-and-byre building under one roof with cross-passage entry.
+  aliases: []
+  keywords:
+    - english longhouse
+    - house-and-byre
+    - longhouse
+
+FW-STG-GIE:
+  name: Gable-front Townhouse
+  short_name: Townhouse
+  description: >
+    Urban townhouse with gable end facing the street.
+  aliases: []
+  keywords:
+    - townhouse
+    - gable-front
+    - urban
