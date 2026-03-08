@@ -1,581 +1,454 @@
 # bvillage/types/fachwerkhaus/hallenhaus/architect.py
 
-"""
-bvillage.types.fachwerkhaus.hallenhaus.architect
-================================================
-
-Type Orchestration: Fachwerkhaus – Hallenhaus
-
-ARC-001A hardened rules
------------------------
-- The type orchestrator must NOT invent structural defaults.
-- All culturally/structurally meaningful knobs come from the layered PolicyStack
-  (ResolvedPolicy.fachwerk + constraints).
-- Blender layer should consume artifacts and must not set defaults (next step).
-
-Artifacts produced
-------------------
-- core.resolved_policy        (debuggable policy snapshot)
-- policy_trace                (layer trace with values)
-- core.constraints            (sampled/penalized values for key constraints)
-- core.house_params           (renderer-facing params: roof_pitch_deg, post_section, dims)
-- fachwerk.frameplan          (structural truth: members, openings frames, braces, infills)
-"""
-
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from typing import Any, Dict, Final, Tuple, Optional
+from dataclasses import is_dataclass
+from typing import Any, Dict, List, Tuple
 
 from bvillage.core.errors import SchemaError
+from bvillage.core.notes import set_domain_artifact, get_domain_artifact
 from bvillage.core.model import (
-    Context,
     StructurePlan,
     Footprint,
+    Grid,
     BayFrame,
     WallSegment,
     ReservedSlot,
-    Issue,
-)
-from bvillage.core.grid import build_rect_grid
-from bvillage.core.notes import set_domain_artifact
-
-from bvillage.core.constraints import (
-    RangeHard,
-    RangeSoft,
-    CostProfile,
-    eval_range,
-    sample_soft,
 )
 
 from bvillage.core.policy_stack import resolve_policy_stack_with_trace
-from bvillage.core.policy_types import (
-    ResolvedPolicy,
-    ConstraintSpec,
-    RangeHardSpec,
-    RangeSoftSpec,
+from bvillage.types.fachwerkhaus.hallenhaus.schema_frameplan_langhaus import (
+    SCHEMA_VERSION_LANGHAUS,
+)
+from bvillage.domains.fachwerk.core.validate_frameplan_fachwerk import (
+    validate_frameplan_langhaus_schema,
+    validate_frameplan_langhaus_domain,
+)
+from bvillage.types.fachwerkhaus.hallenhaus.validate_frameplan_type import (
+    validate_frameplan_langhaus_type,
 )
 
-from bvillage.domains.fachwerk.core.frameplan import (
-    build_frameplan,
-    FramePolicy,
-    frameplan_to_dict,
-    frameplan_report,
+from bvillage.domains.fachwerk.validation.frameplan_checks import (
+    run_arch_checks,
+    log_arch_checks,
 )
 
-from bvillage.types.fachwerkhaus.hallenhaus.planner import plan_interior
-from bvillage.types.fachwerkhaus.hallenhaus.openings import plan_openings
+from bvillage.core.ontology.structural_terms import (
+    POST_OPENING_JAMB,
+    BEAM_OPENING_LINTEL,
+    BRACE_KNEE,
+)
 
 logger = logging.getLogger(__name__)
 
 
-# ============================================================
-# Dims
-# ============================================================
+# -----------------------------------------------------------------------------
+# Small helpers (no guessing, no signature drift)
+# -----------------------------------------------------------------------------
 
-@dataclass(frozen=True, slots=True)
-class HallenhausDims:
-    L: float = 19.9
-    W: float = 6.9
-    H_e: float = 2.58
-    z0: float = 0.0
-
-
-DEFAULT_DIMS: Final[HallenhausDims] = HallenhausDims()
-
-
-# ============================================================
-# Cost Profiles (scoring lenses)
-# ============================================================
-
-_DEFAULT_COST_PROFILES: Final[Tuple[CostProfile, ...]] = (
-    CostProfile(name="auth", mode="quadratic", outside_allowed_step=3.0),
-    CostProfile(name="risk", mode="quadratic", outside_allowed_step=6.0),
-    CostProfile(name="complexity", mode="linear", outside_allowed_step=2.0),
-)
-
-
-# ============================================================
-# Helpers
-# ============================================================
-
-def _issue_to_dict(i: Issue) -> Dict[str, Any]:
-    return {
-        "code": i.code,
-        "severity": i.severity,
-        "message": i.message,
-        "related_ids": list(i.related_ids),
-        "suggested_repairs": list(i.suggested_repairs),
-    }
-
-
-def _hard_from_spec(h: Optional[RangeHardSpec]) -> Optional[RangeHard]:
-    if h is None:
+def _safe_to_payload(obj: Any) -> Any:
+    """
+    Convert policy objects (often slots-based) into JSON-ish payloads without
+    relying on __dict__ / vars().
+    """
+    if obj is None:
         return None
-    return RangeHard(float(h.min_v), float(h.max_v))
+    if isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, (list, tuple)):
+        return [ _safe_to_payload(x) for x in obj ]
+    if isinstance(obj, dict):
+        return { str(k): _safe_to_payload(v) for k, v in obj.items() }
+
+    # dataclass(slots=True) or similar
+    if is_dataclass(obj):
+        out: Dict[str, Any] = {}
+        for f in getattr(obj, "__dataclass_fields__", {}).keys():
+            try:
+                out[f] = _safe_to_payload(getattr(obj, f))
+            except Exception:
+                out[f] = "<unreadable>"
+        return out
+
+    # slots objects
+    slots = getattr(obj, "__slots__", None)
+    if slots:
+        out = {}
+        for s in slots:
+            try:
+                out[str(s)] = _safe_to_payload(getattr(obj, s))
+            except Exception:
+                out[str(s)] = "<unreadable>"
+        return out
+
+    # last resort: repr
+    return repr(obj)
 
 
-def _soft_from_spec(s: Optional[RangeSoftSpec]) -> Optional[RangeSoft]:
-    if s is None:
-        return None
-    return RangeSoft(
-        ideal=(float(s.ideal[0]), float(s.ideal[1])),
-        allowed=(float(s.allowed[0]), float(s.allowed[1])),
-        weight=float(s.weight),
+def _member_id(prefix: str, *parts: object) -> str:
+    return prefix + "_" + "_".join(str(p) for p in parts)
+
+
+# -----------------------------------------------------------------------------
+# Zimmermannslogik (type-level planning inputs)
+# -----------------------------------------------------------------------------
+
+def _build_frame_sequence(seed: int) -> Tuple[str, ...]:
+    """
+    Returns frame roles along the longitudinal axis (x).
+    v0.4.0 MVP: 6 frames, gable ends exist, gate is gable-end (opening),
+    so all interior frames are structural.
+    """
+    # Deterministic MVP (seed currently unused; kept for later jitter/variants)
+    return ("GABLE_END", "STRUCTURAL", "STRUCTURAL", "STRUCTURAL", "STRUCTURAL", "GABLE_END")
+
+
+def _frame_x_positions_centered(seq: Tuple[str, ...]) -> Tuple[float, ...]:
+    """
+    Returns x positions for each frame, centered around x=0 (building center).
+    """
+    bay_m = 3.645  # DEBUG constant for v0.4.0 (replaced by policy ranges later)
+
+    xs: List[float] = []
+    x = 0.0
+    for _ in seq:
+        xs.append(x)
+        x += bay_m
+
+    # center at 0: midpoint between first and last frame
+    center = 0.5 * (xs[0] + xs[-1])
+    xs = [v - center for v in xs]
+    return tuple(float(v) for v in xs)
+
+
+def _build_cross_section() -> Dict[str, Any]:
+    """
+    Cross section specification for a 3-row (3-aisled) Hallenhaus skeleton.
+    """
+    width_m = 7.2
+    z_plate_m = 2.6
+    halfW = 0.5 * width_m
+
+    # Option B: explicit row_kind + y coordinate
+    rows = (
+        {"row_kind": "WALL", "y": -halfW},
+        {"row_kind": "HALL", "y": 0.0},
+        {"row_kind": "WALL", "y": +halfW},
     )
 
-
-def _policy_to_dict(pol: ResolvedPolicy) -> Dict[str, Any]:
-    c_out: Dict[str, Any] = {}
-    for k, spec in pol.constraints.items():
-        c_out[k] = {
-            "unit": spec.unit,
-            "code_prefix": spec.code_prefix,
-            "hard": None if spec.hard is None else {"min_v": spec.hard.min_v, "max_v": spec.hard.max_v},
-            "soft": None if spec.soft is None else {
-                "ideal": [spec.soft.ideal[0], spec.soft.ideal[1]],
-                "allowed": [spec.soft.allowed[0], spec.soft.allowed[1]],
-                "weight": spec.soft.weight,
-            },
-        }
-
-    fw = pol.fachwerk
     return {
-        "schema": pol.schema,
-        "fachwerk": {
-            "binder_max": fw.binder_max,
-            "default_jamb_thickness": fw.default_jamb_thickness,
-            "post_section_width": fw.post_section_width,
-            "post_section_depth": fw.post_section_depth,
-            "plate_section_width": fw.plate_section_width,
-            "plate_section_depth": fw.plate_section_depth,
-            "opening_jamb_width": fw.opening_jamb_width,
-            "opening_jamb_depth": fw.opening_jamb_depth,
-            "braces_enable": fw.braces_enable,
-            "brace_section_width": fw.brace_section_width,
-            "brace_section_depth": fw.brace_section_depth,
-            "brace_min_cell_width": fw.brace_min_cell_width,
-            "brace_min_cell_height": fw.brace_min_cell_height,
-            "target_gefach_width": fw.target_gefach_width,
-            "target_gefach_jitter": fw.target_gefach_jitter,
-            "z_merge_tol": fw.z_merge_tol,
-            "roof_pitch_deg": fw.roof_pitch_deg,
-            "post_section": [fw.post_section[0], fw.post_section[1]],
-        },
-        "constraints": c_out,
+        "width": float(width_m),
+        "plate_height": float(z_plate_m),
+        "rows": rows,
     }
 
 
-def _attach_policy_trace_artifact(structure: StructurePlan, trace) -> None:
-    structure.notes["policy_trace"] = {
-        "schema": trace.schema,
-        "layers": [
-            {
-                "layer_id": layer.layer_id,
-                "ops": [{"key": op.key, "value": op.value} for op in layer.ops],
-            }
-            for layer in trace.layers
-        ],
+def _zimmermann_payload(seq: Tuple[str, ...], xs: Tuple[float, ...], cs: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "schema": 1,
+        "x_frames": tuple(float(x) for x in xs),
+        "cross_section_rows": tuple({"row_kind": r["row_kind"], "y": float(r["y"])} for r in cs["rows"]),
+        "frame_roles": tuple({"bay_index": int(i), "role": str(role)} for i, role in enumerate(seq)),
     }
 
 
-def _attach_resolved_policy_artifact(structure: StructurePlan, pol: ResolvedPolicy) -> None:
-    set_domain_artifact(
-        structure.notes,
-        domain="core",
-        artifact="resolved_policy",
-        payload=_policy_to_dict(pol),
-        legacy_aliases=("resolved_policy", "core.resolved_policy", "policy"),
-    )
+# -----------------------------------------------------------------------------
+# Semantic StructurePlan shell (type-level output)
+# -----------------------------------------------------------------------------
 
+def plan_structure(ctx: Any, seq: Tuple[str, ...], xs: Tuple[float, ...], cs: Dict[str, Any]) -> StructurePlan:
+    halfW = 0.5 * float(cs["width"])
+    z_plate = float(cs["plate_height"])
 
-def _require_constraint(pol: ResolvedPolicy, name: str) -> ConstraintSpec:
-    spec = pol.constraints.get(name)
-    if spec is None:
-        raise SchemaError(f"ResolvedPolicy missing required constraint: {name}")
-    return spec
+    # Frames
+    frames: List[BayFrame] = []
+    for i, role in enumerate(seq):
+        tags = ("PRIMARY_FRAME", f"FrameRole.{role}")
+        frames.append(BayFrame(id=f"F_{i+1}", bay_index=i, tags=tags))
 
+    frames_val = tuple(frames)
 
-def _require_soft(spec: ConstraintSpec, name: str) -> RangeSoft:
-    soft = _soft_from_spec(spec.soft)
-    if soft is None:
-        raise SchemaError(f"Constraint {name} requires soft spec for sampling/targeting.")
-    return soft
+    # Minimal grid (v0.4.0: builder derives axes from frameplan.zimmermann; grid may be empty)
+    grid = Grid(axes_u=(), axes_v=(), fields=())
 
-
-def _attach_house_params_artifact(structure: StructurePlan, pol: ResolvedPolicy) -> None:
-    """
-    Renderer-facing parameters that must be present downstream (no Blender defaults).
-
-    ARC-001A:
-    - No setdefault / no magic defaults in Blender.
-    - Derive geometric heights deterministically from StructurePlan.walls.
-    - Pull policy-driven knobs from ResolvedPolicy.fachwerk.
-    """
-    fw = pol.fachwerk
-    fp = structure.footprint
-
-    # ---- derive z0 / z_plate deterministically from walls ----
-    z0_min: float | None = None
-    z1_max: float | None = None
-
-    walls = getattr(structure, "walls", None)
-    if not isinstance(walls, (list, tuple)) or not walls:
-        raise SchemaError("Cannot derive z0/z_plate: StructurePlan.walls missing/invalid.")
-
-    for w in walls:
-        try:
-            zr = getattr(w, "z_range", None)
-            if not (isinstance(zr, (list, tuple)) and len(zr) == 2):
-                continue
-            z0w = float(zr[0])
-            z1w = float(zr[1])
-        except Exception:
-            continue
-
-        z0_min = z0w if z0_min is None else min(z0_min, z0w)
-        z1_max = z1w if z1_max is None else max(z1_max, z1w)
-
-    if z0_min is None or z1_max is None:
-        raise SchemaError("Cannot derive z0/z_plate: no valid wall.z_range entries found.")
-
-    if not (z1_max > z0_min):
-        raise SchemaError(f"Invalid derived heights: z0={z0_min} z_plate={z1_max}.")
-
-    # ---- policy-driven knobs ----
-    roof_pitch_deg = float(getattr(fw, "roof_pitch_deg"))
-    post_w, post_d = fw.post_section
-
-    # plate_section tuple (for Blender convenience) derived from policy scalars
-    plate_section = (float(fw.plate_section_width), float(fw.plate_section_depth))
-
-    # roof_overhang: deterministic geometric heuristic (NOT a hidden constant default in Blender)
-    # Tuned so W≈6.9m -> ~0.35m, and clamped to sane bounds.
-    W = float(fp.width)
-    roof_overhang = max(0.25, min(0.45, 0.05 * W))
-
-    payload = {
-        "schema": 2,  # <-- schema bump (war 1)
-        # geometry
-        "L": float(fp.length),
-        "W": float(fp.width),
-        "z0": float(z0_min),
-        "z_plate": float(z1_max),
-
-        # policy-driven / renderer-facing
-        "roof_pitch_deg": roof_pitch_deg,
-        "roof_overhang": float(roof_overhang),
-
-        "post_section": [float(post_w), float(post_d)],
-        "plate_section": [float(plate_section[0]), float(plate_section[1])],
-
-        # ---- NEW (ARC-001A hardening) ----
-        # brace fallback profile (used only if brace.profile missing)
-        "brace_section": [
-            float(fw.brace_section_width),
-            float(fw.brace_section_depth),
-        ],
-
-        # infill default material role (policy-driven, not Blender constant)
-        "default_infill_material_role": str(fw.default_infill_material_role),
-    }
-
-    set_domain_artifact(
-        structure.notes,
-        domain="core",
-        artifact="house_params",
-        payload=payload,
-        legacy_aliases=("house_params", "core.house_params"),
-    )
-
-
-def _attach_constraints_artifact(ctx: Context, structure: StructurePlan, pol: ResolvedPolicy) -> None:
-    """
-    Attach constraint-derived parameters and penalty summaries.
-
-    ARC-001A hardening:
-    - Required constraints must exist.
-    - If we sample/derive from ideal, the constraint must define soft.
-    - No local fallback constants.
-    """
-    out_params: Dict[str, Any] = {}
-
-    # Fully-qualified sampling namespace (RNG label only; constraint keys remain un-prefixed)
-    ns = f"{ctx.house_type}."
-
-    # ---- brustriegel_z (sampled) ----
-    spec = _require_constraint(pol, "brustriegel_z")
-    soft = _require_soft(spec, "brustriegel_z")
-    hard = _hard_from_spec(spec.hard)
-
-    z_brust = sample_soft(ctx, key=f"{ns}brustriegel_z", soft=soft)
-
-    ev = eval_range(
-        ctx,
-        name="brustriegel_z",
-        value=z_brust,
-        hard=hard,
-        soft=soft,
-        profiles=_DEFAULT_COST_PROFILES,
-        unit=spec.unit,
-        code_prefix=spec.code_prefix,
-    )
-
-    out_params["brustriegel_z"] = {
-        "value": float(ev.value),
-        "penalties": dict(ev.penalties),
-        "issues": [_issue_to_dict(x) for x in ev.issues],
-        "range_hard": None if hard is None else [hard.min_v, hard.max_v],
-        "range_soft": {
-            "ideal": [soft.ideal[0], soft.ideal[1]],
-            "allowed": [soft.allowed[0], soft.allowed[1]],
-            "weight": soft.weight,
-        },
-        "key": f"{ns}brustriegel_z",
-    }
-
-    # ---- gefach_width_target (sampled) ----
-    spec = _require_constraint(pol, "gefach_width_target")
-    soft = _require_soft(spec, "gefach_width_target")
-    hard = _hard_from_spec(spec.hard)
-
-    target = sample_soft(ctx, key=f"{ns}gefach_width_target", soft=soft)
-
-    ev = eval_range(
-        ctx,
-        name="gefach_width_target",
-        value=target,
-        hard=hard,
-        soft=soft,
-        profiles=_DEFAULT_COST_PROFILES,
-        unit=spec.unit,
-        code_prefix=spec.code_prefix,
-    )
-
-    out_params["gefach_width_target"] = {
-        "value": float(ev.value),
-        "penalties": dict(ev.penalties),
-        "issues": [_issue_to_dict(x) for x in ev.issues],
-        "range_hard": None if hard is None else [hard.min_v, hard.max_v],
-        "range_soft": {
-            "ideal": [soft.ideal[0], soft.ideal[1]],
-            "allowed": [soft.allowed[0], soft.allowed[1]],
-            "weight": soft.weight,
-        },
-        "key": f"{ns}gefach_width_target",
-    }
-
-    payload = {
-        "schema": 2,
-        "profiles": [p.name for p in _DEFAULT_COST_PROFILES],
-        "params": out_params,
-    }
-
-    set_domain_artifact(
-        structure.notes,
-        domain="core",
-        artifact="constraints",
-        payload=payload,
-        legacy_aliases=("constraints", "core.constraints"),
-    )
-
-
-# ============================================================
-# Structure (semantic)
-# ============================================================
-
-def plan_structure(ctx: Context, *, dims: HallenhausDims = DEFAULT_DIMS) -> StructurePlan:
-    L = float(dims.L)
-    W = float(dims.W)
-    H_e = float(dims.H_e)
-    z0 = float(dims.z0)
-
-    grid = build_rect_grid(L, W, bays_x=8, bays_y=2)
-
-    frames = tuple(
-        BayFrame(id=f"BINDER_{i}", bay_index=i, tags=("PRIMARY_FRAME",))
-        for i in range(len(grid.axes_u))
-    )
-
-    half_L = L / 2.0
-    half_W = W / 2.0
+    # Walls: long sides N/S (run along x), gable ends E/W (run along y)
+    umin = float(min(xs))
+    umax = float(max(xs))
 
     walls = (
-        WallSegment("W_N_0", "N", (-half_L, half_L), (z0, H_e), ("EXTERIOR", "WINDOW_OK")),
-        WallSegment("W_S_0", "S", (-half_L, half_L), (z0, H_e), ("EXTERIOR", "WINDOW_OK", "GATE_OK")),
-        WallSegment("W_E_0", "E", (-half_W, half_W), (z0, H_e), ("EXTERIOR",)),
-        WallSegment("W_W_0", "W", (-half_W, half_W), (z0, H_e), ("EXTERIOR",)),
+        WallSegment(id="W_N_0", side="N", u_range=(umin, umax), z_range=(0.0, z_plate), tags=("EXTERIOR", "WINDOW_OK")),
+        WallSegment(id="W_S_0", side="S", u_range=(umin, umax), z_range=(0.0, z_plate), tags=("EXTERIOR", "WINDOW_OK")),
+        WallSegment(id="W_E_0", side="E", u_range=(-halfW, +halfW), z_range=(0.0, z_plate), tags=("EXTERIOR", "GABLE_END")),
+        WallSegment(id="W_W_0", side="W", u_range=(-halfW, +halfW), z_range=(0.0, z_plate), tags=("EXTERIOR", "GABLE_END")),
     )
 
-    reserved = (ReservedSlot("HEARTH_ZONE", "F_2_1", ("HEARTH_ZONE",)),)
+    # Reserved slots (keep one consistent placeholder for planner/debug)
+    reserved = (
+        ReservedSlot(id="HEARTH_ZONE", field_id="F_2_1", tags=("HEARTH_ZONE",)),
+    )
 
-    footprint = Footprint(length=L, width=W, orientation_deg=0.0)
+    length = float(abs(xs[-1] - xs[0]))
+    footprint = Footprint(length=length, width=float(cs["width"]), orientation_deg=0.0)
 
     return StructurePlan(
         footprint=footprint,
         stories=1,
         grid=grid,
-        frames=frames,
+        frames=frames_val,
         walls=walls,
         reserved_slots=reserved,
-        notes={},
+        notes={},  # artifacts attached via notes.py
     )
 
 
-# ============================================================
-# Domain hookup (fachwerk)
-# ============================================================
+# -----------------------------------------------------------------------------
+# FramePlan v4: members-first XYZ skeleton (writes artifact)
+# -----------------------------------------------------------------------------
 
-def _frame_policy_from_resolved(pol: ResolvedPolicy) -> FramePolicy:
-    """
-    Map ResolvedPolicy.fachwerk -> fachwerk FramePolicy.
-
-    ARC-001A hardening:
-    - no defaults here; this is a pure mapping.
-    """
-    fw = pol.fachwerk
-    return FramePolicy(
-        binder_max=float(fw.binder_max),
-        default_jamb_thickness=float(fw.default_jamb_thickness),
-        post_section_width=float(fw.post_section_width),
-        post_section_depth=float(fw.post_section_depth),
-        plate_section_width=float(fw.plate_section_width),
-        plate_section_depth=float(fw.plate_section_depth),
-        opening_jamb_width=float(fw.opening_jamb_width),
-        opening_jamb_depth=float(fw.opening_jamb_depth),
-        braces_enable=bool(fw.braces_enable),
-        brace_section_width=float(fw.brace_section_width),
-        brace_section_depth=float(fw.brace_section_depth),
-        brace_min_cell_width=float(fw.brace_min_cell_width),
-        brace_min_cell_height=float(fw.brace_min_cell_height),
-        target_gefach_width=float(fw.target_gefach_width),
-        target_gefach_jitter=float(fw.target_gefach_jitter),
-        z_merge_tol=float(fw.z_merge_tol),
-    )
-
-
-def derive_frameplan(
-    ctx: Context,
+def derive_frameplan_rohskelett(
+    ctx: Any,
     structure: StructurePlan,
-    openings,
-    resolved: ResolvedPolicy,
-) -> None:
-    frame_policy = _frame_policy_from_resolved(resolved)
+    seq: Tuple[str, ...],
+    xs: Tuple[float, ...],
+    cs: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Emits:
+      - fachwerk.frameplan artifact
+      - includes zimmermann block required by downstream builders
+    """
+    width = float(cs["width"])
+    z_plate = float(cs["plate_height"])
+    halfW = 0.5 * width
+    z0 = 0.0
 
-    fp = build_frameplan(
-        structure=structure,
-        openings=openings,
-        policy=frame_policy,
-        seed=int(ctx.seed.derive("fachwerk.frameplan.jitter")),
-    )
+    posts: List[Dict[str, Any]] = []
+    rails: List[Dict[str, Any]] = []
+    braces: List[Dict[str, Any]] = []
 
-    payload = frameplan_to_dict(fp)
+    # --- Primary posts (3 rows per frame: S wall, hall, N wall) ---
+    for i, x in enumerate(xs):
+        role = seq[i]
 
-    set_domain_artifact(
-        structure.notes,
-        domain="fachwerk",
-        artifact="frameplan",
-        payload=payload,
-        legacy_aliases=("frameplan", "fachwerk.frameplan"),
-    )
-
-    logger.info("%s", frameplan_report(fp))
-
-
-# ============================================================
-# Orchestration
-# ============================================================
-
-def orchestrate_house(ctx: Context):
-    # Grammar Guard (SGA)
-    if ctx.grammar != "hall":
-        raise SchemaError(
-            f"Hallenhaus requires grammar='hall', got '{ctx.grammar}'."
+        posts.append(
+            {
+                "id": _member_id("P", i, "S"),
+                "tid": "post.primary",
+                "role": "post.outer",
+                "p0": (float(x), -halfW, z0),
+                "p1": (float(x), -halfW, z_plate),
+                "tags": ("ROW_WALL", f"FRAME_{i}", f"FrameRole.{role}"),
+            }
+        )
+        posts.append(
+            {
+                "id": _member_id("P", i, "H"),
+                "tid": "post.hall",
+                "role": "post.hall",
+                "p0": (float(x), 0.0, z0),
+                "p1": (float(x), 0.0, z_plate),
+                "tags": ("ROW_HALL", f"FRAME_{i}", f"FrameRole.{role}"),
+            }
+        )
+        posts.append(
+            {
+                "id": _member_id("P", i, "N"),
+                "tid": "post.primary",
+                "role": "post.outer",
+                "p0": (float(x), +halfW, z0),
+                "p1": (float(x), +halfW, z_plate),
+                "tags": ("ROW_WALL", f"FRAME_{i}", f"FrameRole.{role}"),
+            }
         )
 
-    logger.debug(
-        "Hallenhaus.orchestrate_house() start (seed=%s wealth=%s)",
-        getattr(ctx, "seed", None),
-        getattr(ctx, "wealth", None),
-    )
+    # --- Eaves plates along long walls (N/S) ---
+    for i in range(len(xs) - 1):
+        x0 = float(xs[i])
+        x1 = float(xs[i + 1])
 
-    # 1) Resolve policy stack (mandatory)
+        rails.append(
+            {
+                "id": _member_id("PL", "S", i),
+                "tid": "beam.plate",
+                "role": "plate.eaves",
+                "p0": (x0, -halfW, z_plate),
+                "p1": (x1, -halfW, z_plate),
+                "tags": ("WALL_S",),
+            }
+        )
+        rails.append(
+            {
+                "id": _member_id("PL", "N", i),
+                "tid": "beam.plate",
+                "role": "plate.eaves",
+                "p0": (x0, +halfW, z_plate),
+                "p1": (x1, +halfW, z_plate),
+                "tags": ("WALL_N",),
+            }
+        )
+
+    # --- Minimal primary knee braces (debug baseline) ---
+    # (Later: proper bracing per bay, gate frame reinforcement, gable-specific bracing)
+    bid = 0
+    for i in range(len(xs) - 1):
+        x0 = float(xs[i])
+        x1 = float(xs[i + 1])
+        braces.append(
+            {
+                "id": _member_id("BR", bid),
+                "tid": BRACE_KNEE,
+                "role": "brace.knee",
+                "p0": (x0, -halfW, z_plate * 0.30),
+                "p1": (x1, -halfW, z_plate * 0.80),
+                "tags": ("WALL_S",),
+            }
+        )
+        bid += 1
+
+    # --- Gate on gable end (MVP): jamb posts + lintel on W_E_0 ---
+    # Convention: gable end wall "E" is at x = max(xs) (positive x end).
+    # Opening runs along y (local transverse axis).
+    gate_x = float(max(xs))
+    gate_clear_w = 3.0
+    gate_half = 0.5 * gate_clear_w
+    gate_z1 = 2.2
+
+    posts.append(
+        {
+            "id": _member_id("OJ", "GATE", "L"),
+            "tid": POST_OPENING_JAMB,
+            "role": "opening.jamb",
+            "p0": (gate_x, -gate_half, z0),
+            "p1": (gate_x, -gate_half, gate_z1),
+            "tags": ("OPENING_GATE", "GABLE_END", "WALL_E"),
+        }
+    )
+    posts.append(
+        {
+            "id": _member_id("OJ", "GATE", "R"),
+            "tid": POST_OPENING_JAMB,
+            "role": "opening.jamb",
+            "p0": (gate_x, +gate_half, z0),
+            "p1": (gate_x, +gate_half, gate_z1),
+            "tags": ("OPENING_GATE", "GABLE_END", "WALL_E"),
+        }
+    )
+    rails.append(
+        {
+            "id": _member_id("OL", "GATE"),
+            "tid": BEAM_OPENING_LINTEL,
+            "role": "opening.lintel",
+            "p0": (gate_x, -gate_half, gate_z1),
+            "p1": (gate_x, +gate_half, gate_z1),
+            "tags": ("OPENING_GATE", "GABLE_END", "WALL_E"),
+        }
+    )
+    
+    frame_layout = {
+        "x_frames": [float(x) for x in xs],
+        "y_rows": [float(r["y"]) for r in cs["rows"]],
+        "frame_roles": [str(role) for role in seq],
+    }
+
+    frameplan: Dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION_LANGHAUS,
+
+        "coordinate_system": {
+            "origin": "building_center_ground",
+            "axes": {
+                "x": "longitudinal_forward",
+                "y": "right_when_facing_positive_x",
+                "z": "up",
+            },
+            "units": "meters",
+        },
+
+        "basis": {
+            "z0": float(z0),
+            "z_plate": float(z_plate),
+        },
+
+        "frame_layout": frame_layout,
+
+        "zimmermann": _zimmermann_payload(seq, xs, cs),
+
+        "members": {
+            "posts": posts,
+            "rails": rails,
+            "braces": braces,
+            "infills": [],
+        },
+
+        "openings": [],
+
+        "notes": {
+            "mvp": True,
+            "gate": {"placement": "gable_end", "wall": "W_E_0"},
+        },
+}
+
+    set_domain_artifact(structure.notes, domain="fachwerk", artifact="frameplan", payload=frameplan)
+    set_domain_artifact(structure.notes, domain="fachwerk", artifact="zimmermann", payload=frameplan["zimmermann"])
+
+    return frameplan
+
+
+# -----------------------------------------------------------------------------
+# Orchestrator (type entry point)
+# -----------------------------------------------------------------------------
+
+def orchestrate_house(ctx: Any):
+    # Grammar guard
+    if getattr(ctx, "grammar", None) != "hall":
+        raise SchemaError(f"Hallenhaus requires grammar='hall', got '{getattr(ctx, 'grammar', None)}'.")
+
+    logger.debug("Hallenhaus.orchestrate_house() start (seed=%s)", getattr(ctx, "seed", None))
+
+    # 1) Resolve policy stack (kept for pipeline integrity / artifacts)
     resolved, trace = resolve_policy_stack_with_trace(ctx)
 
-    # 2) Semantic structure plan
-    structure = plan_structure(ctx)
+    # 2) Zimmermannslogik: frame sequence + cross section
+    seq = _build_frame_sequence(seed=int(getattr(getattr(ctx, "seed", None), "derive")("hallenhaus.bays") if getattr(ctx, "seed", None) else 0))
+    xs = _frame_x_positions_centered(seq)
+    cs = _build_cross_section()
 
-    # 3) Persist policy artifacts
-    _attach_resolved_policy_artifact(structure, resolved)
-    _attach_policy_trace_artifact(structure, trace)
+    # 3) Semantic structure shell
+    structure = plan_structure(ctx, seq, xs, cs)
 
-    # 4) Persist renderer-facing params (policy-driven)
-    _attach_house_params_artifact(structure, resolved)
+    # 4) Persist policy artifacts (debuggable; no vars()/__dict__ assumptions)
+    set_domain_artifact(
+        structure.notes,
+        domain="core",
+        artifact="resolved_policy",
+        payload={"schema": 1, "resolved": _safe_to_payload(resolved)},
+    )
+    set_domain_artifact(
+        structure.notes,
+        domain="core",
+        artifact="policy_trace",
+        payload={"schema": 1, "trace": _safe_to_payload(trace)},
+    )
 
-    # 5) Persist constraints-derived sampled values (policy-driven)
-    _attach_constraints_artifact(ctx, structure, resolved)
+    # 5) Emit v4 roh-skeleton frameplan (members-first + zimmermann payload)
+    frameplan = derive_frameplan_rohskelett(ctx, structure, seq, xs, cs)
 
-    # 6) Semantic planning
+    # 6) ARCH CHECKS
+    issues = run_arch_checks(frameplan)
+    log_arch_checks(logger, frameplan, issues)
+    if any(i.severity == "HARD" for i in issues):
+        raise SchemaError("Architect checks failed (hard issues).")
+
+    # 6b) Canonical full validation
+    validate_frameplan_langhaus_schema(frameplan)
+    validate_frameplan_langhaus_domain(frameplan)
+    validate_frameplan_langhaus_type(frameplan)
+
+    # 7) Keep return shape stable
+    from bvillage.types.fachwerkhaus.hallenhaus.planner import plan_interior
+    from bvillage.types.fachwerkhaus.hallenhaus.openings import plan_openings
+
     interior = plan_interior(ctx, structure)
     openings = plan_openings(ctx, structure, interior)
 
-    # 7) Domain frameplan (constructive truth) from resolved policy
-    derive_frameplan(ctx, structure, openings, resolved)
-
-    # 8) PPV (non-blocking) — informational in v0.4.0
-    try:
-        from bvillage.core.quality.physical_plausibility_validator import run_physical_plausibility
-
-        report = run_physical_plausibility(ctx, structure, domain_id="fachwerk")
-
-        set_domain_artifact(
-            structure.notes,
-            domain="core",
-            artifact="ppv",
-            payload={
-                "schema": 1,
-                "domain_id": "fachwerk",
-                "issue_count": len(report.issues),
-                "issues": [
-                    {
-                        "code": i.code,
-                        "severity": i.severity,
-                        "message": i.message,
-                        "related_ids": list(i.related_ids),
-                        "suggested_repairs": list(i.suggested_repairs),
-                    }
-                    for i in report.issues
-                ],
-                "metrics": dict(report.metrics),
-                "per_member": dict(report.per_member),
-            },
-            legacy_aliases=("ppv", "core.ppv"),
-        )
-    except Exception as e:
-        # Must not block generation in v0.4.0
-        set_domain_artifact(
-            structure.notes,
-            domain="core",
-            artifact="ppv",
-            payload={
-                "schema": 1,
-                "domain_id": "fachwerk",
-                "issue_count": 1,
-                "issues": [
-                    {
-                        "code": "PPV.RUNTIME_ERROR",
-                        "severity": "SUGGEST",
-                        "message": f"PPV failed non-blocking: {type(e).__name__}: {e}",
-                        "related_ids": [],
-                        "suggested_repairs": [],
-                    }
-                ],
-                "metrics": {},
-                "per_member": {},
-            },
-            legacy_aliases=("ppv", "core.ppv"),
-        )
-
-    logger.debug("Hallenhaus.orchestrate_house() done")
     return structure, interior, openings
