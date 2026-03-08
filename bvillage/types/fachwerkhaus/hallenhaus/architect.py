@@ -18,14 +18,14 @@ from bvillage.core.model import (
 )
 
 from bvillage.core.policy_stack import resolve_policy_stack_with_trace
-from bvillage.types.fachwerkhaus.hallenhaus.schema_frameplan_langhaus import (
+from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frameplan_langhaus import (
     SCHEMA_VERSION_LANGHAUS,
 )
-from bvillage.domains.fachwerk.core.validate_frameplan_fachwerk import (
-    validate_frameplan_langhaus_schema,
-    validate_frameplan_langhaus_domain,
+from bvillage.domains.fachwerk.contracts.validate_frameplan_fachwerk import (
+    validate_frameplan_fachwerk_schema,
+    validate_frameplan_fachwerk_domain,
 )
-from bvillage.types.fachwerkhaus.hallenhaus.validate_frameplan_type import (
+from bvillage.types.fachwerkhaus.hallenhaus.contracts.validate_frameplan_type import (
     validate_frameplan_langhaus_type,
 )
 
@@ -440,8 +440,8 @@ def orchestrate_house(ctx: Any):
         raise SchemaError("Architect checks failed (hard issues).")
 
     # 6b) Canonical full validation
-    validate_frameplan_langhaus_schema(frameplan)
-    validate_frameplan_langhaus_domain(frameplan)
+    validate_frameplan_fachwerk_schema(frameplan)
+    validate_frameplan_fachwerk_domain(frameplan)
     validate_frameplan_langhaus_type(frameplan)
 
     # 7) Keep return shape stable

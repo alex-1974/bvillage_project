@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import Any, Iterable, Tuple
 
 from bvillage.core.errors import SchemaError
-from bvillage.domains.fachwerk.core.schema_member_tids_fachwerk import (
+from bvillage.domains.fachwerk.contracts.schema_member_tids_fachwerk import (
     ALLOWED_BRACE_TIDS,
     ALLOWED_POST_TIDS,
     ALLOWED_RAIL_TIDS,
 )
-from bvillage.types.fachwerkhaus.hallenhaus.schema_frameplan_langhaus import (
+from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frameplan_langhaus import (
     FramePlanLanghaus,
     SCHEMA_VERSION_LANGHAUS,
 )
@@ -52,7 +52,7 @@ def _validate_member(member: dict[str, Any], allowed_tids: Tuple[str, ...], ctx:
         _require_positive(prof["d"], f"{ctx}.profile.d")
 
 
-def validate_frameplan_langhaus_schema(frameplan: FramePlanLanghaus) -> None:
+def validate_frameplan_fachwerk_schema(frameplan: FramePlanLanghaus) -> None:
     if not isinstance(frameplan, dict):
         raise SchemaError("FramePlan must be a dict")
 
@@ -104,7 +104,7 @@ def validate_frameplan_langhaus_schema(frameplan: FramePlanLanghaus) -> None:
         raise SchemaError("openings must be list or None")
 
 
-def validate_frameplan_langhaus_domain(frameplan: FramePlanLanghaus) -> None:
+def validate_frameplan_fachwerk_domain(frameplan: FramePlanLanghaus) -> None:
     members = frameplan["members"]
 
     posts = members["posts"]
@@ -124,4 +124,3 @@ def validate_frameplan_langhaus_domain(frameplan: FramePlanLanghaus) -> None:
         _validate_member(m, ALLOWED_RAIL_TIDS, f"members.rails[{i}]")
     for i, m in enumerate(braces):
         _validate_member(m, ALLOWED_BRACE_TIDS, f"members.braces[{i}]")
-

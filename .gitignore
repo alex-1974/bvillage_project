@@ -1,12 +1,22 @@
 
 *.pyc
 
+.idea/
+
 bvillage.egg-info/
 
 bvillage_project.egg-info/
 
+tmp/
+tmp*/
+
+research/tools/
+research/archive/
+research/literature/
+research/sources/library/
+research/**/drafts/
+research/**/archive/
+
 ARCH_SCAN.txt
 
-research/Mittelalter/Fachwerk/0[!1]*/
-
-.idea/
+research/Mittelalter.bak/*

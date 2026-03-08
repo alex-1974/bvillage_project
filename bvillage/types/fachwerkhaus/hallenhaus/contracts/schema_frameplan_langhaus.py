@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Literal, Optional, Sequence, Tuple, TypedDict
 
-from bvillage.types.fachwerkhaus.hallenhaus.schema_frame_roles import FrameRole
+from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frame_roles import FrameRole
 
 Vec3 = Tuple[float, float, float]
 

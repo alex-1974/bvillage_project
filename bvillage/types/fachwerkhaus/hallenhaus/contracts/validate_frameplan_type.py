@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from bvillage.core.errors import SchemaError
-from bvillage.types.fachwerkhaus.hallenhaus.schema_frame_roles import (
+from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frame_roles import (
     ALLOWED_FRAME_ROLES,
 )
-from bvillage.types.fachwerkhaus.hallenhaus.schema_frameplan_langhaus import (
+from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frameplan_langhaus import (
     FramePlanLanghaus,
 )
 
