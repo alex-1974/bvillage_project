@@ -1,80 +1,88 @@
 # bvillage/domains/fachwerk/blender/braces.py
+from __future__ import annotations
 
 import logging
 from typing import Any, Iterable
 
 import bpy
-import math
 from mathutils import Vector
 
 from bvillage.core.errors import SchemaError
+from bvillage.core.ontology.structural_terms import BRACE_DIAGONAL
+
 from .materials_assign import assign_member_material
 from .timber import make_beam_rect
-
-from bvillage.core.ontology.structural_terms import BRACE_DIAGONAL
 
 __all__ = ["build_braces_corner_band"]
 
 LOG = logging.getLogger(__name__)
 
 
-def _require_basis(fp: dict[str, Any], *, house: dict[str, Any]) -> dict[str, float]:
+def _require_basis(fp: dict[str, Any]) -> dict[str, float]:
+    """
+    Require canonical members-first FramePlan basis.
+
+    Expected keys
+    -------------
+    - z0
+    - z_plate
+
+    Optional keys
+    -------------
+    - x_min
+    - x_max
+    - center_x
+    - halfW
+
+    WHY:
+    Renderer must not derive structural basis from house-side fallback data.
+    """
     basis = fp.get("basis")
-    if isinstance(basis, dict) and all(k in basis for k in ("x_min", "x_max", "center_x", "halfW")):
-        return {
-            "x_min": float(basis["x_min"]),
-            "x_max": float(basis["x_max"]),
-            "center_x": float(basis["center_x"]),
-            "halfW": float(basis["halfW"]),
-        }
+    if not isinstance(basis, dict):
+        raise SchemaError("Braces: missing canonical frameplan basis")
 
-    try:
-        L = float(house["L"])
-        W = float(house["W"])
-    except Exception:
-        raise SchemaError("Braces: missing required house keys 'L'/'W' for basis derivation")
+    out: dict[str, float] = {}
 
-    if not (L > 0.0 and W > 0.0):
-        raise SchemaError("Braces: invalid house dims for basis derivation")
+    for key in ("z0", "z_plate"):
+        if key not in basis:
+            raise SchemaError(f"Braces: basis missing required key '{key}'")
+        try:
+            out[key] = float(basis[key])
+        except Exception as exc:
+            raise SchemaError(f"Braces: invalid basis value for '{key}'") from exc
 
-    return {"x_min": 0.0, "x_max": L, "center_x": 0.5 * L, "halfW": 0.5 * W}
+    # Optional geometric keys, used only if present.
+    for key in ("x_min", "x_max", "center_x", "halfW"):
+        if key in basis:
+            try:
+                out[key] = float(basis[key])
+            except Exception as exc:
+                raise SchemaError(f"Braces: invalid basis value for '{key}'") from exc
 
-
-def _map_wall_uvz_to_world(*, wall: str, u: float, z: float, basis: dict[str, float]) -> Vector:
-    x_min = basis["x_min"]
-    x_max = basis["x_max"]
-    center_x = basis["center_x"]
-    halfW = basis["halfW"]
-
-    if wall == "N":
-        return Vector((center_x + u, -halfW, z))
-    if wall == "S":
-        return Vector((center_x + u, halfW, z))
-    if wall == "E":
-        return Vector((x_max, u, z))
-    if wall == "W":
-        return Vector((x_min, u, z))
-    raise SchemaError(f"Braces: invalid wall '{wall}'")
+    return out
 
 
 def _iter_braces(fp: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    """
+    Members-first only.
+
+    No legacy fallback to fp["braces"] is allowed.
+    """
     members = fp.get("members")
-    if isinstance(members, dict):
-        arr = members.get("braces") or []
-        if isinstance(arr, list):
-            for x in arr:
-                if isinstance(x, dict):
-                    yield x
+    if not isinstance(members, dict):
+        raise SchemaError("Braces: frameplan missing members dict")
 
-    # legacy fallback (optional)
-    arr2 = fp.get("braces") or []
-    if isinstance(arr2, list):
-        for x in arr2:
-            if isinstance(x, dict):
-                yield x
+    arr = members.get("braces")
+    if arr is None:
+        return ()
+
+    if not isinstance(arr, list):
+        raise SchemaError("Braces: members.braces must be a list")
+
+    return (x for x in arr if isinstance(x, dict))
 
 
-def _resolve_brace_profile(*, brace: dict[str, Any], house: dict[str, Any]) -> tuple[float, float]:
+def _resolve_brace_profile(*, brace: dict[str, Any]) -> tuple[float, float]:
     prof = brace.get("profile")
     if isinstance(prof, dict):
         try:
@@ -85,60 +93,64 @@ def _resolve_brace_profile(*, brace: dict[str, Any], house: dict[str, Any]) -> t
         except Exception:
             pass
 
-    sec = house.get("brace_section") or house.get("post_section")
-    if isinstance(sec, (list, tuple)) and len(sec) >= 2:
-        return float(sec[0]), float(sec[1])
-
+    # Deterministic fallback only if profile is absent.
     return 0.08, 0.08
+
+
+def _vec3(value: Any, *, ctx: str) -> Vector:
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        raise SchemaError(f"{ctx}: expected vec3")
+    try:
+        return Vector((float(value[0]), float(value[1]), float(value[2])))
+    except Exception as exc:
+        raise SchemaError(f"{ctx}: invalid vec3 values") from exc
 
 
 def build_braces_corner_band(
     *,
     fp: dict[str, Any],
-    house: dict[str, Any],
     collection: bpy.types.Collection,
     ctx_view: Any = None,
     debug: bool = False,
 ) -> int:
-    basis = _require_basis(fp, house=house)
+    """
+    Build braces strictly from FramePlan.members.braces.
+
+    Contract
+    --------
+    - only tid == BRACE_DIAGONAL is handled here
+    - p0/p1 must already be present in world coordinates
+    - no house fallback
+    - no wall/u/z reconstruction
+    """
+    _ = debug
+    _require_basis(fp)  # validates canonical basis presence
 
     built = 0
-    for i, b in enumerate(_iter_braces(fp)):
-        if b.get("tid") != BRACE_DIAGONAL:
+    for i, brace in enumerate(_iter_braces(fp)):
+        if brace.get("tid") != BRACE_DIAGONAL:
             continue
 
-        wall = b.get("wall")
-        if wall not in ("N", "S", "E", "W"):
-            raise SchemaError(f"Braces: brace[{i}] invalid/missing wall")
+        p0 = _vec3(brace.get("p0"), ctx=f"Braces: brace[{i}].p0")
+        p1 = _vec3(brace.get("p1"), ctx=f"Braces: brace[{i}].p1")
 
-        try:
-            u0 = float(b["u0"])
-            z0 = float(b["z0"])
-            u1 = float(b["u1"])
-            z1 = float(b["z1"])
-        except Exception:
-            raise SchemaError(f"Braces: brace[{i}] missing required numeric u0/u1/z0/z1")
+        w, d = _resolve_brace_profile(brace=brace)
 
-        p0 = _map_wall_uvz_to_world(wall=str(wall), u=u0, z=z0, basis=basis)
-        p1 = _map_wall_uvz_to_world(wall=str(wall), u=u1, z=z1, basis=basis)
-
-        w, d = _resolve_brace_profile(brace=b, house=house)
-
-        name = b.get("id") if isinstance(b.get("id"), str) and b.get("id") else f"Brace_{wall}_{i:04d}"
+        name = brace.get("id") if isinstance(brace.get("id"), str) and brace.get("id") else f"Brace_{i:04d}"
         make_beam_rect(name, p0, p1, width=w, depth=d, collection=collection)
 
-        if ctx_view:
+        if ctx_view is not None:
             obj = collection.objects.get(name)
             try:
                 assign_member_material(
                     obj=obj,
-                    member=b,
+                    member=brace,
                     ctx_view=ctx_view,
                     default_material_id="timber.spruce",
                     name_hint=f"BV_{name}",
                 )
             except Exception:
-                LOG.exception("Braces: material assignment failed for %s member=%s", name, b)
+                LOG.exception("Braces: material assignment failed for %s member=%s", name, brace)
 
         built += 1
 

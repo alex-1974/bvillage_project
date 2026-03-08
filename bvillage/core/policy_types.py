@@ -1,5 +1,4 @@
 # bvillage/core/policy_types.py
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -41,6 +40,23 @@ class FachwerkPolicySpec:
     # --- structural rhythm ---
     binder_max: float
 
+    # --- topological geometry ---
+    # WHY:
+    # Hallenhaus topology currently needs explicit longitudinal bay spacing,
+    # overall building width, and plate height. These values belong in policy,
+    # not as hardcoded constants in the type planner.
+    bay_width: float = 3.645
+    building_width: float = 7.2
+    plate_height: float = 2.6
+
+    # --- topological sequencing ---
+    # WHY:
+    # Frame count and gable treatment are type-relevant planning inputs that
+    # must come from policy rather than from a hardcoded sequence in the
+    # topology planner.
+    bay_count: int = 5
+    gable_mode: str = "end_frame"
+
     # --- openings normalization ---
     default_jamb_thickness: float = 0.20
 
@@ -76,6 +92,7 @@ class FachwerkPolicySpec:
 
     # NEW: infill material default (policy-driven, not Blender literal)
     default_infill_material_role: str = "INFILL_BRICK"
+
 
 @dataclass(frozen=True, slots=True)
 class ResolvedPolicy:

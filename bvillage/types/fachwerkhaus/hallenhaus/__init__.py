@@ -1,92 +1,73 @@
 # bvillage/types/fachwerkhaus/hallenhaus/__init__.py
-
-"""
-bvillage.types.fachwerkhaus.hallenhaus
-======================================
-
-House Type: Fachwerkhaus – Hallenhaus
---------------------------------------
-
-This module registers the house type provider
-"fachwerkhaus.hallenhaus" in the central registry.
-
-Responsibilities
-----------------
-- Provide a stable type_id.
-- Implement generate(ctx) -> (structure, interior, openings).
-- Register itself at import time.
-
-Architecture
-------------
-- Domain engine: bvillage.domains.fachwerk
-- Type-specific orchestration: architect.py
-- Blender builder: domain-level
-
-Units
------
-All geometry values are in meters.
-
-Registration
-------------
-Registration happens at module import time.
-The registry discovery system explicitly imports this package.
-
-Design Note
------------
-This module must contain *no* heavy logic.
-It only wires together planner + registry.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any
 
-from bvillage.core.registry import register_house_type, HouseTypeProvider
-from .architect import orchestrate_house
+from bvillage.core.registry import register_house_type
+from bvillage.core.type_registry import register as register_type
+from bvillage.core.archetype_registry import register as register_archetype
 
-# ---------------------------------------------------------
-# Provider Implementation
-# ---------------------------------------------------------
+from .provider import (
+    plan_structure_and_interior,
+    plan_openings_for_type,
+    validate_for_type,
+)
+
+__all__ = ["HallenhausProvider"]
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class HallenhausProvider:
     """
-    HouseTypeProvider implementation for Fachwerkhaus Hallenhaus.
+    Type provider for Fachwerkhaus Hallenhaus.
+
+    Structural frame generation is dispatched by the Foreman to the domain layer.
     """
 
     type_id: str = "fachwerkhaus.hallenhaus"
 
-    def generate(self, ctx: Any) -> Tuple[Any, Any, Any]:
-        """
-        Generate full house pipeline.
+    def plan_structure_and_interior(self, ctx: Any, *, resolved_policy: Any):
+        return plan_structure_and_interior(ctx, resolved_policy=resolved_policy)
 
-        Parameters
-        ----------
-        ctx :
-            Execution context (policy, config, runtime options).
+    def plan_openings_for_type(
+        self,
+        ctx: Any,
+        *,
+        structure: Any,
+        interior: Any,
+        frameplan: dict[str, Any],
+    ):
+        return plan_openings_for_type(
+            ctx,
+            structure=structure,
+            interior=interior,
+            frameplan=frameplan,
+        )
 
-        Returns
-        -------
-        tuple
-            (structure, interior, openings)
+    def validate_for_type(
+        self,
+        ctx: Any,
+        *,
+        structure: Any,
+        frameplan: dict[str, Any],
+    ):
+        return validate_for_type(
+            ctx,
+            structure=structure,
+            frameplan=frameplan,
+        )
 
-        Contract
-        --------
-        - structure: core model object (units: meters)
-        - interior: interior planning result
-        - openings: normalized opening definitions
-
-        This function delegates to planner.orchestrate_house().
-        """
-        return orchestrate_house(ctx)
-
-
-# ---------------------------------------------------------
-# Registration
-# ---------------------------------------------------------
 
 _provider = HallenhausProvider()
 
+# Legacy registry hook (kept for compatibility during stabilization)
 register_house_type(_provider, origin=__name__)
+
+# New plugin registries
+register_type(_provider.type_id, _provider)
+register_archetype(
+    _provider.type_id,
+    type_provider=_provider.type_id,
+    domain="fachwerk",
+)

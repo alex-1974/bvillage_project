@@ -105,18 +105,30 @@ def _clamp01(x: float) -> float:
 
 def _baseline_fachwerk() -> tuple[FachwerkPolicySpec, TraceLayer]:
     # Baseline is allowed to use PolicySpec defaults (NOT renderer defaults).
-    fw = FachwerkPolicySpec(binder_max=1.60)
+    fw = FachwerkPolicySpec(
+        binder_max=1.60,
+        bay_width=3.645,
+        building_width=7.2,
+        plate_height=2.6,
+        bay_count=5,
+        gable_mode="end_frame",
+    )
     return fw, _trace_layer(
         "BaselinePolicy",
         [
+            ("fachwerk.bay_count", fw.bay_count),
+            ("fachwerk.bay_width", fw.bay_width),
             ("fachwerk.binder_max", fw.binder_max),
+            ("fachwerk.building_width", fw.building_width),
             ("fachwerk.default_jamb_thickness", fw.default_jamb_thickness),
+            ("fachwerk.gable_mode", fw.gable_mode),
+            ("fachwerk.plate_height", fw.plate_height),
         ],
     )
 
 
 def _epoch_layer(epoch: str, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    # Minimal MVP: epoch does not alter FachwerkPolicySpec fields yet (only 2 fields exist).
+    # Minimal MVP: epoch does not alter FachwerkPolicySpec fields yet (only a few fields exist).
     # We still trace it to keep the contract stable and extensible.
     return fw, _trace_layer(
         f"EpochPolicy:{epoch}",
@@ -137,11 +149,22 @@ def _settlement_layer(settlement: str, fw: FachwerkPolicySpec) -> tuple[Fachwerk
 
 
 def _wealth_layer(wealth01: float, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    # Minimal MVP: wealth does not alter spec yet (kept for future).
-    return fw, _trace_layer(
+    # Minimal MVP: wealth does not alter most spec fields yet.
+    # Only bay_count is lightly modulated to enable larger houses for higher-wealth cases.
+    bay_count = fw.bay_count
+    if wealth01 >= 0.80:
+        bay_count = 7
+    elif wealth01 >= 0.60:
+        bay_count = 6
+    elif wealth01 <= 0.20:
+        bay_count = 4
+
+    fw_out = replace(fw, bay_count=int(bay_count))
+    return fw_out, _trace_layer(
         f"WealthPolicy:{wealth01:.3f}",
         [
             ("ctx.wealth", wealth01),
+            ("fachwerk.bay_count", fw_out.bay_count),
         ],
     )
 
@@ -179,7 +202,13 @@ def _type_layer(
         # jitter is expressed via soft ideal range below; keep single source of truth here
         jitter = 0.10
 
-        fw_out = replace(fw, binder_max=float(binder_max))
+        fw_out = replace(
+            fw,
+            binder_max=float(binder_max),
+            target_gefach_width=float(target_gefach_width),
+            target_gefach_jitter=float(jitter),
+            gable_mode="end_frame",
+        )
 
         constraints["brustriegel_z"] = ConstraintSpec(
             hard=None,
@@ -209,7 +238,12 @@ def _type_layer(
                 ("ctx.epoch", epoch),
                 ("ctx.settlement_type", settlement),
                 ("ctx.wealth", wealth01),
+                ("fachwerk.bay_count", fw_out.bay_count),
+                ("fachwerk.bay_width", fw_out.bay_width),
                 ("fachwerk.binder_max", fw_out.binder_max),
+                ("fachwerk.building_width", fw_out.building_width),
+                ("fachwerk.gable_mode", fw_out.gable_mode),
+                ("fachwerk.plate_height", fw_out.plate_height),
                 ("constraints.brustriegel_z", "ConstraintSpec"),
                 ("constraints.gefach_width_target", "ConstraintSpec"),
                 ("gefach.target_width", float(target_gefach_width)),
@@ -227,7 +261,12 @@ def _type_layer(
             ("ctx.epoch", epoch),
             ("ctx.settlement_type", settlement),
             ("ctx.wealth", wealth01),
+            ("fachwerk.bay_count", fw_out.bay_count),
+            ("fachwerk.bay_width", fw_out.bay_width),
             ("fachwerk.binder_max", fw_out.binder_max),
+            ("fachwerk.building_width", fw_out.building_width),
+            ("fachwerk.gable_mode", fw_out.gable_mode),
+            ("fachwerk.plate_height", fw_out.plate_height),
         ],
     )
     return fw_out, constraints, layer

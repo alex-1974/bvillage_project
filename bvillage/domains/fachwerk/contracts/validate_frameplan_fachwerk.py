@@ -1,19 +1,23 @@
-# bvillage/domains/fachwerk/core/validate_frameplan_fachwerk.py
-
+# bvillage/domains/fachwerk/contracts/validate_frameplan_fachwerk.py
 from __future__ import annotations
 
 from typing import Any, Iterable, Tuple
 
 from bvillage.core.errors import SchemaError
+from bvillage.domains.fachwerk.contracts.schema_frameplan_fachwerk import (
+    FramePlanFachwerk,
+    SCHEMA_VERSION_FACHWERK,
+)
 from bvillage.domains.fachwerk.contracts.schema_member_tids_fachwerk import (
     ALLOWED_BRACE_TIDS,
     ALLOWED_POST_TIDS,
     ALLOWED_RAIL_TIDS,
 )
-from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frameplan_langhaus import (
-    FramePlanLanghaus,
-    SCHEMA_VERSION_LANGHAUS,
-)
+
+__all__ = [
+    "validate_frameplan_fachwerk_schema",
+    "validate_frameplan_fachwerk_domain",
+]
 
 
 def _require_keys(obj: dict[str, Any], keys: Iterable[str], ctx: str) -> None:
@@ -52,7 +56,7 @@ def _validate_member(member: dict[str, Any], allowed_tids: Tuple[str, ...], ctx:
         _require_positive(prof["d"], f"{ctx}.profile.d")
 
 
-def validate_frameplan_fachwerk_schema(frameplan: FramePlanLanghaus) -> None:
+def validate_frameplan_fachwerk_schema(frameplan: FramePlanFachwerk) -> None:
     if not isinstance(frameplan, dict):
         raise SchemaError("FramePlan must be a dict")
 
@@ -63,9 +67,10 @@ def validate_frameplan_fachwerk_schema(frameplan: FramePlanLanghaus) -> None:
     )
 
     schema = int(frameplan["schema_version"])
-    if schema != SCHEMA_VERSION_LANGHAUS:
+    if schema != SCHEMA_VERSION_FACHWERK:
         raise SchemaError(
-            f"Unsupported FramePlan schema_version={schema} (expected {SCHEMA_VERSION_LANGHAUS})"
+            f"Unsupported Fachwerk FramePlan schema_version={schema} "
+            f"(expected {SCHEMA_VERSION_FACHWERK})"
         )
 
     cs = frameplan["coordinate_system"]
@@ -96,6 +101,9 @@ def validate_frameplan_fachwerk_schema(frameplan: FramePlanLanghaus) -> None:
     if float(basis["z_plate"]) <= float(basis["z0"]):
         raise SchemaError("basis.z_plate must be above z0")
 
+    frame_layout = frameplan["frame_layout"]
+    _require_keys(frame_layout, ("x_frames", "y_rows", "frame_roles"), "frame_layout")
+
     members = frameplan["members"]
     _require_keys(members, ("posts", "rails", "braces", "infills"), "members")
 
@@ -104,7 +112,7 @@ def validate_frameplan_fachwerk_schema(frameplan: FramePlanLanghaus) -> None:
         raise SchemaError("openings must be list or None")
 
 
-def validate_frameplan_fachwerk_domain(frameplan: FramePlanLanghaus) -> None:
+def validate_frameplan_fachwerk_domain(frameplan: FramePlanFachwerk) -> None:
     members = frameplan["members"]
 
     posts = members["posts"]

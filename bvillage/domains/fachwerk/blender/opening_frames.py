@@ -1,4 +1,5 @@
 # bvillage/domains/fachwerk/blender/opening_frames.py
+from __future__ import annotations
 
 import logging
 from typing import Any
@@ -6,27 +7,23 @@ from typing import Any
 import bpy
 from mathutils import Vector
 
-from .timber import make_beam_rect
-from .opening_profiles import OpeningProfilePolicy
-from .materials_assign import assign_member_material
 from bvillage.core.errors import SchemaError
-
 from bvillage.core.ontology.structural_terms import (
-    POST_JAMB,
-    BEAM_LINTEL,
+    POST_OPENING_JAMB,
+    BEAM_OPENING_LINTEL,
     BEAM_WINDOW_SILL,
 )
 
-__all__ = ['build_opening_frames']
+from .materials_assign import assign_member_material
+from .opening_profiles import OpeningProfilePolicy
+from .timber import make_beam_rect
+
+__all__ = ["build_opening_frames"]
 
 LOG = logging.getLogger(__name__)
 
 
-# ------------------------------------------------------------
-# Materials (local, minimal)
-# ------------------------------------------------------------
-
-def _assign_member_material(
+def _assign_member_material_local(
     *,
     collection: bpy.types.Collection | None,
     obj_name: str,
@@ -36,6 +33,7 @@ def _assign_member_material(
 ) -> None:
     if ctx_view is None or collection is None:
         return
+
     obj = collection.objects.get(obj_name)
     if obj is None:
         return
@@ -56,183 +54,129 @@ def _assign_member_material(
         LOG.exception("OpeningFrames: material assignment failed for %s member=%s", obj_name, mm)
 
 
-# ------------------------------------------------------------
-# Geometry mapping helpers
-# ------------------------------------------------------------
-
-def _house_basis(house: dict[str, Any]) -> tuple[float, float, float, float]:
-    axes_u = house["axes_u"]
-    x_min = float(min(axes_u))
-    x_max = float(max(axes_u))
-    center_x = 0.5 * (x_min + x_max)
-    halfW = 0.5 * float(house["W"])
-    return x_min, x_max, center_x, halfW
+def _vec3(value: Any, *, ctx: str) -> Vector:
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        raise SchemaError(f"{ctx}: expected vec3")
+    try:
+        return Vector((float(value[0]), float(value[1]), float(value[2])))
+    except Exception as exc:
+        raise SchemaError(f"{ctx}: invalid vec3 values") from exc
 
 
-def _map_post(m: dict[str, Any], *, house: dict[str, Any]) -> tuple[Vector, Vector]:
-    wall = str(m.get("wall"))
-    u = float(m["u"])
-    z0 = float(m["z0"])
-    z1 = float(m["z1"])
-
-    x_min, x_max, center_x, halfW = _house_basis(house)
-
-    if wall == "N":
-        x = center_x + u
-        y = -halfW
-    elif wall == "S":
-        x = center_x + u
-        y = halfW
-    elif wall == "E":
-        x = x_max
-        y = u
-    elif wall == "W":
-        x = x_min
-        y = u
-    else:
-        raise SchemaError(f"opening_frames: invalid wall '{wall}' for post mapping")
-
-    return Vector((x, y, z0)), Vector((x, y, z1))
-
-
-def _map_rail(m: dict[str, Any], *, house: dict[str, Any]) -> tuple[Vector, Vector]:
-    wall = str(m.get("wall"))
-    u0 = float(m["u0"])
-    u1 = float(m["u1"])
-    z = float(m["z"])
-
-    x_min, x_max, center_x, halfW = _house_basis(house)
-
-    if wall == "N":
-        return Vector((center_x + u0, -halfW, z)), Vector((center_x + u1, -halfW, z))
-    if wall == "S":
-        return Vector((center_x + u0, halfW, z)), Vector((center_x + u1, halfW, z))
-    if wall == "E":
-        return Vector((x_max, u0, z)), Vector((x_max, u1, z))
-    if wall == "W":
-        return Vector((x_min, u0, z)), Vector((x_min, u1, z))
-    raise SchemaError(f"opening_frames: invalid wall '{wall}' for rail mapping")
-
-
-def _suffix_for_opening_member(m: dict[str, Any]) -> str:
-    tid = m.get("tid")
-    if tid == POST_JAMB:
-        side = m.get("side")
+def _suffix_for_opening_member(member: dict[str, Any]) -> str:
+    tid = member.get("tid")
+    if tid == POST_OPENING_JAMB:
+        side = member.get("side")
         return f"JAMB_{side}" if side in ("L", "R") else "JAMB"
-    if tid == BEAM_LINTEL:
+    if tid == BEAM_OPENING_LINTEL:
         return "LINTEL"
     if tid == BEAM_WINDOW_SILL:
         return "SILL"
     return "MEMBER"
 
 
-# ------------------------------------------------------------
-# Builder
-# ------------------------------------------------------------
-
 def build_opening_frames(
     *,
     fp: dict[str, Any],
-    house: dict[str, Any],
     collection: bpy.types.Collection | None,
     policy: OpeningProfilePolicy | None = None,
     ctx_view: Any | None = None,
     debug: bool = False,
-):
+) -> None:
     """
-    Build structural opening frames (posts jambs + rails lintel/sill).
+    Build structural opening frames strictly from members-first FramePlan.
 
-    Members-first:
-      - If fp["members"] contains posts/rails: build ONLY from members and return.
-
-    Legacy fallback:
-      - Build from fp["openings"] (old schema).
+    Contract
+    --------
+    - posts with tid == POST_OPENING_JAMB are rendered here
+    - rails with tid in {BEAM_OPENING_LINTEL, BEAM_WINDOW_SILL} are rendered here
+    - p0/p1 must already be world-space coordinates
+    - no house dependency
+    - no legacy fallback to fp["openings"]
     """
+    _ = debug
+
     if policy is None:
         policy = OpeningProfilePolicy()
 
-    # ==========================================================
-    # MEMBERS-FIRST
-    # ==========================================================
     members = fp.get("members")
-    if isinstance(members, dict):
-        posts = members.get("posts") or []
-        rails = members.get("rails") or []
+    if not isinstance(members, dict):
+        raise SchemaError("opening_frames: frameplan missing members dict")
 
-        if isinstance(posts, list) and isinstance(rails, list) and (len(posts) + len(rails) > 0):
-            # Posts: opening jambs only
-            for m in posts:
-                tid = m.get("tid")
-                if not isinstance(tid, str) or not tid:
-                    raise SchemaError("opening_frames: member missing required string field 'tid'")
-                if tid != POST_JAMB:
-                    continue
+    posts = members.get("posts") or []
+    rails = members.get("rails") or []
 
-                side = m.get("side")
-                if side not in ("L", "R"):
-                    raise SchemaError("opening_frames: opening-jamb missing required field side in {'L','R'}")
+    if not isinstance(posts, list):
+        raise SchemaError("opening_frames: members.posts must be a list")
+    if not isinstance(rails, list):
+        raise SchemaError("opening_frames: members.rails must be a list")
 
-                opening = m.get("opening")
-                if not isinstance(opening, str) or not opening:
-                    raise SchemaError("opening_frames: opening-jamb missing required string field 'opening'")
+    # Posts: opening jambs only
+    for i, member in enumerate(posts):
+        tid = member.get("tid")
+        if not isinstance(tid, str) or not tid:
+            raise SchemaError("opening_frames: post member missing required string field 'tid'")
+        if tid != POST_OPENING_JAMB:
+            continue
 
-                p0, p1 = _map_post(m, house=house)
+        p0 = _vec3(member.get("p0"), ctx=f"opening_frames.posts[{i}].p0")
+        p1 = _vec3(member.get("p1"), ctx=f"opening_frames.posts[{i}].p1")
 
-                prof = m.get("profile") or {}
-                w = float(prof.get("w", policy.jamb_post[0]))
-                d = float(prof.get("d", policy.jamb_post[1]))
+        prof = member.get("profile") or {}
+        w = float(prof.get("w", policy.jamb_post[0]))
+        d = float(prof.get("d", policy.jamb_post[1]))
 
-                nm = f"{opening}_{_suffix_for_opening_member(m)}"
-                make_beam_rect(nm, p0, p1, width=w, depth=d, collection=collection)
-                _assign_member_material(
-                    collection=collection,
-                    obj_name=nm,
-                    member=m,
-                    ctx_view=ctx_view,
-                    default_material_id="timber.oak",
-                )
+        opening = member.get("opening")
+        suffix = _suffix_for_opening_member(member)
+        if isinstance(opening, str) and opening:
+            name = f"{opening}_{suffix}"
+        else:
+            mid = member.get("id") if isinstance(member.get("id"), str) and member.get("id") else f"opening_post_{i:04d}"
+            name = f"{mid}_{suffix}"
 
-            # Rails: lintel/sill only
-            for m in rails:
-                tid = m.get("tid")
-                if not isinstance(tid, str) or not tid:
-                    raise SchemaError("opening_frames: member missing required string field 'tid'")
-                if tid not in (BEAM_LINTEL, BEAM_WINDOW_SILL):
-                    continue
+        make_beam_rect(name, p0, p1, width=w, depth=d, collection=collection)
+        _assign_member_material_local(
+            collection=collection,
+            obj_name=name,
+            member=member,
+            ctx_view=ctx_view,
+            default_material_id="timber.oak",
+        )
 
-                opening = m.get("opening")
-                if not isinstance(opening, str) or not opening:
-                    raise SchemaError("opening_frames: opening-rail missing required string field 'opening'")
+    # Rails: lintel / sill only
+    for i, member in enumerate(rails):
+        tid = member.get("tid")
+        if not isinstance(tid, str) or not tid:
+            raise SchemaError("opening_frames: rail member missing required string field 'tid'")
+        if tid not in (BEAM_OPENING_LINTEL, BEAM_WINDOW_SILL):
+            continue
 
-                p0, p1 = _map_rail(m, house=house)
+        p0 = _vec3(member.get("p0"), ctx=f"opening_frames.rails[{i}].p0")
+        p1 = _vec3(member.get("p1"), ctx=f"opening_frames.rails[{i}].p1")
 
-                prof = m.get("profile") or {}
-                w = float(prof.get("w", policy.window_lintel[0]))
-                d = float(prof.get("d", policy.window_lintel[1]))
+        prof = member.get("profile") or {}
+        if tid == BEAM_WINDOW_SILL:
+            w = float(prof.get("w", policy.window_sill[0]))
+            d = float(prof.get("d", policy.window_sill[1]))
+        else:
+            w = float(prof.get("w", policy.window_lintel[0]))
+            d = float(prof.get("d", policy.window_lintel[1]))
 
-                nm = f"{opening}_{_suffix_for_opening_member(m)}"
-                make_beam_rect(nm, p0, p1, width=w, depth=d, collection=collection)
-                _assign_member_material(
-                    collection=collection,
-                    obj_name=nm,
-                    member=m,
-                    ctx_view=ctx_view,
-                    default_material_id="timber.oak",
-                )
+        opening = member.get("opening")
+        suffix = _suffix_for_opening_member(member)
+        if isinstance(opening, str) and opening:
+            name = f"{opening}_{suffix}"
+        else:
+            mid = member.get("id") if isinstance(member.get("id"), str) and member.get("id") else f"opening_rail_{i:04d}"
+            name = f"{mid}_{suffix}"
 
-            LOG.info("OpeningFrames: done | built_from=members")
-            return
+        make_beam_rect(name, p0, p1, width=w, depth=d, collection=collection)
+        _assign_member_material_local(
+            collection=collection,
+            obj_name=name,
+            member=member,
+            ctx_view=ctx_view,
+            default_material_id="timber.oak",
+        )
 
-    # ==========================================================
-    # LEGACY FALLBACK (unchanged behavior)
-    # ==========================================================
-    openings = fp.get("openings") or []
-    if not isinstance(openings, list) or len(openings) <= 0:
-        LOG.info("OpeningFrames: no openings (legacy) -> nothing to build")
-        return
-
-    LOG.warning("OpeningFrames: LEGACY fallback path in use (no members.*).")
-
-    # NOTE: keep your existing legacy implementation below if you still need it.
-    # If you want, paste your legacy block here unchanged.
-    return
+    LOG.info("OpeningFrames: done | built_from=members")
