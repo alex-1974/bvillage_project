@@ -47,7 +47,7 @@ IDs are stable once assigned. They do not change when research refines the under
 
 ### type_family
 
-Each archetype belongs to a `type_family` — the plugin folder under `bvillage/types/` that contains its Topology Planner. The `type_family` determines which `ITopologyProducer` implementation resolves the archetype. Multiple archetype IDs may share one `type_family` if their topological planning logic is identical or differs only in policy parameters.
+Each archetype belongs to a `type_family` — the plugin folder under `bvillage/types/<domain>/` that contains its Topology Planner. The `type_family` determines which `ITopologyProducer` implementation resolves the archetype. Multiple archetype IDs may share one `type_family` if their topological planning logic is identical or differs only in policy parameters.
 
 The `type_family` is a plugin binding, not a scientific classification. It is assigned when the archetype is implemented, not when it is catalogued. Provisional entries may carry `type_family: TBD`.
 
@@ -67,14 +67,14 @@ Buildings organized along a single longitudinal axis, integrating living, agricu
 
 | ID | Name | Structural signature | Region | Period | `construction_grammar` | `type_family` |
 |---|---|---|---|---|---|---|
-| FW-LH-ND | Niederdeutsches Hallenhaus | Longitudinal threshing floor (Längsdiele), three-aisled | Northern Germany | 13–19c | `BOX_FRAME` | `fw_longhouse` |
-| FW-LH-2S | Hallenhaus Zweiständer | Two interior post rows | Northern Germany | 15–18c | `BOX_FRAME` | `fw_longhouse` |
-| FW-LH-3S | Hallenhaus Dreiständer | Asymmetric post rows | Northern Germany | 16–18c | `BOX_FRAME` | `fw_longhouse` |
-| FW-LH-4S | Hallenhaus Vierständer | Four post rows | Northern Germany | 16–19c | `BOX_FRAME` | `fw_longhouse` |
-| FW-GULF | Gulfhaus | Large central volume (Gulf), posts at periphery | North Sea coast | 16–19c | `BOX_FRAME` | `fw_longhouse` |
-| FW-HAUB | Haubarg | Central post structure, large collective barn | North Frisia | 17–19c | `BOX_FRAME` | `fw_longhouse` |
-| FW-MITT | Mittertennhaus | Central threshing floor (Tenn) | Alpine region | 15–19c | `BOX_FRAME` | `fw_longhouse` |
-| FW-LH-EN | English Longhouse *(prov.)* | Living and byre under one roof, cross-passage entry | England, Wales | 12–16c | `BOX_FRAME` | `fw_longhouse` |
+| FW-LH-ND | Niederdeutsches Hallenhaus | Longitudinal threshing floor (Längsdiele), three-aisled | Northern Germany | 13–19c | `BOX_FRAME` | `longhouse` |
+| FW-LH-2S | Hallenhaus Zweiständer | Two interior post rows | Northern Germany | 15–18c | `BOX_FRAME` | `longhouse` |
+| FW-LH-3S | Hallenhaus Dreiständer | Asymmetric post rows | Northern Germany | 16–18c | `BOX_FRAME` | `longhouse` |
+| FW-LH-4S | Hallenhaus Vierständer | Four post rows | Northern Germany | 16–19c | `BOX_FRAME` | `longhouse` |
+| FW-GULF | Gulfhaus | Large central volume (Gulf), posts at periphery | North Sea coast | 16–19c | `BOX_FRAME` | `longhouse` |
+| FW-HAUB | Haubarg | Central post structure, large collective barn | North Frisia | 17–19c | `BOX_FRAME` | `longhouse` |
+| FW-MITT | Mittertennhaus | Central threshing floor (Tenn) | Alpine region | 15–19c | `BOX_FRAME` | `longhouse` |
+| FW-LH-EN | English Longhouse *(prov.)* | Living and byre under one roof, cross-passage entry | England, Wales | 12–16c | `BOX_FRAME` | `longhouse` |
 
 ### 3.2 Ernhaus family
 
@@ -82,8 +82,8 @@ Buildings with a transverse entry hall (Ern) separating living and agricultural 
 
 | ID | Name | Structural signature | Region | Period | `construction_grammar` | `type_family` |
 |---|---|---|---|---|---|---|
-| FW-ER-MD | Mitteldeutsches Ernhaus | Transverse hall (Ern) | Central / Southern Germany | 14–18c | `STOREY_FRAME` | `fw_crosshall` |
-| FW-HARZ | Harzer Haus | Ernhaus variant, mountain adaptation | Harz region | 16–19c | `STOREY_FRAME` | `fw_crosshall` |
+| FW-ER-MD | Mitteldeutsches Ernhaus | Transverse hall (Ern) | Central / Southern Germany | 14–18c | `STOREY_FRAME` | `ern_house` |
+| FW-HARZ | Harzer Haus | Ernhaus variant, mountain adaptation | Harz region | 16–19c | `STOREY_FRAME` | `ern_house` |
 
 ### 3.3 Hybrid structural family
 
@@ -99,11 +99,11 @@ Buildings designed for narrow urban parcels. Structural logic runs differently f
 
 | ID | Name | Structural signature | Region | Period | `construction_grammar` | `type_family` |
 |---|---|---|---|---|---|---|
-| FW-STG-GIE | Giebelständiges Stadthaus | Gable end to street, narrow parcel, deep plan | Towns | 14–18c | `STOREY_FRAME` | `fw_townhouse` |
-| FW-STG-TRF | Traufenständiges Stadthaus | Eaves side to street, broader frontage | Towns | 15–18c | `STOREY_FRAME` | `fw_townhouse` |
-| FW-ACK | Ackerbürgerhaus | Urban plot with agricultural annex | Small towns | 15–19c | `STOREY_FRAME` | `fw_townhouse` |
-| FW-SPC | Speicherhaus | Storage building, minimal living program | Towns | 15–18c | `STOREY_FRAME` | `fw_townhouse` |
-| FW-MER | Merchant House | Projecting upper storeys, commercial ground floor | England, Low Countries | 14–17c | `STOREY_FRAME` | `fw_townhouse` |
+| FW-STG-GIE | Giebelständiges Stadthaus | Gable end to street, narrow parcel, deep plan | Towns | 14–18c | `STOREY_FRAME` | `townhouse` |
+| FW-STG-TRF | Traufenständiges Stadthaus | Eaves side to street, broader frontage | Towns | 15–18c | `STOREY_FRAME` | `townhouse` |
+| FW-ACK | Ackerbürgerhaus | Urban plot with agricultural annex | Small towns | 15–19c | `STOREY_FRAME` | `townhouse` |
+| FW-SPC | Speicherhaus | Storage building, minimal living program | Towns | 15–18c | `STOREY_FRAME` | `townhouse` |
+| FW-MER | Merchant House | Projecting upper storeys, commercial ground floor | England, Low Countries | 14–17c | `STOREY_FRAME` | `townhouse` |
 
 ### 3.5 Compound types (Hofanlage)
 
@@ -111,7 +111,7 @@ Multi-wing arrangements enclosing a yard. Spatial logic is defined by the relati
 
 | ID | Name | Structural signature | Region | Period | `construction_grammar` | `type_family` |
 |---|---|---|---|---|---|---|
-| FW-HOF | Fachwerk-Hofanlage | Multi-wing yard enclosure | Central / Southern Germany | 16–19c | `STOREY_FRAME` | `fw_courtyard` |
+| FW-HOF | Fachwerk-Hofanlage | Multi-wing yard enclosure | Central / Southern Germany | 16–19c | `STOREY_FRAME` | `courtyard` |
 
 ### 3.6 English hall types
 
@@ -119,9 +119,9 @@ Open-hall buildings with a central, roof-open living space. Structurally distinc
 
 | ID | Name | Structural signature | Region | Period | `construction_grammar` | `type_family` |
 |---|---|---|---|---|---|---|
-| FW-WLD | Wealden House | Open hall flanked by two-storey jetted bays under continuous roof; flying wall plate | South-east England | 14–16c | `BOX_FRAME` | `fw_longhouse` |
-| FW-OHALL | Open Hall House | Single-storey central open hall, unjetted | England | 13–16c | `BOX_FRAME` | `fw_longhouse` |
-| FW-AIS | Aisled Hall House | Internal arcade rows carry roof; nave + aisles | England, Low Countries | 12–16c | `AISLED_FRAME` | `fw_aisled` |
+| FW-WLD | Wealden House | Open hall flanked by two-storey jetted bays under continuous roof; flying wall plate | South-east England | 14–16c | `BOX_FRAME` | `longhouse` |
+| FW-OHALL | Open Hall House | Single-storey central open hall, unjetted | England | 13–16c | `BOX_FRAME` | `longhouse` |
+| FW-AIS | Aisled Hall House | Internal arcade rows carry roof; nave + aisles | England, Low Countries | 12–16c | `AISLED_FRAME` | `aisled` |
 
 ### 3.7 Cruck family
 
@@ -129,9 +129,9 @@ Buildings whose primary structure is formed by curved or straight cruck blades r
 
 | ID | Name | Structural signature | Region | Period | `construction_grammar` | `type_family` |
 |---|---|---|---|---|---|---|
-| FW-CRK | Cruck House (Full Cruck) | Blades from near ground to ridge | England, Wales | 12–17c | `CRUCK_FRAME` | `fw_cruck` |
-| FW-CRJ | Jointed Cruck House | Blades jointed at wall-head, not continuous | West England | 13–16c | `CRUCK_FRAME` | `fw_cruck` |
-| FW-CRR | Raised Cruck House | Blades begin above wall-head; stone wall base | England | 14–17c | `CRUCK_FRAME` | `fw_cruck` |
+| FW-CRK | Cruck House (Full Cruck) | Blades from near ground to ridge | England, Wales | 12–17c | `CRUCK_FRAME` | `cruck` |
+| FW-CRJ | Jointed Cruck House | Blades jointed at wall-head, not continuous | West England | 13–16c | `CRUCK_FRAME` | `cruck` |
+| FW-CRR | Raised Cruck House | Blades begin above wall-head; stone wall base | England | 14–17c | `CRUCK_FRAME` | `cruck` |
 
 ### 3.8 Wall-grid types (pan de bois / Wandraster) *(Phase 2)*
 
@@ -156,13 +156,13 @@ Entries with insufficient primary source coverage. May be revised, merged into e
 
 As research expands beyond Fachwerk, new domain sections are added here following the same structure. Domain prefix assignments:
 
-| Prefix | Domain |
-|--------|--------|
-| FW | Fachwerk / timber frame |
-| MB | Mauerwerk / load-bearing masonry |
-| BK | Blockbau / log construction |
-| EA | Earth architecture / rammed earth, adobe |
-| PG | Post-in-ground / early post-frame |
+| Prefix | Domain | Directory |
+|--------|--------|-----------|
+| FW | Fachwerk / timber frame | `timber_frame` |
+| MB | Mauerwerk / load-bearing masonry | `masonry` |
+| BK | Blockbau / log building | `log_building` |
+| EA | Earth architecture / rammed earth, adobe | `earth_construction` |
+| PG | Post-in-ground / early post-frame | `post_in_ground` |
 
 New domain prefixes are assigned when a domain is formally added to the system.
 
@@ -178,7 +178,7 @@ New domain prefixes are assigned when a domain is formally added to the system.
 
 **`construction_grammar`** is the generative logic dispatched by the Frame Producer. It is a code binding, not a scientific classification. See §2 and `ARCH_BAUGRAMMATIKEN_WISSENSCHAFT.md §4` for definitions.
 
-**`type_family`** is the plugin folder under `bvillage/types/` that provides the Topology Planner for this archetype. `TBD` indicates the archetype is catalogued but not yet implemented.
+**`type_family`** is the plugin folder under `bvillage/types/<domain>/` that provides the Topology Planner for this archetype. `TBD` indicates the archetype is catalogued but not yet implemented.
 
 ---
 

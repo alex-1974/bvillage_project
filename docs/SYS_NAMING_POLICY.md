@@ -31,7 +31,7 @@ Names must remain understandable after long development pauses and across AI-ass
 |---|---|---|
 | `core/` | `bvillage/core/` | Engine-agnostic interfaces, data models, registry, utilities. No Blender imports. No architectural semantics. |
 | `foreman/` | `bvillage/foreman/` | Coordination, plugin dispatch, conflict resolution. No structural generation. No Blender imports. |
-| `types/` | `bvillage/types/<family>/` | Topology planning for a specific archetype family. One family per construction grammar. No structural members. No Blender imports. |
+| `types/` | `bvillage/types/<domain>/<family>/` | Topology planning for a specific archetype family. One family per construction grammar. No structural members. No Blender imports. |
 | `domain-core/` | `bvillage/domains/<domain>/core/` | Constructive derivation of structural artifacts. No Blender imports. |
 | `domain-blender/` | `bvillage/domains/<domain>/blender/` | Blender geometry emission only. No structural inference. |
 | `policies/` | `bvillage/policies/` | Domain-agnostic policy definitions. No generation code. |
@@ -88,13 +88,13 @@ The mapping between pipeline roles and file roles:
 |---|---|---|
 | Commissioner | — | implemented in `SettlementBuilder` caller code |
 | Foreman | `plan_` | `foreman/plan_dispatch.py` |
-| Topology Planner | `plan_` | `types/fw_longhouse/plan_topology.py` |
-| Frame Producer | `derive_` | `domains/fachwerk/core/derive_frameplan_boxframe.py` |
-| Roof Producer | `derive_` | `domains/fachwerk/core/derive_roofplan.py` |
-| Joiner | `plan_` | `domains/fachwerk/core/plan_interior.py` |
+| Topology Planner | `plan_` | `types/timber_frame/longhouse/plan_topology.py` |
+| Frame Producer | `derive_` | `domains/timber_frame/core/derive_frameplan_boxframe.py` |
+| Roof Producer | `derive_` | `domains/timber_frame/core/derive_roofplan.py` |
+| Joiner | `plan_` | `domains/timber_frame/core/plan_interior.py` |
 | Inspector | `validate_` | `core/validate_physics.py` |
 | Appraiser | `audit_` | `core/audit_candidates.py` |
-| Renderer | `build_` | `domains/fachwerk/blender/build_frameplan.py` |
+| Renderer | `build_` | `domains/timber_frame/blender/build_frameplan.py` |
 
 ---
 
@@ -116,18 +116,18 @@ Current timber frame implementations:
 
 Pattern for Topology Planners: `<Family>TopologyPlanner`
 
-Current timber frame families:
+Current timber frame families (`bvillage/types/timber_frame/<family>/`):
 
-| Family | Class name |
+| Family directory | Class name |
 |---|---|
-| `fw_longhouse` | `LonghouseTopologyPlanner` |
-| `fw_townhouse` | `TownhouseTopologyPlanner` |
-| `fw_crosshall` | `CrosshallTopologyPlanner` |
-| `fw_courtyard` | `CourtyardTopologyPlanner` |
-| `fw_cruck` | `CruckTopologyPlanner` |
-| `fw_aisled` | `AisledTopologyPlanner` |
+| `longhouse` | `LonghouseTopologyPlanner` |
+| `townhouse` | `TownhouseTopologyPlanner` |
+| `ern_house` | `ErnHouseTopologyPlanner` |
+| `courtyard` | `CourtyardTopologyPlanner` |
+| `cruck` | `CruckTopologyPlanner` |
+| `aisled` | `AisledTopologyPlanner` |
 
-These names are domain-internal. Core knows only the interfaces `IFrameProducer` and `ITopologyPlanner`. A developer outside the fachwerk domain does not need to know these names.
+These names are domain-internal. Core knows only the interfaces `IFrameProducer` and `ITopologyPlanner`. A developer outside the `timber_frame` domain does not need to know these names.
 
 ---
 
@@ -154,7 +154,7 @@ Public API per module: maximum three functions. All other functions are private 
 Every `.py` file must start with its canonical project path as the first line:
 
 ```python
-# bvillage/domains/fachwerk/core/derive_frameplan_boxframe.py
+# bvillage/domains/timber_frame/core/derive_frameplan_boxframe.py
 ```
 
 No docstring may precede this line. During refactors, this line must be updated to match the new location. See SYS_CONTRACT.md §11.
