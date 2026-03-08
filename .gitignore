@@ -9,6 +9,8 @@ bvillage_project.egg-info/
 
 tmp/
 tmp*/
+scratch/
+generated/
 
 research/tools/
 research/archive/
