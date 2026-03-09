@@ -1338,6 +1338,54 @@ Research findings may promote items from Vision into v0.4.x or later.
 
 ---
 
+## SEM-004 — Archetype Display Name Catalog (i18n)
+
+Archetype IDs (`FW-LH-ND`, `FW-STG-GIE`, ...) are stable machine-readable
+identifiers for plugin dispatch. They are not user-facing.
+
+A separate display name layer maps each `archetype_id` to human-readable
+names in multiple languages, independently of the registry and dispatch logic.
+
+### Design
+
+Locale files under `core/locales/`:
+
+```
+core/locales/
+  de.yaml    — required
+  en.yaml    — required
+  <xx>.yaml  — optional, community-contributed
+```
+
+Each file maps `archetype_id` to display name for that locale:
+
+```yaml
+# en.yaml
+FW-LH-ND: "North German Hall House"
+FW-STG-GIE: "Gable-Front Town House"
+
+# de.yaml
+FW-LH-ND: "Niederdeutsches Hallenhaus"
+FW-STG-GIE: "Giebelständiges Stadthaus"
+```
+
+Resolution: `get_display_name(archetype_id, locale="en") -> str`.
+Fallback chain: requested locale → `de` → raw `archetype_id`.
+
+### Source of truth
+
+`ARCH_TAXONOMY.md` is the canonical source. Locale files are the code copy.
+When a new archetype is added to `ARCH_TAXONOMY.md`, both `de.yaml` and
+`en.yaml` must be updated in the same commit.
+
+### Scope
+- No changes to registry, dispatch, or plugin binding
+- No impact on determinism
+- `de` and `en` are mandatory; all other locales are optional
+- Additive only
+
+---
+
 ## VAR-003 — Semantic Preference Layer (Fuzzy)
 
 Qualitative intent inputs ("large house", "steep roof", "very wide gates")
@@ -1508,8 +1556,8 @@ Canonical structure (for reference):
 bvillage/
 ├── core/           — interfaces, registry, Inspector
 ├── foreman/        — plan_context, plan_dispatch, plan_conflict
-├── types/          — Topology Planner families (fw_longhouse, fw_townhouse, ...)
-├── domains/        — Frame Producers, Roof Producers, domain translation
+├── types/          — Topology Planner families (timber_frame/longhouse, timber_frame/townhouse, ...)
+├── domains/        — Frame Producers, Roof Producers, domain translation (timber_frame/core, timber_frame/blender, ...)
 ├── interior/       — Joiner
 └── policies/       — domain-agnostic policy definitions
 ```
