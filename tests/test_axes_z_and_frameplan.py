@@ -13,9 +13,9 @@ Units: meters.
 
 from __future__ import annotations
 
-from bvillage.domains.fachwerk.core.axes_z import compute_z_axes
-from bvillage.domains.fachwerk.core.frameplan import build_frameplan, FramePolicy
-from bvillage.domains.fachwerk.core.openings_norm import normalize_openings_from_plan
+from bvillage.domains.timber_frame.core.axes_z import compute_z_axes
+from bvillage.domains.timber_frame.core.frameplan import build_frameplan, FramePolicy
+from bvillage.domains.timber_frame.core.openings_norm import normalize_openings_from_plan
 
 from conftest import make_structure, make_openings_plan, opening
 

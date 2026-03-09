@@ -1,7 +1,7 @@
 # bvillage/domains/fachwerk/core/openings_norm.py
 
 """
-bvillage.domains.fachwerk.core.openings_norm
+bvillage.domains.timber_frame.core.openings_norm
 ============================================
 
 Normalize house-type openings into a Fachwerk-engine friendly representation.

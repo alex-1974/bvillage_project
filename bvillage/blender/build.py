@@ -39,7 +39,7 @@ from bvillage.blender.utils import ensure_collection, clear_collection
 from bvillage.core.notes import get_domain_artifact
 
 # Domain builder: consumes explicit frameplan dict
-from bvillage.domains.fachwerk.blender.build_frame import build_fachwerk_frame_from_structure_notes
+from bvillage.domains.timber_frame.blender.build_frame import build_fachwerk_frame_from_structure_notes
 
 logger = logging.getLogger(__name__)
 

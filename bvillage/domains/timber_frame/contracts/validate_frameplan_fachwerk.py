@@ -4,11 +4,11 @@ from __future__ import annotations
 from typing import Any, Iterable, Tuple
 
 from bvillage.core.errors import SchemaError
-from bvillage.domains.fachwerk.contracts.schema_frameplan_fachwerk import (
+from bvillage.domains.timber_frame.contracts.schema_frameplan_fachwerk import (
     FramePlanFachwerk,
     SCHEMA_VERSION_FACHWERK,
 )
-from bvillage.domains.fachwerk.contracts.schema_member_tids_fachwerk import (
+from bvillage.domains.timber_frame.contracts.schema_member_tids_fachwerk import (
     ALLOWED_BRACE_TIDS,
     ALLOWED_POST_TIDS,
     ALLOWED_RAIL_TIDS,

@@ -7,7 +7,7 @@ from typing import Any, Optional
 import bpy
 
 from bvillage.core.materials.material_registry import resolve_for_builder
-from bvillage.domains.fachwerk.blender.materials_adapter import apply_material_to_object
+from bvillage.domains.timber_frame.blender.materials_adapter import apply_material_to_object
 
 
 def assign_member_material(

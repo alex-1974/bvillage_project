@@ -1,7 +1,7 @@
 # bvillage/domains/fachwerk/core/axes_z.py
 
 """
-bvillage.domains.fachwerk.core.axes_z
+bvillage.domains.timber_frame.core.axes_z
 ====================================
 
 Compute horizontal Z axes for Fachwerk framing.
@@ -19,7 +19,7 @@ from __future__ import annotations
 import bisect
 
 from bvillage.core.geom_eps import EPS_EQ, EPS_MERGE, clamp, sorted_unique
-from bvillage.domains.fachwerk.core.openings_norm import OpeningFinal
+from bvillage.domains.timber_frame.core.openings_norm import OpeningFinal
 
 __all__ = ["compute_z_axes"]
 

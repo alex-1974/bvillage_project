@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from bvillage.core.model import Context
 from bvillage.core.report import report_plans
-from bvillage.domains.fachwerk.core.frameplan import build_frameplan, FramePolicy, frameplan_report
+from bvillage.domains.timber_frame.core.frameplan import build_frameplan, FramePolicy, frameplan_report
 
 from conftest import make_structure, make_openings_plan, opening
 from bvillage.core.seed import Seed
@@ -72,7 +72,7 @@ def test_core_report_contains_sections_and_formats_dims_in_meters():
         region="north",
         settlement_type="village",
         wealth=0.6,
-        house_type="fachwerkhaus.hallenhaus",
+        archetype_id="FW-LH-ND",
     )
 
     structure = make_structure(L=10.0, W=4.0, z0=0.0, H_e=2.5)

@@ -57,7 +57,7 @@ CLEAR_PREVIOUS = True
 ARCHETYPE_ID = "FW-LH-ND"
 
 try:
-    from bvillage.foreman.plan_bootstrap import ensure_plugins_loaded
+    from bvillage.core.foreman.plan_bootstrap import ensure_plugins_loaded
     from bvillage.core.foreman import generate
     from bvillage.core.logging_conf import configure_logging
     from bvillage.core.report import report_plans

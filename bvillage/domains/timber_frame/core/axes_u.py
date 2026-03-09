@@ -1,7 +1,7 @@
 # bvillage/domains/fachwerk/core/axes_u.py
 
 """
-bvillage.domains.fachwerk.core.axes_u
+bvillage.domains.timber_frame.core.axes_u
 ====================================
 
 Compute *vertical stud axes along each wall* (u-axes in wall-local coordinates).
@@ -23,7 +23,7 @@ import bisect
 import math
 
 from bvillage.core.geom_eps import EPS_EQ, EPS_INSIDE, sorted_unique
-from bvillage.domains.fachwerk.core.openings_norm import OpeningFinal
+from bvillage.domains.timber_frame.core.openings_norm import OpeningFinal
 
 __all__ = [
     "interval_intersects",

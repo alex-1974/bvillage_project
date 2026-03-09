@@ -1,5 +1,4 @@
-# bvillage/domains/fachwerk/blender/materials_adapter.py
-
+# bvillage/domains/timber_frame/blender/materials_adapter.py
 from __future__ import annotations
 
 import hashlib
@@ -11,12 +10,9 @@ import bpy
 
 LOG = logging.getLogger(__name__)
 
-__all__ = [
-    "apply_material_to_object",
-]
+__all__ = ["apply_material_to_object"]
 
 
-# Cache: deterministic key -> bpy material
 _MATERIAL_CACHE: dict[str, bpy.types.Material] = {}
 
 
@@ -37,11 +33,9 @@ def _seed_fingerprint(ctx: Any) -> str:
     if seed is None and isinstance(ctx, dict):
         seed = ctx.get("seed", None)
 
-    # Normalize
     if seed is None:
         return ""
 
-    # Seed object (e.g. Seed(base=42))
     base = getattr(seed, "base", None)
     if base is not None:
         return str(base)
@@ -52,13 +46,11 @@ def _seed_fingerprint(ctx: Any) -> str:
 def _sample_fingerprint(sample: Any) -> str:
     """
     Serialize a RenderSample-like object into a stable string.
-    We only rely on a small stable subset.
     """
     base = str(getattr(sample, "base_color_hex", ""))
     rough = getattr(sample, "roughness", 0.0)
     metal = getattr(sample, "metallic", 0.0)
 
-    # normalize floats
     try:
         rough_f = float(rough)
     except Exception:
@@ -78,7 +70,6 @@ def _surface_fingerprint(surface: Any) -> str:
     if surface is None:
         return ""
 
-    # common patterns: surface.id, surface.name, dataclass, dict
     sid = getattr(surface, "id", None)
     if sid is not None:
         return str(sid)
@@ -94,7 +85,6 @@ def _surface_fingerprint(surface: Any) -> str:
             return surface.__class__.__name__
 
     if isinstance(surface, dict):
-        # stable-ish order
         items = "|".join(f"{k}={surface[k]!r}" for k in sorted(surface.keys()))
         return items
 
@@ -125,11 +115,11 @@ def _material_cache_key(
     Deterministic cache key for bpy.material reuse.
 
     Includes:
-    - resolved material id (canonical)
-    - surface spec id (if any)
-    - sample params (base/rough/metal)
-    - seed fingerprint (deterministic variation)
-    - member role + explicit material_id (so role-default mapping stays stable)
+    - resolved material id
+    - surface spec id
+    - sample params
+    - seed fingerprint
+    - member role + explicit material_id
     """
     seed_fp = _seed_fingerprint(ctx)
     resolved_fp = _resolved_fingerprint(resolved)
@@ -139,9 +129,7 @@ def _material_cache_key(
     role = str(member.get("role", ""))
     material_id = str(member.get("material_id", ""))
 
-    # If you ever change key semantics, bump this constant.
     key_version = "v1"
-
     payload = f"{key_version}|{resolved_fp}|{surface_fp}|{sample_fp}|seed={seed_fp}|role={role}|mid={material_id}"
     return hashlib.sha1(payload.encode("utf-8")).hexdigest()
 
@@ -178,7 +166,6 @@ def _ensure_principled_material(
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
 
-    # find or create Principled BSDF
     principled = None
     output = None
     for n in nodes:
@@ -195,18 +182,15 @@ def _ensure_principled_material(
         output = nodes.new(type="ShaderNodeOutputMaterial")
         output.location = (300, 0)
 
-    # ensure link
-    # (remove competing links to output surface)
     for l in list(output.inputs["Surface"].links):
         links.remove(l)
     links.new(principled.outputs["BSDF"], output.inputs["Surface"])
 
-    # apply sample params
     base_hex = str(getattr(sample, "base_color_hex", "#b0b0b0") or "#b0b0b0")
     try:
         r, g, b = _hex_to_rgb01(base_hex)
     except Exception:
-        r, g, b = (0.69, 0.69, 0.69)  # deterministic fallback, no randomness
+        r, g, b = (0.69, 0.69, 0.69)
 
     rough = getattr(sample, "roughness", 0.5)
     metal = getattr(sample, "metallic", 0.0)
@@ -237,14 +221,13 @@ def apply_material_to_object(
     name_hint: str | None = None,
 ) -> None:
     """
-    Assign a deterministic material to obj based on (resolved, surface, sample, ctx, member).
+    Assign a deterministic material to obj based on
+    (resolved, surface, sample, ctx, member).
 
-    This module is the *only* place that:
+    This module is the only place that:
     - computes cache keys
     - caches bpy.materials
     - builds node graphs
-
-    build_frame.py must not do any of that.
     """
     if obj is None:
         return
@@ -259,20 +242,18 @@ def apply_material_to_object(
 
     mat = _MATERIAL_CACHE.get(cache_key)
     if mat is None:
-        # stable name: material class id + short key suffix
-        resolved_id = _resolved_fingerprint(resolved) or "material"
-        suffix = cache_key[:10]
-        mat_name = name_hint or f"bv_{resolved_id}_{suffix}"
-        mat = _ensure_principled_material(name=mat_name, sample=sample)
+        material_name = name_hint or f"BV_MAT_{cache_key[:12]}"
+        mat = _ensure_principled_material(
+            name=material_name,
+            sample=sample,
+        )
         _MATERIAL_CACHE[cache_key] = mat
 
-    # assign
-    data = obj.data
-    if data is None or not hasattr(data, "materials"):
+    if obj.data is None or not hasattr(obj.data, "materials"):
         return
 
-    mats = data.materials
-    if len(mats) == 0:
-        mats.append(mat)
-    else:
+    mats = obj.data.materials
+    if mats:
         mats[0] = mat
+    else:
+        mats.append(mat)

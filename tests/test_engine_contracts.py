@@ -12,10 +12,10 @@ These tests are deliberately more strict than the unit tests:
 
 Scope
 -----
-- bvillage.domains.fachwerk.core.openings_norm
-- bvillage.domains.fachwerk.core.axes_u
-- bvillage.domains.fachwerk.core.axes_z
-- bvillage.domains.fachwerk.core.frameplan
+- bvillage.domains.timber_frame.core.openings_norm
+- bvillage.domains.timber_frame.core.axes_u
+- bvillage.domains.timber_frame.core.axes_z
+- bvillage.domains.timber_frame.core.frameplan
 
 Units: meters.
 """
@@ -24,10 +24,10 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from bvillage.domains.fachwerk.core.openings_norm import normalize_openings_from_plan
-from bvillage.domains.fachwerk.core.axes_u import compute_vertical_axes
-from bvillage.domains.fachwerk.core.axes_z import compute_z_axes
-from bvillage.domains.fachwerk.core.frameplan import build_frameplan, FramePolicy
+from bvillage.domains.timber_frame.core.openings_norm import normalize_openings_from_plan
+from bvillage.domains.timber_frame.core.axes_u import compute_vertical_axes
+from bvillage.domains.timber_frame.core.axes_z import compute_z_axes
+from bvillage.domains.timber_frame.core.frameplan import build_frameplan, FramePolicy
 
 from conftest import make_structure, make_openings_plan, opening
 

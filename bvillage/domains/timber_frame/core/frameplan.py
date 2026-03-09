@@ -1,7 +1,7 @@
 # bvillage/domains/fachwerk/core/frameplan.py
 
 """
-bvillage.domains.fachwerk.core.frameplan
+bvillage.domains.timber_frame.core.frameplan
 =======================================
 
 Build a Fachwerk frameplan artifact.
@@ -34,13 +34,13 @@ from random import Random
 
 from bvillage.core.geom_eps import EPS_MERGE
 from bvillage.core.model import StructurePlan
-from bvillage.domains.fachwerk.core.openings_norm import (
+from bvillage.domains.timber_frame.core.openings_norm import (
     OpeningFinal,
     normalize_openings_from_plan,
 )
-from bvillage.domains.fachwerk.core.axes_u import compute_vertical_axes
-from bvillage.domains.fachwerk.core.axes_z import compute_z_axes
-from bvillage.domains.fachwerk.core.wall_tags import compute_wall_tags, suggest_front_wall
+from bvillage.domains.timber_frame.core.axes_u import compute_vertical_axes
+from bvillage.domains.timber_frame.core.axes_z import compute_z_axes
+from bvillage.domains.timber_frame.core.wall_tags import compute_wall_tags, suggest_front_wall
 
 
 WidthType = Literal["axis", "clear"]

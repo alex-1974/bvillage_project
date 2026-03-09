@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/blender/braces.py
+# bvillage/domains/timber_frame/blender/braces.py
 from __future__ import annotations
 
 import logging
@@ -33,9 +33,6 @@ def _require_basis(fp: dict[str, Any]) -> dict[str, float]:
     - x_max
     - center_x
     - halfW
-
-    WHY:
-    Renderer must not derive structural basis from house-side fallback data.
     """
     basis = fp.get("basis")
     if not isinstance(basis, dict):
@@ -51,7 +48,6 @@ def _require_basis(fp: dict[str, Any]) -> dict[str, float]:
         except Exception as exc:
             raise SchemaError(f"Braces: invalid basis value for '{key}'") from exc
 
-    # Optional geometric keys, used only if present.
     for key in ("x_min", "x_max", "center_x", "halfW"):
         if key in basis:
             try:
@@ -65,8 +61,6 @@ def _require_basis(fp: dict[str, Any]) -> dict[str, float]:
 def _iter_braces(fp: dict[str, Any]) -> Iterable[dict[str, Any]]:
     """
     Members-first only.
-
-    No legacy fallback to fp["braces"] is allowed.
     """
     members = fp.get("members")
     if not isinstance(members, dict):
@@ -93,7 +87,6 @@ def _resolve_brace_profile(*, brace: dict[str, Any]) -> tuple[float, float]:
         except Exception:
             pass
 
-    # Deterministic fallback only if profile is absent.
     return 0.08, 0.08
 
 
@@ -120,11 +113,11 @@ def build_braces_corner_band(
     --------
     - only tid == BRACE_DIAGONAL is handled here
     - p0/p1 must already be present in world coordinates
-    - no house fallback
+    - no house dependency
     - no wall/u/z reconstruction
     """
     _ = debug
-    _require_basis(fp)  # validates canonical basis presence
+    _require_basis(fp)
 
     built = 0
     for i, brace in enumerate(_iter_braces(fp)):

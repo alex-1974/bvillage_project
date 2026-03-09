@@ -1,1 +1,1 @@
-# bvillage/domains/__init__.py
+# bvillage/core/__init__.py

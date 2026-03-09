@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/blender/infills.py
+# bvillage/domains/timber_frame/blender/infills.py
 from __future__ import annotations
 
 import logging
@@ -27,8 +27,6 @@ def _require_basis(fp: dict[str, Any]) -> dict[str, float]:
     - x_max
     - center_x
     - halfW
-
-    No fallback from house dimensions is allowed.
     """
     basis = fp.get("basis")
     if not isinstance(basis, dict):
@@ -83,9 +81,9 @@ def build_infills(
 
     Contract
     --------
-    - no house fallback
-    - no legacy schema fallback
     - canonical members-first only
+    - no house dependency
+    - no legacy schema path
     """
     _ = debug
 
@@ -124,7 +122,9 @@ def build_infills(
             z0 = float(cell["z0"])
             z1 = float(cell["z1"])
         except Exception as exc:
-            raise SchemaError(f"Infills: INFILL_CELL[{i}] missing required numeric u0/u1/z0/z1") from exc
+            raise SchemaError(
+                f"Infills: INFILL_CELL[{i}] missing required numeric u0/u1/z0/z1"
+            ) from exc
 
         if wall == "N":
             v00 = Vector((center_x + u0, -half_w, z0))

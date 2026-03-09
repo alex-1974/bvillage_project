@@ -6,10 +6,10 @@ from typing import Any
 
 from bvillage.core.domain_registry import register as register_domain
 
-from bvillage.domains.fachwerk.core.derive_frameplan_boxframe import (
+from bvillage.domains.timber_frame.core.derive_frameplan_boxframe import (
     derive_frameplan_boxframe,
 )
-from bvillage.domains.fachwerk.contracts.validate_frameplan_fachwerk import (
+from bvillage.domains.timber_frame.contracts.validate_frameplan_fachwerk import (
     validate_frameplan_fachwerk_schema,
     validate_frameplan_fachwerk_domain,
 )

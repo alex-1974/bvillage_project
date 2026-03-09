@@ -5,7 +5,7 @@ from pathlib import Path
 
 from bvillage.core.schema_i18n import register_locale_catalog
 from bvillage.core.util_yaml import load_yaml
-from bvillage.foreman.plan_dispatch import register_provider_with_archetypes
+from bvillage.core.foreman.plan_dispatch import register_provider_with_archetypes
 
 from .provider import LonghouseTypeProvider
 

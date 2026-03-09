@@ -11,8 +11,8 @@ Units: meters.
 
 from __future__ import annotations
 
-from bvillage.domains.fachwerk.core.axes_u import compute_vertical_axes, interval_intersects
-from bvillage.domains.fachwerk.core.openings_norm import normalize_openings_from_plan
+from bvillage.domains.timber_frame.core.axes_u import compute_vertical_axes, interval_intersects
+from bvillage.domains.timber_frame.core.openings_norm import normalize_openings_from_plan
 from conftest import make_structure, make_openings_plan, opening
 
 

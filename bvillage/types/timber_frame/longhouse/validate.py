@@ -4,16 +4,13 @@
 bvillage.types.timber_frame.longhouse.validate
 ==============================================
 
-Hallenhaus-specific validation rules.
+Longhouse-specific validation rules.
 
-These rules were intentionally moved out of bvillage.core.validate
-to keep core type-agnostic.
+Core remains type-agnostic; this module implements archetype rules.
 
 Contracts
 ---------
 validate_type(ctx, structure, interior) -> list[Issue]
-
-Units: meters (area proxy via grid fields).
 """
 
 from __future__ import annotations
@@ -21,14 +18,16 @@ from __future__ import annotations
 from typing import List
 
 from bvillage.core.model import Context, StructurePlan, InteriorPlan, Issue
+from bvillage.core.policy_stack import get_policy
 
 
 def validate_type(ctx: Context, structure: StructurePlan, interior: InteriorPlan) -> List[Issue]:
     """
-    Hallenhaus rules:
+    Longhouse rules:
     - DIELE must exist and be >= 40% of fields
-    - For rural/village: STALL must exist and be >= 20% of fields
+    - STALL may be required depending on policy
     """
+
     issues: List[Issue] = []
 
     total_fields = len(structure.grid.fields)
@@ -37,14 +36,20 @@ def validate_type(ctx: Context, structure: StructurePlan, interior: InteriorPlan
 
     room_by_id = {r.id: r for r in interior.rooms}
 
+    policy = get_policy(ctx)
+
+    # ------------------------------------------------------------------
     # DIELE dominance
+    # ------------------------------------------------------------------
+
     diele = room_by_id.get("R_DIELE")
+
     if diele is None:
         issues.append(
             Issue(
                 code="H_NO_DIELE",
                 severity="HARD",
-                message="Hallenhaus requires a DIELE room (R_DIELE).",
+                message="Longhouse requires a DIELE room (R_DIELE).",
                 suggested_repairs=("R_CREATE_DIELE",),
             )
         )
@@ -61,15 +66,20 @@ def validate_type(ctx: Context, structure: StructurePlan, interior: InteriorPlan
                 )
             )
 
-    # STALL share for rural/village
-    if ctx.settlement_type in ("rural", "village"):
+    # ------------------------------------------------------------------
+    # STALL requirement (policy-driven)
+    # ------------------------------------------------------------------
+
+    if getattr(policy, "require_stall", False):
+
         stall = room_by_id.get("R_STALL")
+
         if stall is None:
             issues.append(
                 Issue(
                     code="H_NO_STALL",
                     severity="HARD",
-                    message="Rural longhouse requires a STALL room (R_STALL).",
+                    message="Longhouse policy requires a STALL room (R_STALL).",
                     suggested_repairs=("R_CREATE_STALL",),
                 )
             )

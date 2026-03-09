@@ -1,7 +1,7 @@
 # bvillage/domains/fachwerk/core/wall_tags.py
 
 """
-bvillage.domains.fachwerk.core.wall_tags
+bvillage.domains.timber_frame.core.wall_tags
 =======================================
 
 Purpose
@@ -40,7 +40,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Literal, Mapping, TypedDict
 
-from bvillage.domains.fachwerk.core.openings_norm import OpeningFinal
+from bvillage.domains.timber_frame.core.openings_norm import OpeningFinal
 
 WallSide = Literal["N", "S", "E", "W"]
 _WALLS: tuple[WallSide, ...] = ("N", "S", "E", "W")

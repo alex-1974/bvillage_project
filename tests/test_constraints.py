@@ -14,7 +14,7 @@ def _ctx(seed=123):
         region="north",
         settlement_type="village",
         wealth=0.6,
-        house_type="fachwerkhaus.hallenhaus",
+        archetype_id="FW-LH-ND",
     )
 
 def test_hard_violation_emits_hard_issue():
