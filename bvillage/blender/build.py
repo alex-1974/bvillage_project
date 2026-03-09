@@ -1,5 +1,4 @@
 # bvillage/blender/build.py
-
 """
 bvillage.blender.build
 =====================
@@ -38,8 +37,8 @@ from bvillage.core.model import Context, StructurePlan, InteriorPlan, OpeningsPl
 from bvillage.blender.utils import ensure_collection, clear_collection
 from bvillage.core.notes import get_domain_artifact
 
-# Domain builder: consumes explicit frameplan dict
 from bvillage.domains.timber_frame.blender.build_frame import build_fachwerk_frame_from_structure_notes
+from bvillage.domains.timber_frame.blender.roof import build_roof_from_plan
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +46,6 @@ logger = logging.getLogger(__name__)
 def _require_fachwerk_frameplan(structure: StructurePlan) -> dict:
     """
     Load fachwerk.frameplan artifact via canonical schema.
-
-    Transitional legacy aliases allowed (read-only):
-      - legacy frameplan alias (flat key)
-      - legacy qualified alias (fachwerk.frameplan)
 
     Raises
     ------
@@ -66,23 +61,41 @@ def _require_fachwerk_frameplan(structure: StructurePlan) -> dict:
         artifact="frameplan",
     )
 
-    if not frameplan:
-        raise RuntimeError("Missing fachwerk.frameplan artifact.")
-
-    schema_version = frameplan.get("schema_version")
-
-    # ------------------------------------------------------------------
-    # v0.4.0 guard: Blender builder still expects schema_version=3
-    # ------------------------------------------------------------------
-
     if frameplan is None:
-        raise RuntimeError(
-            "Missing required artifact: fachwerk.frameplan (canonical or legacy alias)."
-        )
+        raise RuntimeError("Missing required artifact: fachwerk.frameplan.")
+
     if not isinstance(frameplan, dict):
         raise RuntimeError("fachwerk.frameplan must be a dict payload.")
 
     return frameplan
+
+
+def _require_fachwerk_roofplan(structure: StructurePlan) -> dict:
+    """
+    Load fachwerk.roofplan artifact.
+
+    Raises
+    ------
+    RuntimeError if artifact is missing or invalid.
+    """
+    notes = getattr(structure, "notes", None)
+    if not isinstance(notes, dict):
+        raise RuntimeError("StructurePlan.notes missing or invalid.")
+
+    roofplan = get_domain_artifact(
+        structure.notes,
+        domain="fachwerk",
+        artifact="roofplan",
+    )
+
+    if roofplan is None:
+        raise RuntimeError("Missing required artifact: fachwerk.roofplan.")
+
+    if not isinstance(roofplan, dict):
+        raise RuntimeError("fachwerk.roofplan must be a dict payload.")
+
+    return roofplan
+
 
 def render_house(
     ctx: Context,
@@ -94,36 +107,6 @@ def render_house(
 ) -> bpy.types.Collection:
     """
     Build the house in the Blender scene.
-
-    Parameters
-    ----------
-    ctx:
-        Execution context (used mainly for naming / seeding).
-    structure:
-        Structural plan; must contain fachwerk.frameplan artifact for Fachwerk frame build.
-    interior:
-        Interior plan (currently not built into geometry here; placeholder).
-    openings:
-        Openings plan (currently not built into geometry here; placeholder).
-    clear_previous:
-        If True, clears the per-house sub-collections before building.
-
-    Returns
-    -------
-    bpy.types.Collection
-        Root collection for the house build.
-
-    Current build steps
-    -------------------
-    1) Create (or reuse) House_<seed> root collection.
-    2) Create sub-collections: Structure / Interior / Openings.
-    3) Build Fachwerk timber frame into Structure (artifact-driven).
-    4) Interior & opening-props are intentionally deferred until frame correctness is locked.
-
-    Raises
-    ------
-    RuntimeError
-        If required plan artifacts are missing (e.g. frameplan not attached).
     """
     house_root_name = f"House_{getattr(ctx, 'seed', 'NA')}"
     root = ensure_collection(house_root_name, parent=None)
@@ -137,13 +120,12 @@ def render_house(
         clear_collection(col_interior)
         clear_collection(col_openings)
 
-    # ---- Structure: Fachwerk frame ----
     logger.info("Blender build: Fachwerk frame (House=%s)", house_root_name)
 
-    frameplan = _require_fachwerk_frameplan(structure)
+    _ = _require_fachwerk_frameplan(structure)
 
     root_collection = bpy.context.scene.collection
-    
+
     build_fachwerk_frame_from_structure_notes(
         ctx=ctx,
         structure=structure,
@@ -151,11 +133,13 @@ def render_house(
         clear_previous=clear_previous,
     )
 
-    # ---- Openings props placeholder ----
-    # (Optional future) gates/windows leaves/shutters as separate objects.
-    # Keep this out until frameplan is stable to avoid visual clutter.
+    logger.info("Blender build: roof")
 
-    # ---- Interior placeholder ----
-    # (Future) floors, partitions, furniture based on InteriorPlan.
+    roofplan = _require_fachwerk_roofplan(structure)
+
+    build_roof_from_plan(
+        roofplan=roofplan,
+        col_roof=col_structure,
+    )
 
     return root

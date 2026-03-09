@@ -1,97 +1,78 @@
-# bvillage/domains/fachwerk/blender/roof.py
+# bvillage/domains/timber_frame/blender/roof.py
+from __future__ import annotations
 
-from math import tan, radians
+from typing import Any
+
 from mathutils import Vector
+
+from bvillage.core.errors import SchemaError
 from .timber import make_beam_rect
 
+__all__ = ["build_roof_from_plan"]
 
-def build_roof_per_field(
+
+def _member_profile(member: dict[str, Any], *, default_width: float, default_depth: float) -> tuple[float, float]:
+    profile = member.get("profile")
+    if isinstance(profile, dict):
+        try:
+            return float(profile["width"]), float(profile["depth"])
+        except Exception:
+            pass
+    return default_width, default_depth
+
+
+def _iter_roof_members(roofplan: dict[str, Any]):
+    members = roofplan.get("members")
+    if not isinstance(members, dict):
+        raise SchemaError("RoofPlan missing 'members' dict")
+
+    for group in ("ridge", "rafters", "collar_ties"):
+        arr = members.get(group, [])
+        if not isinstance(arr, list):
+            raise SchemaError(f"RoofPlan.members.{group} must be a list")
+        for m in arr:
+            yield group, m
+
+
+def build_roof_from_plan(
     *,
-    axes_u,
-    half_width: float,
-    z_plate: float,
-    roof_pitch_deg: float = 50.0,
-    kehl_frac: float = 0.58,
+    roofplan: dict[str, Any],
     col_roof=None,
-    profiles=None,
-):
+) -> None:
     """
-    Build roof timbers per longitudinal field:
-      - 1 rafter pair per field at xmid
-      - 1 collar tie (Kehlbalken) per field
-      - 1 continuous ridge purlin (Firstpfette)
+    Render roof geometry strictly from RoofPlan.
 
-    axes_u: list of x positions (len >= 2)
-    half_width: W/2 (e.g. 3.45)
-    z_plate: wall plate height (e.g. 2.2)
-
-    profiles: dict with sizes in meters:
-      {
-        "ridge": (w,d),
-        "rafter": (w,d),
-        "collar": (w,d),
-      }
+    HARD RULE:
+    - no derivation from axes_u / half_width / z_plate
+    - Roof Producer already wrote the structural truth
     """
-    if profiles is None:
-        profiles = {
-            "ridge": (0.18, 0.22),
-            "rafter": (0.10, 0.16),
-            "collar": (0.12, 0.16),
-        }
+    for group, member in _iter_roof_members(roofplan):
+        p0 = member.get("p0")
+        p1 = member.get("p1")
+        if p0 is None or p1 is None:
+            raise SchemaError(f"Roof member in group {group!r} missing p0/p1")
 
-    if not axes_u or len(axes_u) < 2:
-        raise ValueError("axes_u must contain at least 2 values")
+        if not (isinstance(p0, (list, tuple)) and len(p0) == 3):
+            raise SchemaError(f"Roof member in group {group!r} has invalid p0")
+        if not (isinstance(p1, (list, tuple)) and len(p1) == 3):
+            raise SchemaError(f"Roof member in group {group!r} has invalid p1")
 
-    # ridge height from pitch and half span
-    h = tan(radians(roof_pitch_deg)) * half_width
-    z_ridge = z_plate + h
+        if group == "ridge":
+            width, depth = _member_profile(member, default_width=0.18, default_depth=0.22)
+        elif group == "rafters":
+            width, depth = _member_profile(member, default_width=0.10, default_depth=0.16)
+        elif group == "collar_ties":
+            width, depth = _member_profile(member, default_width=0.12, default_depth=0.16)
+        else:
+            raise SchemaError(f"Unknown roof member group: {group}")
 
-    # collar height by fraction along the roof height
-    kehl_frac = max(0.50, min(0.70, kehl_frac))
-    z_kehl = z_plate + kehl_frac * (z_ridge - z_plate)
-
-    # y at collar height along the rafter line
-    y_kehl = (z_kehl - z_plate) / tan(radians(roof_pitch_deg))
-
-    # ridge purlin, continuous
-    make_beam_rect(
-        "Firstpfette",
-        Vector((axes_u[0], 0.0, z_ridge)),
-        Vector((axes_u[-1], 0.0, z_ridge)),
-        width=profiles["ridge"][0],
-        depth=profiles["ridge"][1],
-        collection=col_roof,
-    )
-
-    # per field: rafter pair + collar tie
-    for i in range(len(axes_u) - 1):
-        xmid = 0.5 * (axes_u[i] + axes_u[i + 1])
+        name = str(member.get("id") or f"{group}_member")
 
         make_beam_rect(
-            f"Rafter_L_{i:02d}",
-            Vector((xmid, -half_width, z_plate)),
-            Vector((xmid, 0.0, z_ridge)),
-            width=profiles["rafter"][0],
-            depth=profiles["rafter"][1],
+            name,
+            Vector((float(p0[0]), float(p0[1]), float(p0[2]))),
+            Vector((float(p1[0]), float(p1[1]), float(p1[2]))),
+            width=width,
+            depth=depth,
             collection=col_roof,
         )
-
-        make_beam_rect(
-            f"Rafter_R_{i:02d}",
-            Vector((xmid, +half_width, z_plate)),
-            Vector((xmid, 0.0, z_ridge)),
-            width=profiles["rafter"][0],
-            depth=profiles["rafter"][1],
-            collection=col_roof,
-        )
-
-        make_beam_rect(
-            f"Kehlbalken_{i:02d}",
-            Vector((xmid, -y_kehl, z_kehl)),
-            Vector((xmid, +y_kehl, z_kehl)),
-            width=profiles["collar"][0],
-            depth=profiles["collar"][1],
-            collection=col_roof,
-        )
-
-    return {"z_ridge": z_ridge, "z_kehl": z_kehl, "y_kehl": y_kehl}
