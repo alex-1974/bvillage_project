@@ -1,15 +1,12 @@
-"""
-Timber-frame domain plugin bootstrap.
+from __future__ import annotations
 
-Registers the Foreman responsible for timber-frame construction grammar.
-"""
+from bvillage.core.dispatch_registry import register_foreman_for_grammar
+from bvillage.domains.timber_frame.foreman.boxframe_foreman import BoxFrameForeman
 
-from bvillage.core.foreman.plan_dispatch import register_foreman_for_grammar
-from bvillage.domains.timber_frame.foreman.box_frame_foreman import BoxFrameForeman
+__all__ = ["register"]
 
 
-def register():
-
+def register() -> None:
     register_foreman_for_grammar(
         "BOX_FRAME",
         BoxFrameForeman(),
