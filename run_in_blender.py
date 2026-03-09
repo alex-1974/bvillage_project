@@ -58,7 +58,7 @@ ARCHETYPE_ID = "FW-LH-ND"
 
 try:
     from bvillage.core.foreman.plan_bootstrap import ensure_plugins_loaded
-    from bvillage.core.foreman import generate
+    from bvillage.core.site_manager import SiteManager
     from bvillage.core.logging_conf import configure_logging
     from bvillage.core.report import report_plans
     from bvillage.core.validate import validate
@@ -80,7 +80,8 @@ try:
         archetype_id=ARCHETYPE_ID,
     )
 
-    structure, interior, openings = generate(ctx)
+    manager = SiteManager()
+    structure, interior, openings = manager.build(ctx)
 
     issues = validate(ctx, structure, interior)
     rep = report_plans(

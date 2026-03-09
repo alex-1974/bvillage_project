@@ -1,40 +1,41 @@
-# bvillage/core/foreman/plan_bootstrap.py
+"""
+bvillage/core/foreman/plan_bootstrap.py
+
+Plugin bootstrap loader.
+
+Loads all domain and type plugins and executes their register()
+functions if present.
+"""
+
 from __future__ import annotations
 
 import importlib
 import pkgutil
 
-__all__ = ["ensure_plugins_loaded"]
-
-_PLUGINS_LOADED = False
-
-
-def _is_type_family_package(module_name: str) -> bool:
-    parts = module_name.split(".")
-    return len(parts) == 4 and parts[0] == "bvillage" and parts[1] == "types"
+_BOOTSTRAPPED = False
 
 
 def ensure_plugins_loaded() -> None:
-    """
-    Import all concrete type-family plugins so they can register themselves.
+    global _BOOTSTRAPPED
 
-    This function is idempotent and may be called multiple times.
-    """
-    global _PLUGINS_LOADED
-
-    if _PLUGINS_LOADED:
+    if _BOOTSTRAPPED:
         return
 
-    package = importlib.import_module("bvillage.types")
+    _load_package_plugins("bvillage.types")
+    _load_package_plugins("bvillage.domains")
+
+    _BOOTSTRAPPED = True
+
+
+def _load_package_plugins(package_name: str) -> None:
+
+    package = importlib.import_module(package_name)
 
     for module in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-        if not module.ispkg:
-            continue
 
-        name = module.name
-        if not _is_type_family_package(name):
-            continue
+        mod = importlib.import_module(module.name)
 
-        importlib.import_module(name)
+        register = getattr(mod, "register", None)
 
-    _PLUGINS_LOADED = True
+        if callable(register):
+            register()

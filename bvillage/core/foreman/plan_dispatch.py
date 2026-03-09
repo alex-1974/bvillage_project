@@ -1,75 +1,76 @@
-# bvillage/core/foreman/plan_dispatch.py
+"""
+Dispatch registry
+
+1. archetype_id → provider
+2. construction_grammar → foreman
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
-
-from bvillage.core.provider_contract import TypeProvider
-from bvillage.core.schema_archetype_id import validate_archetype_id
-
-__all__ = [
-    "ArchetypeBinding",
-    "register_provider_with_archetypes",
-    "resolve_provider_for_archetype",
-    "list_registered_archetypes",
-]
+from typing import Any, Dict
 
 
 @dataclass(frozen=True, slots=True)
 class ArchetypeBinding:
     archetype_id: str
-    provider: TypeProvider
+    provider: Any
     construction_grammar: str
 
 
-_REGISTRY: Dict[str, ArchetypeBinding] = {}
+_PROVIDER_REGISTRY: Dict[str, ArchetypeBinding] = {}
+_FOREMAN_REGISTRY: Dict[str, Any] = {}
 
 
-def register_provider_with_archetypes(
-    provider: TypeProvider,
-    construction_grammars: dict[str, str],
-) -> None:
-    if not isinstance(provider, TypeProvider):
-        raise RuntimeError(
-            f"Provider {provider!r} does not satisfy TypeProvider contract"
-        )
+# ------------------------------------------------------------
+# provider registration
+# ------------------------------------------------------------
+
+def register_provider_with_archetypes(provider, construction_grammars):
 
     for archetype_id, grammar in construction_grammars.items():
-        if not isinstance(archetype_id, str) or not archetype_id.strip():
-            raise RuntimeError("Invalid archetype_id during registration")
 
-        archetype_id = archetype_id.strip()
+        if archetype_id in _PROVIDER_REGISTRY:
+            raise RuntimeError(f"Duplicate archetype: {archetype_id}")
 
-        validate_archetype_id(archetype_id)
-
-        if archetype_id in _REGISTRY:
-            existing = _REGISTRY[archetype_id]
-            raise RuntimeError(
-                "Duplicate archetype registration:\n"
-                f"  archetype_id: {archetype_id}\n"
-                f"  existing provider: {existing.provider.__class__.__name__}\n"
-                f"  new provider: {provider.__class__.__name__}"
-            )
-
-        _REGISTRY[archetype_id] = ArchetypeBinding(
+        _PROVIDER_REGISTRY[archetype_id] = ArchetypeBinding(
             archetype_id=archetype_id,
             provider=provider,
-            construction_grammar=str(grammar),
+            construction_grammar=grammar,
         )
 
 
-def resolve_provider_for_archetype(archetype_id: str) -> ArchetypeBinding:
-    if not isinstance(archetype_id, str) or not archetype_id.strip():
-        raise RuntimeError("Invalid archetype_id")
+def resolve_provider_for_archetype(archetype_id):
 
     try:
-        return _REGISTRY[archetype_id]
+        return _PROVIDER_REGISTRY[archetype_id]
+
     except KeyError:
         raise RuntimeError(
-            f"Unknown archetype_id: {archetype_id}\n"
-            f"Registered archetypes: {sorted(_REGISTRY.keys())}"
+            f"Unknown archetype: {archetype_id}\n"
+            f"Known: {sorted(_PROVIDER_REGISTRY)}"
         )
 
 
-def list_registered_archetypes() -> tuple[str, ...]:
-    return tuple(sorted(_REGISTRY.keys()))
+# ------------------------------------------------------------
+# foreman registration
+# ------------------------------------------------------------
+
+def register_foreman_for_grammar(grammar, foreman):
+
+    if grammar in _FOREMAN_REGISTRY:
+        raise RuntimeError(f"Duplicate foreman for grammar {grammar}")
+
+    _FOREMAN_REGISTRY[grammar] = foreman
+
+
+def resolve_foreman_for_grammar(grammar):
+
+    try:
+        return _FOREMAN_REGISTRY[grammar]
+
+    except KeyError:
+        raise RuntimeError(
+            f"No foreman registered for grammar {grammar}\n"
+            f"Known grammars: {sorted(_FOREMAN_REGISTRY)}"
+        )
