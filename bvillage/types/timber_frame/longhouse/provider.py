@@ -1,4 +1,4 @@
-# bvillage/types/fachwerkhaus/hallenhaus/provider.py
+# bvillage/types/timber_frame/longhouse/provider.py
 from __future__ import annotations
 
 from typing import Any, Tuple
@@ -6,10 +6,10 @@ from typing import Any, Tuple
 from bvillage.core.errors import SchemaError
 from bvillage.core.model import InteriorPlan, OpeningsPlan, StructurePlan
 
-from bvillage.types.fachwerkhaus.hallenhaus.plan_topology import plan_topology
-from bvillage.types.fachwerkhaus.hallenhaus.planner import plan_interior
-from bvillage.types.fachwerkhaus.hallenhaus.openings import plan_openings
-from bvillage.types.fachwerkhaus.hallenhaus.contracts.validate_frameplan_type import (
+from bvillage.types.timber_frame.longhouse.plan_topology import plan_topology
+from bvillage.types.timber_frame.longhouse.planner import plan_interior
+from bvillage.types.timber_frame.longhouse.openings import plan_openings
+from bvillage.types.timber_frame.longhouse.contracts.validate_frameplan_type import (
     validate_frameplan_langhaus_type,
 )
 

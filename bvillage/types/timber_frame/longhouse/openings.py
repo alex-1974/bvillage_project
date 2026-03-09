@@ -1,4 +1,4 @@
-# bvillage/types/fachwerkhaus/hallenhaus/openings.py
+# bvillage/types/timber_frame/longhouse/openings.py
 from __future__ import annotations
 
 import hashlib

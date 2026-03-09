@@ -1,54 +1,14 @@
-"""
-bvillage/core/foreman.py
-
-Foreman orchestrates the BVILLAGE generation pipeline.
-
-Core principle:
-Core must NOT know any architectural domain (fachwerk, stone, etc.).
-
-The Foreman only interacts with:
-
-- Context
-- ProviderRegistry
-- Contracts
-"""
-
 from __future__ import annotations
 
-from typing import Any
-
-from bvillage.core.context import Context
-from bvillage.core.registry import ProviderRegistry
-from bvillage.core.errors import GenerationError
-from bvillage.core.validate import validate_pipeline
+from bvillage.foreman.plan_dispatch import resolve_provider_for_archetype
 
 
-def generate(ctx: Context) -> dict[str, Any]:
-    """
-    Main entry point of the BVILLAGE engine.
+def generate(ctx):
 
-    Pipeline:
+    binding = resolve_provider_for_archetype(ctx.archetype_id)
 
-        Context
-            ↓
-        ProviderRegistry.resolve()
-            ↓
-        Provider.generate()
-            ↓
-        validate_pipeline()
-            ↓
-        return result
-    """
+    provider = binding.provider
 
-    provider = ProviderRegistry.resolve(ctx)
+    structure, interior, openings = provider.generate(ctx)
 
-    if provider is None:
-        raise GenerationError(
-            f"No provider found for context: {ctx}"
-        )
-
-    result = provider.generate(ctx)
-
-    validate_pipeline(result)
-
-    return result
+    return structure, interior, openings

@@ -63,7 +63,7 @@ def report_plans(
     lines.append("========== BVILLAGE REPORT ==========")
     lines.append(
         "[Context] "
-        f"type={ctx.house_type} seed={ctx.seed.base} "
+        f"type={ctx.archetype_type} seed={ctx.seed.base} "
         f"epoch={ctx.epoch_band} region={ctx.region} settlement={ctx.settlement_type} "
         f"wealth={ctx.wealth:.2f}"
     )

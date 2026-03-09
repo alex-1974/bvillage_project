@@ -1,7 +1,7 @@
-# bvillage/types/fachwerkhaus/hallenhaus/validate.py
+# bvillage/types/timber_frame/longhouse/validate.py
 
 """
-bvillage.types.fachwerkhaus.hallenhaus.validate
+bvillage.types.timber_frame.longhouse.validate
 ==============================================
 
 Hallenhaus-specific validation rules.
@@ -69,7 +69,7 @@ def validate_type(ctx: Context, structure: StructurePlan, interior: InteriorPlan
                 Issue(
                     code="H_NO_STALL",
                     severity="HARD",
-                    message="Rural hallenhaus requires a STALL room (R_STALL).",
+                    message="Rural longhouse requires a STALL room (R_STALL).",
                     suggested_repairs=("R_CREATE_STALL",),
                 )
             )

@@ -311,7 +311,7 @@ def _adjust_secondary_axes_by_target(
             elif span <= 2.8:
                 n = 2
 
-            # very large bay (rare in hallenhaus) → max two posts
+            # very large bay (rare in longhouse) → max two posts
             else:
                 n = 3
 

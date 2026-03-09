@@ -10,7 +10,7 @@ from bvillage.core.ontology.structural_terms import (
     BEAM_OPENING_LINTEL,
     BRACE_KNEE,
 )
-from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frameplan_langhaus import (
+from bvillage.types.timber_frame.longhouse.contracts.schema_frameplan_langhaus import (
     SCHEMA_VERSION_LANGHAUS,
 )
 

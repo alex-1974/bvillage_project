@@ -1,4 +1,4 @@
-# bvillage/types/fachwerkhaus/hallenhaus/planner.py
+# bvillage/types/timber_frame/longhouse/planner.py
 
 from __future__ import annotations
 from typing import List, Tuple

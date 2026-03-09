@@ -1,10 +1,10 @@
-# bvillage/types/fachwerkhaus/hallenhaus/schema_frameplan_langhaus.py
+# bvillage/types/timber_frame/longhouse/schema_frameplan_langhaus.py
 
 from __future__ import annotations
 
 from typing import List, Literal, Optional, Sequence, Tuple, TypedDict
 
-from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frame_roles import FrameRole
+from bvillage.types.timber_frame.longhouse.contracts.schema_frame_roles import FrameRole
 
 Vec3 = Tuple[float, float, float]
 

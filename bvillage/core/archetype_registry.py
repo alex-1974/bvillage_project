@@ -19,8 +19,8 @@ class ArchetypeBinding:
 
     Example
     -------
-    archetype: "fachwerkhaus.hallenhaus"
-    type_provider: "fachwerkhaus.hallenhaus"
+    archetype: "timber_frame.longhouse"
+    type_provider: "timber_frame.longhouse"
     domain: "fachwerk"
     """
 

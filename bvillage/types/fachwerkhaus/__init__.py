@@ -1,1 +1,0 @@
-# bvillage/types/fachwerkhaus/__init__.py

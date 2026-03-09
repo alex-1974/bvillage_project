@@ -1,17 +1,16 @@
 # bvillage/core/policy_stack.py
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from typing import Any, Iterable
 
-from .model import Context
-from .policy_types import (
-    ResolvedPolicy,
+from bvillage.core.model import Context
+from bvillage.core.policy_types import (
     ConstraintSpec,
+    FachwerkPolicySpec,
     RangeHardSpec,
     RangeSoftSpec,
-    FachwerkPolicySpec,
+    ResolvedPolicy,
 )
 
 __all__ = [
@@ -54,17 +53,35 @@ def _trace_layer(layer_id: str, ops: Iterable[tuple[str, Any]]) -> TraceLayer:
 
 
 # ============================================================
-# Guards / normalization (ARC-001A: explicit, deterministic)
+# Guards / normalization
 # ============================================================
 
-# Context.house_type may be short; resolve to namespaced plugin id.
-_TYPE_ALIASES: dict[str, str] = {
-    "hallenhaus": "fachwerkhaus.hallenhaus",
-    "fachwerkhaus.hallenhaus": "fachwerkhaus.hallenhaus",
+# ------------------------------------------------------------------
+# Archetype id compatibility aliases
+#
+# WHY:
+# During migration, old inputs may still use legacy identifiers.
+# These aliases normalize legacy values to stable archetype_ids.
+# ------------------------------------------------------------------
+_ARCHETYPE_ALIASES: dict[str, str] = {
+    # canonical examples
+    "FW-LH-ND": "FW-LH-ND",
+    "FW-LH-2S": "FW-LH-2S",
+    "FW-LH-3S": "FW-LH-3S",
+    "FW-LH-4S": "FW-LH-4S",
+    "FW-GULF": "FW-GULF",
+    "FW-HAUB": "FW-HAUB",
+    "FW-MITT": "FW-MITT",
+    "FW-LH-EN": "FW-LH-EN",
+    "FW-STG-GIE": "FW-STG-GIE",
+    # legacy / transition aliases
+    "hallenhaus": "FW-LH-ND",
+    "fachwerk.hallenhaus": "FW-LH-ND",
+    "timber_frame.longhouse": "FW-LH-ND",
 }
 
-# Context.epoch_band currently uses E1/E2/E3; normalize to readable internal names.
-# NOTE: this is INTERNAL ONLY; ctx.epoch_band remains the stable external contract.
+# Context.epoch_band currently uses readable internal names;
+# tolerate historic short aliases during migration.
 _EPOCH_ALIASES: dict[str, str] = {
     "E1": "early_medieval",
     "E2": "high_medieval",
@@ -75,18 +92,18 @@ _EPOCH_ALIASES: dict[str, str] = {
 }
 
 
-def _norm_house_type(house_type: Any) -> str:
-    if not isinstance(house_type, str) or not house_type.strip():
-        return "unknown"
-    ht = house_type.strip()
-    return _TYPE_ALIASES.get(ht, ht)
+def _norm_archetype_id(archetype_id: Any) -> str:
+    if not isinstance(archetype_id, str) or not archetype_id.strip():
+        return "UNKNOWN"
+    raw = archetype_id.strip()
+    return _ARCHETYPE_ALIASES.get(raw, raw)
 
 
 def _norm_epoch(epoch_band: Any) -> str:
     if not isinstance(epoch_band, str) or not epoch_band.strip():
         return "unknown"
-    e = epoch_band.strip()
-    return _EPOCH_ALIASES.get(e, e)
+    raw = epoch_band.strip()
+    return _EPOCH_ALIASES.get(raw, raw)
 
 
 def _clamp01(x: float) -> float:
@@ -99,12 +116,31 @@ def _clamp01(x: float) -> float:
 
 
 # ============================================================
-# Layers (ARC-001A: no field-loss, deltas only)
+# Archetype-family helpers
+# ============================================================
+
+
+def _is_longhouse_family(archetype_id: str) -> bool:
+    """
+    Return True for archetypes resolved by the timber_frame/longhouse family.
+
+    WHY:
+    Policy resolution must no longer depend on plugin path strings such as
+    'timber_frame.longhouse'. It should operate on stable archetype ids.
+    """
+    if archetype_id.startswith("FW-LH-"):
+        return True
+    if archetype_id in {"FW-GULF", "FW-HAUB", "FW-MITT"}:
+        return True
+    return False
+
+
+# ============================================================
+# Layers
 # ============================================================
 
 
 def _baseline_fachwerk() -> tuple[FachwerkPolicySpec, TraceLayer]:
-    # Baseline is allowed to use PolicySpec defaults (NOT renderer defaults).
     fw = FachwerkPolicySpec(
         binder_max=1.60,
         bay_width=3.645,
@@ -128,8 +164,7 @@ def _baseline_fachwerk() -> tuple[FachwerkPolicySpec, TraceLayer]:
 
 
 def _epoch_layer(epoch: str, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    # Minimal MVP: epoch does not alter FachwerkPolicySpec fields yet (only a few fields exist).
-    # We still trace it to keep the contract stable and extensible.
+    # MVP: epoch currently traced but does not yet modify FachwerkPolicySpec.
     return fw, _trace_layer(
         f"EpochPolicy:{epoch}",
         [
@@ -139,7 +174,7 @@ def _epoch_layer(epoch: str, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec
 
 
 def _settlement_layer(settlement: str, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    # Minimal MVP: settlement does not alter spec yet (kept for future).
+    # MVP: settlement currently traced but does not yet modify FachwerkPolicySpec.
     return fw, _trace_layer(
         f"SettlementPolicy:{settlement}",
         [
@@ -149,8 +184,7 @@ def _settlement_layer(settlement: str, fw: FachwerkPolicySpec) -> tuple[Fachwerk
 
 
 def _wealth_layer(wealth01: float, fw: FachwerkPolicySpec) -> tuple[FachwerkPolicySpec, TraceLayer]:
-    # Minimal MVP: wealth does not alter most spec fields yet.
-    # Only bay_count is lightly modulated to enable larger houses for higher-wealth cases.
+    # Minimal modulation of bay_count to allow larger houses for higher-wealth cases.
     bay_count = fw.bay_count
     if wealth01 >= 0.80:
         bay_count = 7
@@ -169,8 +203,8 @@ def _wealth_layer(wealth01: float, fw: FachwerkPolicySpec) -> tuple[FachwerkPoli
     )
 
 
-def _type_layer(
-    house_type: str,
+def _archetype_layer(
+    archetype_id: str,
     *,
     epoch: str,
     settlement: str,
@@ -178,16 +212,16 @@ def _type_layer(
     fw: FachwerkPolicySpec,
 ) -> tuple[FachwerkPolicySpec, dict[str, ConstraintSpec], TraceLayer]:
     """
-    Type-specific resolution.
+    Archetype-specific policy resolution.
 
-    ARC-001A principle:
-      - This is the ONLY place where binder_max / typological constraints are derived.
-      - Planner and Domains must NOT invent structural defaults.
+    Architecture
+    ------------
+    Resolution is driven by stable archetype_id, not by provider path or folder name.
     """
 
     constraints: dict[str, ConstraintSpec] = {}
 
-    if house_type == "fachwerkhaus.hallenhaus":
+    if _is_longhouse_family(archetype_id):
         # ---- Statics limit (hard structural max spacing) ----
         # Wealth slightly increases span (better timber quality).
         base = 1.50
@@ -199,7 +233,6 @@ def _type_layer(
         target_gefach_width = 1.35 + 0.10 * (wealth01 - 0.5)
         target_gefach_width = max(1.20, min(1.50, target_gefach_width))
 
-        # jitter is expressed via soft ideal range below; keep single source of truth here
         jitter = 0.10
 
         fw_out = replace(
@@ -218,7 +251,7 @@ def _type_layer(
                 weight=1.0,
             ),
             unit="m",
-            code_prefix="HALL",
+            code_prefix="LH",
         )
 
         constraints["gefach_width_target"] = ConstraintSpec(
@@ -229,12 +262,13 @@ def _type_layer(
                 weight=3.0,
             ),
             unit="m",
-            code_prefix="HALL",
+            code_prefix="LH",
         )
 
         layer = _trace_layer(
-            "TypePolicy:fachwerkhaus.hallenhaus",
+            f"ArchetypePolicy:{archetype_id}",
             [
+                ("ctx.archetype_id", archetype_id),
                 ("ctx.epoch", epoch),
                 ("ctx.settlement_type", settlement),
                 ("ctx.wealth", wealth01),
@@ -253,11 +287,13 @@ def _type_layer(
 
         return fw_out, constraints, layer
 
-    # Generic fallback for other types: deterministic, minimal.
+    # Generic fallback for unknown / not yet specialized archetypes.
     fw_out = replace(fw, binder_max=1.65)
+
     layer = _trace_layer(
-        "TypePolicy:generic",
+        f"ArchetypePolicy:{archetype_id}",
         [
+            ("ctx.archetype_id", archetype_id),
             ("ctx.epoch", epoch),
             ("ctx.settlement_type", settlement),
             ("ctx.wealth", wealth01),
@@ -284,13 +320,13 @@ def resolve_policy_stack(ctx: Context) -> ResolvedPolicy:
 
 def resolve_policy_stack_with_trace(ctx: Context) -> tuple[ResolvedPolicy, ResolutionTrace]:
     """
-    ARC-001A hardened policy resolution:
-      - No renderer defaults.
-      - Type + culture inputs resolved once here.
-      - Trace returned as separate artifact (ResolvedPolicy has no 'trace' field).
-    """
+    Policy resolution driven by canonical archetype_id.
 
-    house_type = _norm_house_type(ctx.house_type)
+    Notes
+    -----
+    During migration, legacy ids may still be normalized via _ARCHETYPE_ALIASES.
+    """
+    archetype_id = _norm_archetype_id(ctx.archetype_id)
     epoch = _norm_epoch(ctx.epoch_band)
     settlement = str(ctx.settlement_type)
     wealth01 = _clamp01(float(ctx.wealth))
@@ -309,8 +345,8 @@ def resolve_policy_stack_with_trace(ctx: Context) -> tuple[ResolvedPolicy, Resol
     fw, l3 = _wealth_layer(wealth01, fw)
     layers.append(l3)
 
-    fw, constraints, l4 = _type_layer(
-        house_type,
+    fw, constraints, l4 = _archetype_layer(
+        archetype_id,
         epoch=epoch,
         settlement=settlement,
         wealth01=wealth01,

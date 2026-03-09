@@ -1,5 +1,3 @@
-# run_in_blender.py
-
 import os
 import sys
 import traceback
@@ -56,11 +54,12 @@ for name in list(sys.modules.keys()):
 # ============================================================
 
 CLEAR_PREVIOUS = True
-TYPE_ID = "fachwerkhaus.hallenhaus"
+ARCHETYPE_ID = "FW-LH-ND"
 
 try:
+    from bvillage.foreman.plan_bootstrap import ensure_plugins_loaded
+    from bvillage.core.foreman import generate
     from bvillage.core.logging_conf import configure_logging
-    from bvillage.core.registry import discover_types, get_house_type
     from bvillage.core.report import report_plans
     from bvillage.core.validate import validate
     from bvillage.core.model import Context
@@ -69,8 +68,8 @@ try:
 
     configure_logging(level="INFO", force=True)
 
-    discover_types(force=True)
-    provider = get_house_type(TYPE_ID)
+    # Import concrete type-family plugins so they can register themselves.
+    ensure_plugins_loaded()
 
     ctx = Context(
         seed=Seed(42),
@@ -78,15 +77,29 @@ try:
         region="north",
         settlement_type="village",
         wealth=0.6,
-        house_type=TYPE_ID,
+        archetype_id=ARCHETYPE_ID,
     )
 
-    structure, interior, openings = provider.generate(ctx)
+    structure, interior, openings = generate(ctx)
+
     issues = validate(ctx, structure, interior)
-    rep = report_plans(ctx, structure, interior=interior, openings=openings, issues=issues, score=None)
+    rep = report_plans(
+        ctx,
+        structure,
+        interior=interior,
+        openings=openings,
+        issues=issues,
+        score=None,
+    )
     print(rep)
 
-    render_house(ctx, structure, interior, openings, clear_previous=CLEAR_PREVIOUS)
+    render_house(
+        ctx,
+        structure,
+        interior,
+        openings,
+        clear_previous=CLEAR_PREVIOUS,
+    )
 
     print("=== BVILLAGE RUNNER DONE ===\n")
 

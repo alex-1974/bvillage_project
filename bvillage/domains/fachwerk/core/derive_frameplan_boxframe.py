@@ -11,7 +11,7 @@ from bvillage.core.ontology.structural_terms import (
     BRACE_KNEE,
 )
 
-from bvillage.types.fachwerkhaus.hallenhaus.contracts.schema_frameplan_langhaus
+from bvillage.types.timber_frame.longhouse.contracts.schema_frameplan_langhaus
 
 __all__ = ["derive_frameplan_boxframe"]
 

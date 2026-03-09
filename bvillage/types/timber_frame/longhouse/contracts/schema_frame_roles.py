@@ -1,4 +1,4 @@
-# bvillage/types/fachwerkhaus/hallenhaus/schema_frame_roles.py
+# bvillage/types/timber_frame/longhouse/schema_frame_roles.py
 
 from __future__ import annotations
 
