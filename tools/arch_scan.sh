@@ -64,9 +64,9 @@ if [[ "$ARCHIVE" -eq 1 ]]; then
 else
   if [[ -z "$OUT_PATH" ]]; then
     if [[ "$MODE" == "--json" ]]; then
-      OUT_PATH="$ROOT/tmp/ARCH_SCAN.json"
+      OUT_PATH="$ROOT/generated/ARCH_SCAN.json"
     else
-      OUT_PATH="$ROOT/tmp/ARCH_SCAN.txt"
+      OUT_PATH="$ROOT/generated/ARCH_SCAN.txt"
     fi
   fi
   mkdir -p "$(dirname "$OUT_PATH")"
