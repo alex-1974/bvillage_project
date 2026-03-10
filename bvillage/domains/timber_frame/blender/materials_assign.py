@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/blender/materials_assign.py
+# bvillage/domains/timber_frame/blender/materials_assign.py
 
 from __future__ import annotations
 

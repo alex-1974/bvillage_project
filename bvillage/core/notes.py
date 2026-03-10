@@ -23,7 +23,7 @@ notes is a dict. The preferred structured schema is:
 notes["domains"][<domain_name>][<artifact_name>] = payload
 
 Example:
-notes["domains"]["fachwerk"]["frameplan"] = {...}
+notes["domains"]["timber_frame"]["frameplan"] = {...}
 
 Back-compat Aliases
 -------------------

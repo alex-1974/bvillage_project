@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/core/structural_terms.py
+# bvillage/domains/timber_frame/core/structural_terms.py
 
 """
 Fachwerk Structural Terms (frozen ontology)

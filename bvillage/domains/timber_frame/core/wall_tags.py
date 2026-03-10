@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/core/wall_tags.py
+# bvillage/domains/timber_frame/core/wall_tags.py
 
 """
 bvillage.domains.timber_frame.core.wall_tags

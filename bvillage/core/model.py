@@ -1,4 +1,5 @@
 # bvillage/core/model.py
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -58,8 +59,8 @@ class Context:
     occupants: int = 4
     climate_hint: str = "temperate"
 
-    # Stable dispatch key, resolved via plugin registry / archetype binding.
-    archetype_id: str = "FW-LH-ND"
+    # archetype_id (stable machine-readable id)
+    archetype_id: str = ""
 
     # Structural Grammar Architecture (SGA)
     # Grammar is a structural contract, not a free-form style knob.

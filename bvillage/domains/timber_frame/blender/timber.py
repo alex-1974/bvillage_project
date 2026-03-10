@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/blender/timber.py
+# bvillage/domains/timber_frame/blender/timber.py
 
 import bpy
 import bmesh

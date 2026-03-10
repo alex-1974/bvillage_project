@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/blender/build_frame.py
+# bvillage/domains/timber_frame/blender/build_frame.py
 
 from __future__ import annotations
 

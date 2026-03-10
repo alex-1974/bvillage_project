@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # tools/import_graph.py
+
 """
 BVILLAGE Import Graph Generator
 
@@ -67,7 +68,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--outdir",
         type=str,
-        default="tmp",
+        default="generated",
         help="Output directory for IMPORT_GRAPH.txt (default: tmp). Ignored if --outfile is set.",
     )
     parser.add_argument(

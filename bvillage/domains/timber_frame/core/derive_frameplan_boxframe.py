@@ -1,4 +1,5 @@
 # bvillage/domains/timber_frame/core/derive_frameplan_boxframe.py
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple

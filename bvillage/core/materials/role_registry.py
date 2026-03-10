@@ -1,4 +1,5 @@
 # bvillage/core/materials/role_registry.py
+
 from __future__ import annotations
 
 from typing import Dict, Mapping, Optional

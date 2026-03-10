@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/blender/opening_profiles.py
+# bvillage/domains/timber_frame/blender/opening_profiles.py
 
 from dataclasses import dataclass
 

@@ -1,4 +1,5 @@
-# bvillage/domains/fachwerk/contracts/validate_frameplan_fachwerk.py
+# bvillage/domains/timber_frame/contracts/validate_frameplan_fachwerk.py
+
 from __future__ import annotations
 
 from typing import Any, Iterable, Tuple

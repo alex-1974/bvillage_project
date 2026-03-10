@@ -1,4 +1,5 @@
 # bvillage/types/timber_frame/longhouse/contracts/validate_frameplan_type.py
+
 from __future__ import annotations
 
 from typing import Any

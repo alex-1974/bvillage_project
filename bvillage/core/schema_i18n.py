@@ -1,4 +1,5 @@
 # bvillage/core/schema_i18n.py
+
 from __future__ import annotations
 
 from collections import defaultdict

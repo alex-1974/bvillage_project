@@ -1,4 +1,5 @@
 # bvillage/core/ontology/structural_terms.py
+
 """
 BVILLAGE Structural Ontology
 

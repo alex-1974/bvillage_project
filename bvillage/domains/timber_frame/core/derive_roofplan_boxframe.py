@@ -1,4 +1,5 @@
 # bvillage/domains/timber_frame/core/derive_roofplan_boxframe.py
+
 from __future__ import annotations
 
 from math import radians, tan

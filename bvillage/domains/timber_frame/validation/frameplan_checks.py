@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/validation/frameplan_checks.py
+# bvillage/domains/timber_frame/validation/frameplan_checks.py
 
 from __future__ import annotations
 

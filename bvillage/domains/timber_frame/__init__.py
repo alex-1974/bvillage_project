@@ -1,3 +1,5 @@
+# bvillage/domains/timber_frame/__init__.py
+
 from __future__ import annotations
 
 from bvillage.core.dispatch_registry import register_foreman_for_grammar

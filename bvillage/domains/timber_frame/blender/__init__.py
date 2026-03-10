@@ -1,1 +1,1 @@
-# bvillage/domains/fachwerk/blender/__init__.py
+# bvillage/domains/timber_frame/blender/__init__.py

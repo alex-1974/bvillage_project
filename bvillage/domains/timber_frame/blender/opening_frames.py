@@ -1,4 +1,5 @@
 # bvillage/domains/timber_frame/blender/opening_frames.py
+
 from __future__ import annotations
 
 from typing import Any

@@ -1,4 +1,5 @@
 # bvillage/types/timber_frame/longhouse/__init__.py
+
 from __future__ import annotations
 
 from bvillage.core.dispatch_registry import register_provider_with_archetypes

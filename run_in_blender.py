@@ -1,4 +1,5 @@
-import os
+# run_in_blender.py
+
 import platform
 import sys
 import traceback

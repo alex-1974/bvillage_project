@@ -1,4 +1,5 @@
 # bvillage/core/plugin_bootstrap.py
+
 from __future__ import annotations
 
 import importlib
@@ -16,10 +17,10 @@ def _iter_plugin_packages(package_name: str, *, depth: int):
     Examples
     --------
     package_name="bvillage.domains", depth=1
-        -> bvillage.domains.timber_frame
+        -> bvillage.domains.<domain>
 
     package_name="bvillage.types", depth=2
-        -> bvillage.types.timber_frame.longhouse
+        -> bvillage.types.<domain>.<type>
     """
     package = importlib.import_module(package_name)
     base_parts = package_name.count(".")

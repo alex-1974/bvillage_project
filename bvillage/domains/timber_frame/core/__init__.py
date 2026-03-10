@@ -1,1 +1,1 @@
-# bvillage/domains/fachwerk/core/__init__.py
+# bvillage/domains/timber_frame/core/__init__.py

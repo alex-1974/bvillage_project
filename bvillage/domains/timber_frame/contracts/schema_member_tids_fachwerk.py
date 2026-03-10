@@ -1,4 +1,4 @@
-# bvillage/domains/fachwerk/core/schema_member_tids_fachwerk.py
+# bvillage/domains/timber_frame/contracts/schema_member_tids_fachwerk.py
 
 from __future__ import annotations
 

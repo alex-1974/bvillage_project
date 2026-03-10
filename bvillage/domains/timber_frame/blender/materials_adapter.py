@@ -1,4 +1,5 @@
 # bvillage/domains/timber_frame/blender/materials_adapter.py
+
 from __future__ import annotations
 
 import hashlib

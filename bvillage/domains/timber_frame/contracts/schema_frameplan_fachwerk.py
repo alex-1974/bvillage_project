@@ -1,4 +1,5 @@
-# bvillage/domains/fachwerk/contracts/schema_frameplan_fachwerk.py
+# bvillage/domains/timber_frame/contracts/schema_frameplan_fachwerk.py
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple, TypedDict

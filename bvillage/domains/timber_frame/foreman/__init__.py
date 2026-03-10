@@ -1,1 +1,1 @@
-# bvillage.domains.timber_frame.foreman
+# bvillage/domains/timber_frame/foreman/__init__.py

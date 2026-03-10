@@ -1,4 +1,5 @@
 # bvillage/domains/timber_frame/blender/braces.py
+
 from __future__ import annotations
 
 import logging

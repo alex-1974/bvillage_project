@@ -1,4 +1,5 @@
 # bvillage/domains/timber_frame/foreman/boxframe_foreman.py
+
 from __future__ import annotations
 
 from bvillage.core.notes import set_domain_artifact

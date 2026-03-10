@@ -1,4 +1,5 @@
 # bvillage/core/policy_resolver.py
+
 from __future__ import annotations
 
 from bvillage.core.dispatch_registry import resolve_provider_for_archetype
