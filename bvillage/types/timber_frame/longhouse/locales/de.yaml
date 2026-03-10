@@ -1,0 +1,106 @@
+FW-LH-ND:
+  name: Niederdeutsches Hallenhaus
+  short_name: Hallenhaus
+  description: >
+    Dreischiffiges niederdeutsches Langhaus mit Längsdiele.
+  aliases:
+    - Niedersachsenhaus
+    - Niederdeutsches Langhaus
+  keywords:
+    - hallenhaus
+    - langhaus
+    - fachwerk
+    - niederdeutsch
+
+FW-LH-2S:
+  name: Hallenhaus Zweiständer
+  short_name: Zweiständerhaus
+  description: >
+    Langhaus mit zwei inneren Ständerreihen.
+  aliases:
+    - Zweiständer
+  keywords:
+    - hallenhaus
+    - zweiständer
+    - langhaus
+
+FW-LH-3S:
+  name: Hallenhaus Dreiständer
+  short_name: Dreiständerhaus
+  description: >
+    Langhaus mit asymmetrischer innerer Ständerordnung.
+  aliases:
+    - Dreiständer
+  keywords:
+    - hallenhaus
+    - dreiständer
+    - langhaus
+
+FW-LH-4S:
+  name: Hallenhaus Vierständer
+  short_name: Vierständerhaus
+  description: >
+    Langhaus mit vier Ständerreihen.
+  aliases:
+    - Vierständer
+  keywords:
+    - hallenhaus
+    - vierständer
+    - langhaus
+
+FW-GULF:
+  name: Gulfhaus
+  short_name: Gulfhaus
+  description: >
+    Küstennahe Langhausform mit großem zentralem Gulf.
+  aliases:
+    - Gulf-Haus
+  keywords:
+    - gulfhaus
+    - langhaus
+    - küstenhaus
+
+FW-HAUB:
+  name: Haubarg
+  short_name: Haubarg
+  description: >
+    Nordfriesischer Großbau mit zentraler Tragstruktur.
+  aliases: []
+  keywords:
+    - haubarg
+    - nordfriesland
+    - großbau
+
+FW-MITT:
+  name: Mittertennhaus
+  short_name: Mittertennhaus
+  description: >
+    Langhaus mit mittiger Tenne, vor allem im Alpenraum.
+  aliases: []
+  keywords:
+    - mittertennhaus
+    - langhaus
+    - tenne
+
+FW-LH-EN:
+  name: English Longhouse
+  short_name: Englisches Langhaus
+  description: >
+    Wohn- und Stallfunktion unter einem Dach, mit Quereingang.
+  aliases:
+    - Englisches Langhaus
+  keywords:
+    - english longhouse
+    - langhaus
+    - england
+
+FW-STG-GIE:
+  name: Giebelständiges Stadthaus
+  short_name: Stadthaus
+  description: >
+    Stadthaus mit giebelständiger Orientierung zur Straße.
+  aliases: []
+  keywords:
+    - stadthaus
+    - giebelständig
+    - urban

@@ -27,7 +27,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--with-tests", dest="with_tests", action="store_true", default=True)
     parser.add_argument("--no-tests", dest="with_tests", action="store_false")
-    parser.add_argument("--outdir", default="tmp")
+    parser.add_argument("--outdir", default="generated")
     parser.add_argument("--outfile", default="")
     return parser.parse_args()
 

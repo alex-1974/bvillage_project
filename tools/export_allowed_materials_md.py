@@ -1,3 +1,5 @@
+# tools/export_allowed_materials_md.py
+
 from __future__ import annotations
 
 import sys
@@ -9,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 from bvillage.core.materials.material_registry import BASES, VARIANTS
 
 
-OUT_PATH = Path("docs/BVILLAGE Allowed Materials List.md")
+OUT_PATH = Path("generated/BVILLAGE Allowed Materials List.md")
 
 
 def build_index():

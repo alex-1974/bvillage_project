@@ -9,14 +9,14 @@ bvillage_project.egg-info/
 
 tmp/
 tmp*/
+scratch/
+generated/
 
 research/tools/
 research/archive/
-research/literature/
+research/literature*/
 research/sources/library/
 research/**/drafts/
 research/**/archive/
-
-ARCH_SCAN.txt
 
 research/Mittelalter.bak/*

@@ -1,3 +1,5 @@
+# tests/test_hotpaths_strict.py
+
 """
 Strict hot path audit for @hot functions.
 

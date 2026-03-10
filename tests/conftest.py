@@ -47,7 +47,7 @@ def ctx() -> Context:
         wealth=0.6,
         occupants=4,
         climate_hint="temperate",
-        house_type="fachwerkhaus.hallenhaus",
+        archetype_id="FW-LH-ND",
     )
 
 

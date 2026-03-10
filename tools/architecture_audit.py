@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # tools/architecture_audit.py
+
 """
 BVILLAGE architecture audit.
 
@@ -13,6 +14,7 @@ This tool checks:
 - policy leakage
 - contract placement hints
 - naming / path hygiene
+- structural grammar boundaries
 
 It is intentionally conservative:
 - reports grounded findings only
@@ -22,7 +24,7 @@ It is intentionally conservative:
 Output
 ------
 Writes a markdown report, default:
-    tmp/architecture_audit.md
+    generated/architecture_audit.md
 
 Severity
 --------
@@ -33,7 +35,7 @@ Severity
 Usage
 -----
     python3 tools/architecture_audit.py
-    python3 tools/architecture_audit.py --root . --out tmp/architecture_audit.md
+    python3 tools/architecture_audit.py --root . --out generated/architecture_audit.md
     python3 tools/architecture_audit.py --include-tests
 """
 
@@ -41,7 +43,9 @@ from __future__ import annotations
 
 import argparse
 import ast
+import io
 import re
+import tokenize
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -110,43 +114,65 @@ CTX_POLICY_FIELDS = (
     "grammar",
 )
 
-FRAMEPLAN_MUTATION_HINTS = (
-    ".append(",
-    ".extend(",
-    ".insert(",
-    ".pop(",
-    ".remove(",
-    ".clear(",
-    "[",
-)
-
 NOTES_SCHEMA_PATH = 'notes["domains"][domain][artifact]'
 
-ALLOWED_CORE_IMPORT_PREFIXES = (
-    "bvillage.core",
-    "bvillage.foreman",
-    "bvillage.policies",
-)
-
-ALLOWED_DOMAIN_CORE_IMPORT_PREFIXES = (
-    "bvillage.core",
-    "bvillage.domains",
-    "bvillage.policies",
-)
-
-ALLOWED_TYPE_IMPORT_PREFIXES = (
-    "bvillage.core",
-    "bvillage.types",
-    "bvillage.policies",
-)
-
-ALLOWED_BLENDER_IMPORT_PREFIXES = (
-    "bvillage.core",
-    "bvillage.domains",
-    "bvillage.blender",
-)
-
 PATH_HEADER_RE = re.compile(r"^#\s+(.+\.py)\s*$")
+FALLBACK_TOKEN_RE = re.compile(r"\bfallback\b", re.IGNORECASE)
+
+REPORT_MODULE_PREFIXES = (
+    "bvillage.core.report",
+)
+
+# STRUCT-001 should only trigger on grounded structural-emission patterns,
+# not on comments, docstrings, TypedDict field names, or harmless prose.
+STRUCTURAL_EMISSION_EVIDENCE_LABELS = (
+    ("members = {", re.compile(r"\bmembers\s*=\s*\{")),
+    ("members = dict(...)", re.compile(r"\bmembers\s*=\s*dict\s*\(")),
+    ("members.append(...)", re.compile(r"\bmembers\.append\s*\(")),
+    ("members.extend(...)", re.compile(r"\bmembers\.extend\s*\(")),
+    ('"members": {...}', re.compile(r'["\']members["\']\s*:\s*\{')),
+    ('"posts": ...', re.compile(r'["\']posts["\']\s*:\s*[\[{]')),
+    ('"rails": ...', re.compile(r'["\']rails["\']\s*:\s*[\[{]')),
+    ('"braces": ...', re.compile(r'["\']braces["\']\s*:\s*[\[{]')),
+    ('"infills": ...', re.compile(r'["\']infills["\']\s*:\s*[\[{]')),
+    ('"tid": "..."', re.compile(r'["\']tid["\']\s*:\s*["\'][^"\']+["\']')),
+    ("Member(...)", re.compile(r"\bMember\s*\(")),
+)
+
+# Accepted signals that a domain file participates correctly in artifact
+# production without directly spelling "members" in the current module.
+FRAMEPLAN_DERIVATION_PATTERNS = (
+    re.compile(r"\bderive_frameplan_[A-Za-z0-9_]+\s*\("),
+    re.compile(r"\bset_domain_artifact\s*\("),
+    re.compile(r'artifact\s*=\s*["\']frameplan["\']'),
+)
+
+ROOFPLAN_DERIVATION_PATTERNS = (
+    re.compile(r"\bderive_roofplan_[A-Za-z0-9_]+\s*\("),
+    re.compile(r"\bset_domain_artifact\s*\("),
+    re.compile(r'artifact\s*=\s*["\']roofplan["\']'),
+)
+
+# Accepted renderer signals for artifact-driven geometry emission.
+RENDER_ARTIFACT_PATTERNS = (
+    re.compile(r"\bmembers\b"),
+    re.compile(r"\broofplan\b"),
+    re.compile(r"\bbuild_roof_from_plan\s*\("),
+    re.compile(r"\bbuild_fachwerk_frame_from_structure_notes\s*\("),
+    re.compile(r"\bget_domain_artifact\s*\("),
+    re.compile(r'artifact\s*=\s*["\']frameplan["\']'),
+    re.compile(r'artifact\s*=\s*["\']roofplan["\']'),
+)
+
+RENDER_INFERENCE_PATTERNS = (
+    "axes_u",
+    "axes_z",
+    "vertical_axes",
+    "compute_vertical_axes",
+    "compute_z_axes",
+    "wall_height",
+    "infer",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -292,6 +318,109 @@ def is_relative_import(mod: str) -> bool:
 
 def md_escape(text: str) -> str:
     return text.replace("|", "\\|")
+
+
+def non_comment_lines(source: str) -> list[tuple[int, str]]:
+    out: list[tuple[int, str]] = []
+    for lineno, line in enumerate(source.splitlines(), start=1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        out.append((lineno, line))
+    return out
+
+
+def source_without_comments_and_docstrings(source: str, tree: ast.AST | None) -> str:
+    """
+    Return source with comments and docstrings removed.
+
+    WHY:
+    Structural grammar checks must inspect executable / declarative code,
+    not prose in comments or docstrings.
+    """
+    lines = source.splitlines()
+    docstring_lines: set[int] = set()
+
+    if tree is not None:
+        for node in ast.walk(tree):
+            body = getattr(node, "body", None)
+
+            # Only module / class / function-like nodes with a statement list
+            # can legally start with a docstring expression.
+            if not isinstance(body, list) or not body:
+                continue
+
+            first = body[0]
+            if (
+                isinstance(first, ast.Expr)
+                and isinstance(first.value, ast.Constant)
+                and isinstance(first.value.value, str)
+            ):
+                start = getattr(first, "lineno", None)
+                end = getattr(first, "end_lineno", start)
+                if start is not None and end is not None:
+                    docstring_lines.update(range(start, end + 1))
+
+    token_lines: dict[int, list[str]] = {}
+    try:
+        tok_stream = tokenize.generate_tokens(io.StringIO(source).readline)
+        for tok in tok_stream:
+            tok_type = tok.type
+            tok_str = tok.string
+            start_line = tok.start[0]
+
+            if start_line in docstring_lines:
+                continue
+            if tok_type == tokenize.COMMENT:
+                continue
+            if tok_type in {
+                tokenize.STRING,
+                tokenize.NL,
+                tokenize.NEWLINE,
+                tokenize.INDENT,
+                tokenize.DEDENT,
+                tokenize.ENDMARKER,
+            }:
+                continue
+
+            token_lines.setdefault(start_line, []).append(tok_str)
+    except tokenize.TokenError:
+        # Fall back to a simple line-based removal if tokenization fails.
+        cleaned_lines: list[str] = []
+        for lineno, line in enumerate(lines, start=1):
+            if lineno in docstring_lines:
+                continue
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            cleaned_lines.append(line)
+        return "\n".join(cleaned_lines)
+
+    cleaned_lines = []
+    for lineno in sorted(token_lines.keys()):
+        cleaned_lines.append(" ".join(token_lines[lineno]))
+
+    return "\n".join(cleaned_lines)
+
+
+def detect_structural_emission(clean_source: str) -> list[str]:
+    hits: list[str] = []
+    for label, pattern in STRUCTURAL_EMISSION_EVIDENCE_LABELS:
+        if pattern.search(clean_source):
+            hits.append(label)
+    return hits
+
+
+def matches_any(clean_source: str, patterns: tuple[re.Pattern[str], ...]) -> bool:
+    return any(p.search(clean_source) for p in patterns)
+
+
+def collect_token_hits(clean_source: str, tokens: tuple[str, ...]) -> list[str]:
+    hits: list[str] = []
+    for tok in tokens:
+        if tok in clean_source:
+            hits.append(tok)
+    return hits
 
 
 # ---------------------------------------------------------------------------
@@ -540,17 +669,16 @@ def audit_core_arch_knowledge(files: list[FileInfo]) -> list[Violation]:
                     )
                 )
 
-        low_source = fi.source.lower()
-        for kw in CONCRETE_ARCH_KEYWORDS:
-            if kw in low_source:
+        for lineno, line in non_comment_lines(fi.source):
+            if has_arch_keyword(line):
                 out.append(
                     Violation(
                         severity="MEDIUM",
                         code="CORE-ARCH-003",
                         file=fi.relpath,
-                        line=1,
+                        line=lineno,
                         message="Core source contains concrete building/domain knowledge.",
-                        evidence=kw,
+                        evidence=line.strip()[:120],
                     )
                 )
                 break
@@ -560,14 +688,15 @@ def audit_core_arch_knowledge(files: list[FileInfo]) -> list[Violation]:
 
 def audit_policy_leakage(files: list[FileInfo]) -> list[Violation]:
     out: list[Violation] = []
-    allow_mods = {
-        "bvillage.core.policy_stack",
-        "bvillage.core.policy_types",
-        "bvillage.policies",
-    }
 
     for fi in files:
-        if fi.module_name == "bvillage.core.policy_stack" or fi.module_name.startswith("bvillage.policies"):
+        if (
+            fi.module_name == "bvillage.core.policy_stack"
+            or fi.module_name.startswith("bvillage.policies")
+            or fi.module_name.startswith("bvillage.domains.timber_frame.policies")
+        ):
+            continue
+        if fi.module_name.startswith(REPORT_MODULE_PREFIXES):
             continue
         if fi.tree is None:
             continue
@@ -592,82 +721,47 @@ def audit_policy_leakage(files: list[FileInfo]) -> list[Violation]:
 
 
 def audit_type_generates_structure(files: list[FileInfo]) -> list[Violation]:
-    out: list[Violation] = []
-    structural_terms = (
-        "members",
-        "post.",
-        "beam.",
-        "brace.",
-        "infill.",
-        '"tid"',
-        "'tid'",
-    )
-
-    for fi in files:
-        if fi.layer != "types":
-            continue
-        low = fi.source.lower()
-        hits = [t for t in structural_terms if t in low]
-        if hits:
-            out.append(
-                Violation(
-                    severity="MEDIUM",
-                    code="TYPE-001",
-                    file=fi.relpath,
-                    line=1,
-                    message="Type layer appears to contain structural member generation logic.",
-                    evidence=", ".join(hits[:5]),
-                )
-            )
-    return out
+    # Deprecated: folded into audit_structural_grammar().
+    return []
 
 
 def audit_renderer_fallbacks(files: list[FileInfo]) -> list[Violation]:
     out: list[Violation] = []
 
-    bad_patterns = (
-        "axes_u",
-        "axes_z",
-        "vertical_axes",
-        "compute_vertical_axes",
-        "compute_z_axes",
-        "_infer_wall_height",
-        "fallback",
-        "legacy fallback",
-    )
-
     for fi in files:
         if fi.layer not in {"domain-blender", "blender-root"}:
             continue
 
-        low = fi.source.lower()
+        clean = source_without_comments_and_docstrings(fi.source, fi.tree)
+        low = clean.lower()
 
-        if "members" not in low:
+        if not matches_any(low, RENDER_ARTIFACT_PATTERNS):
             out.append(
                 Violation(
                     severity="MEDIUM",
                     code="RENDER-001",
                     file=fi.relpath,
                     line=1,
-                    message="Renderer does not obviously consume members-first payload.",
-                    evidence="members not found",
+                    message="Renderer does not obviously consume artifact-driven payload.",
+                    evidence="members/roofplan/artifact access not found",
                 )
             )
 
-        if "legacy fallback" in low or "fallback" in low:
-            out.append(
-                Violation(
-                    severity="HARD",
-                    code="RENDER-002",
-                    file=fi.relpath,
-                    line=1,
-                    message="Renderer contains fallback path.",
-                    evidence="fallback",
+        for lineno, line in non_comment_lines(fi.source):
+            if FALLBACK_TOKEN_RE.search(line):
+                out.append(
+                    Violation(
+                        severity="HARD",
+                        code="RENDER-002",
+                        file=fi.relpath,
+                        line=lineno,
+                        message="Renderer contains fallback path.",
+                        evidence=line.strip()[:120],
+                    )
                 )
-            )
+                break
 
-        # axes are allowed for mapping basis in transitional code, but still important to flag
-        axis_hits = [p for p in ("axes_u", "axes_z", "vertical_axes") if p in low]
+        axis_hits = collect_token_hits(low, ("axes_u", "axes_z", "vertical_axes"))
         if axis_hits:
             out.append(
                 Violation(
@@ -686,6 +780,8 @@ def audit_renderer_fallbacks(files: list[FileInfo]) -> list[Violation]:
 def audit_frameplan_mutation(files: list[FileInfo]) -> list[Violation]:
     out: list[Violation] = []
     for fi in files:
+        if fi.relpath.startswith("tools/"):
+            continue
         if fi.tree is None:
             continue
         if fi.layer in {"domain-core", "blender-root", "domain-blender"}:
@@ -744,17 +840,18 @@ def audit_folder_structure(files: list[FileInfo]) -> list[Violation]:
                     evidence=p,
                 )
             )
-        if fi.layer == "core" and "/contracts/" not in p and fi.path.name.startswith("schema_"):
-            out.append(
-                Violation(
-                    severity="LOW",
-                    code="FOLDER-002",
-                    file=fi.relpath,
-                    line=1,
-                    message="Core schema file not located in contracts-oriented subtree.",
-                    evidence=p,
+        if fi.layer == "core" and fi.path.name.startswith("schema_"):
+            if "/contracts/" not in p:
+                out.append(
+                    Violation(
+                        severity="LOW",
+                        code="FOLDER-002",
+                        file=fi.relpath,
+                        line=1,
+                        message="Core schema file not located in contracts-oriented subtree.",
+                        evidence=p,
+                    )
                 )
-            )
     return out
 
 
@@ -777,6 +874,93 @@ def audit_plugin_registration(files: list[FileInfo]) -> list[Violation]:
                     evidence="register not found",
                 )
             )
+    return out
+
+
+def audit_structural_grammar(files: list[FileInfo]) -> list[Violation]:
+    """
+    Verify BVILLAGE structural grammar boundaries.
+
+    Architecture rules
+    ------------------
+    Type layer:
+        must NOT generate structural members
+
+    Domain layer:
+        should generate FramePlan / RoofPlan artifacts
+
+    Renderer:
+        should consume artifacts rather than infer structure
+    """
+    out: list[Violation] = []
+
+    for fi in files:
+        if fi.tree is None:
+            continue
+
+        clean = source_without_comments_and_docstrings(fi.source, fi.tree)
+        low = clean.lower()
+
+        if fi.layer == "types":
+            hits = detect_structural_emission(low)
+            if hits:
+                out.append(
+                    Violation(
+                        severity="HARD",
+                        code="STRUCT-001",
+                        file=fi.relpath,
+                        line=1,
+                        message="Type layer generates structural members.",
+                        evidence=", ".join(hits[:4]),
+                    )
+                )
+
+        if fi.layer == "domain-core":
+            mentions_frameplan = "frameplan" in low
+            mentions_roofplan = "roofplan" in low
+            has_members = "members" in low
+
+            accepted_frameplan = matches_any(low, FRAMEPLAN_DERIVATION_PATTERNS)
+            accepted_roofplan = matches_any(low, ROOFPLAN_DERIVATION_PATTERNS)
+
+            if mentions_frameplan and not has_members and not accepted_frameplan:
+                out.append(
+                    Violation(
+                        severity="MEDIUM",
+                        code="STRUCT-002",
+                        file=fi.relpath,
+                        line=1,
+                        message="Domain layer does not obviously generate FramePlan members or delegate to a Frame Producer.",
+                        evidence="frameplan found without members/derive_frameplan/set_domain_artifact(frameplan)",
+                    )
+                )
+
+            if mentions_roofplan and not accepted_roofplan:
+                out.append(
+                    Violation(
+                        severity="MEDIUM",
+                        code="STRUCT-004",
+                        file=fi.relpath,
+                        line=1,
+                        message="Domain layer does not obviously generate RoofPlan or delegate to a Roof Producer.",
+                        evidence="roofplan found without derive_roofplan/set_domain_artifact(roofplan)",
+                    )
+                )
+
+        if fi.layer in {"domain-blender", "blender-root"}:
+            hits = collect_token_hits(low, RENDER_INFERENCE_PATTERNS)
+            if hits:
+                out.append(
+                    Violation(
+                        severity="MEDIUM",
+                        code="STRUCT-003",
+                        file=fi.relpath,
+                        line=1,
+                        message="Renderer may infer structure instead of consuming artifact-driven plans.",
+                        evidence=", ".join(hits[:3]),
+                    )
+                )
+
     return out
 
 
@@ -852,7 +1036,7 @@ def summarize(files: list[FileInfo], violations: list[Violation]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="BVILLAGE architecture audit")
     parser.add_argument("--root", default=".", help="Repository root")
-    parser.add_argument("--out", default="tmp/architecture_audit.md", help="Markdown report output path")
+    parser.add_argument("--out", default="generated/architecture_audit.md", help="Markdown report output path")
     parser.add_argument("--include-tests", action="store_true", help="Include tests/ in scan")
     args = parser.parse_args()
 
@@ -880,6 +1064,7 @@ def main() -> int:
     violations.extend(audit_notes_schema(files))
     violations.extend(audit_folder_structure(files))
     violations.extend(audit_plugin_registration(files))
+    violations.extend(audit_structural_grammar(files))
 
     report = summarize(files, violations)
 
@@ -887,8 +1072,12 @@ def main() -> int:
     out_path.write_text(report, encoding="utf-8")
 
     print(f"[OK] wrote audit report: {out_path}")
-    print(f"[INFO] files={len(files)} hard={sum(v.severity == 'HARD' for v in violations)} "
-          f"medium={sum(v.severity == 'MEDIUM' for v in violations)} low={sum(v.severity == 'LOW' for v in violations)}")
+    print(
+        f"[INFO] files={len(files)} "
+        f"hard={sum(v.severity == 'HARD' for v in violations)} "
+        f"medium={sum(v.severity == 'MEDIUM' for v in violations)} "
+        f"low={sum(v.severity == 'LOW' for v in violations)}"
+    )
     return 0
 
 

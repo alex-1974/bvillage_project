@@ -1,1 +1,0 @@
-# bvillage/domains/fachwerk/blender/__init__.py

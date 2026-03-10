@@ -8,3 +8,7 @@ ROLE_DEFAULT_MATERIAL: dict[str, str] = {
     "BRACE": "timber.oak",
     "INFILL": "brick.low_fired",
 }
+
+from bvillage.core.materials.role_registry import register_role_defaults
+
+register_role_defaults(ROLE_DEFAULT_MATERIAL)
