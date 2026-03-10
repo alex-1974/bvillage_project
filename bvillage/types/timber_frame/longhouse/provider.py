@@ -11,10 +11,11 @@ from bvillage.types.timber_frame.longhouse.contracts.validate_frameplan_type imp
 from bvillage.types.timber_frame.longhouse.openings import plan_openings
 from bvillage.types.timber_frame.longhouse.plan_topology import plan_topology
 from bvillage.types.timber_frame.longhouse.planner import plan_interior
+from bvillage.domains.timber_frame.policies.timber_frame_policy_stack import resolve_policy_stack
 
 __all__ = ["LonghouseTypeProvider"]
 
-
+    
 class LonghouseTypeProvider:
     """
     Type-layer provider for timber-frame longhouse archetypes.
@@ -32,7 +33,9 @@ class LonghouseTypeProvider:
     - no roof production
     - no renderer logic
     """
-
+    def resolve_policy(self, ctx):
+        return resolve_policy_stack(ctx)
+    
     def plan_structure_and_interior(
         self,
         ctx: Any,

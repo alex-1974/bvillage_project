@@ -5,6 +5,9 @@ from math import radians, tan
 from typing import Any
 
 from bvillage.core.errors import SchemaError
+from bvillage.domains.timber_frame.contracts.validate_roofplan_timber_frame import (
+    validate_roofplan_timber_frame,
+)
 
 __all__ = ["derive_roofplan_boxframe"]
 
@@ -17,7 +20,7 @@ def _resolve_pitch_deg(resolved_policy: Any) -> float:
 
     if isinstance(resolved_policy, dict):
         for key in (
-            "fachwerk.roof_pitch_deg",
+            "timber_frame.roof_pitch_deg",
             "roof_pitch_deg",
             "roof.pitch_deg",
         ):
@@ -30,7 +33,7 @@ def _resolve_pitch_deg(resolved_policy: Any) -> float:
 
     for attr in (
         "roof_pitch_deg",
-        "fachwerk_roof_pitch_deg",
+        "timber_frame_roof_pitch_deg",
     ):
         value = getattr(resolved_policy, attr, None)
         if value is not None:
@@ -50,7 +53,7 @@ def _resolve_kehl_frac(resolved_policy: Any) -> float:
 
     if isinstance(resolved_policy, dict):
         for key in (
-            "fachwerk.kehl_frac",
+            "timber_frame.kehl_frac",
             "roof.kehl_frac",
             "kehl_frac",
         ):
@@ -110,6 +113,18 @@ def _extract_frame_x_positions(frameplan: dict[str, Any]) -> list[float]:
     return [float(x) for x in xs]
 
 
+def _extract_y_rows(frameplan: dict[str, Any]) -> list[float]:
+    frame_layout = frameplan.get("frame_layout")
+    if not isinstance(frame_layout, dict):
+        raise SchemaError("FramePlan.frame_layout missing/invalid for roof derivation")
+
+    ys = frame_layout.get("y_rows")
+    if not isinstance(ys, list) or len(ys) < 2:
+        raise SchemaError("FramePlan.frame_layout.y_rows missing/invalid for roof derivation")
+
+    return [float(y) for y in ys]
+
+
 def _extract_half_width(frameplan: dict[str, Any]) -> float:
     basis = frameplan.get("basis")
     if not isinstance(basis, dict):
@@ -134,18 +149,6 @@ def _extract_z_plate(frameplan: dict[str, Any]) -> float:
     return float(z_plate)
 
 
-def _extract_y_rows(frameplan: dict[str, Any]) -> list[float]:
-    frame_layout = frameplan.get("frame_layout")
-    if not isinstance(frame_layout, dict):
-        raise SchemaError("FramePlan.frame_layout missing/invalid for roof derivation")
-
-    ys = frame_layout.get("y_rows")
-    if not isinstance(ys, list) or len(ys) < 2:
-        raise SchemaError("FramePlan.frame_layout.y_rows missing/invalid for roof derivation")
-
-    return [float(y) for y in ys]
-
-
 def derive_roofplan_boxframe(
     frameplan: dict[str, Any],
     *,
@@ -159,7 +162,7 @@ def derive_roofplan_boxframe(
     - renderer must not derive rafters/collars/ridge from planning axes
     """
     xs = _extract_frame_x_positions(frameplan)
-    _ = _extract_y_rows(frameplan)  # kept as an explicit contract dependency
+    _ = _extract_y_rows(frameplan)  # explicit contract dependency
     half_width = _extract_half_width(frameplan)
     z_plate = _extract_z_plate(frameplan)
 
@@ -233,7 +236,7 @@ def derive_roofplan_boxframe(
             }
         )
 
-    return {
+    roofplan = {
         "schema_version": "0.1.0",
         "coordinate_system": "BVILLAGE_RIGHT_HANDED_Z_UP",
         "roof_type": "gable_rafter_roof",
@@ -249,3 +252,7 @@ def derive_roofplan_boxframe(
         },
         "members": members,
     }
+
+    validate_roofplan_timber_frame(roofplan)
+
+    return roofplan

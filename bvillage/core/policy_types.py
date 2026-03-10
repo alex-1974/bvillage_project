@@ -1,4 +1,3 @@
-# bvillage/core/policy_types.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,75 +28,19 @@ class ConstraintSpec:
 
 
 @dataclass(frozen=True, slots=True)
-class FachwerkPolicySpec:
-    """
-    Domain inputs for the Fachwerk stack.
-
-    All defaults must be policy-level defaults.
-    Blender must not invent structural/material defaults.
-    """
-
-    # --- structural rhythm ---
-    binder_max: float
-
-    # --- topological geometry ---
-    # WHY:
-    # Hallenhaus topology currently needs explicit longitudinal bay spacing,
-    # overall building width, and plate height. These values belong in policy,
-    # not as hardcoded constants in the type planner.
-    bay_width: float = 3.645
-    building_width: float = 7.2
-    plate_height: float = 2.6
-
-    # --- topological sequencing ---
-    # WHY:
-    # Frame count and gable treatment are type-relevant planning inputs that
-    # must come from policy rather than from a hardcoded sequence in the
-    # topology planner.
-    bay_count: int = 5
-    gable_mode: str = "end_frame"
-
-    # --- openings normalization ---
-    default_jamb_thickness: float = 0.20
-
-    # --- member profile defaults ---
-    post_section_width: float = 0.20
-    post_section_depth: float = 0.20
-
-    plate_section_width: float = 0.18
-    plate_section_depth: float = 0.18
-
-    opening_jamb_width: float = 0.18
-    opening_jamb_depth: float = 0.18
-
-    # --- braces ---
-    braces_enable: bool = True
-    brace_section_width: float = 0.12
-    brace_section_depth: float = 0.12
-    brace_min_cell_width: float = 0.80
-    brace_min_cell_height: float = 0.80
-
-    # --- historical gefach targeting ---
-    target_gefach_width: float = 1.35
-    target_gefach_jitter: float = 0.10
-
-    # --- numerics ---
-    z_merge_tol: float = 0.01
-
-    # --- renderer-facing (policy-driven) ---
-    roof_pitch_deg: float = 50.0
-
-    # fallback member profile tuple (used by Blender mapping only)
-    post_section: Tuple[float, float] = (0.20, 0.20)
-
-    # NEW: infill material default (policy-driven, not Blender literal)
-    default_infill_material_role: str = "INFILL_BRICK"
-
-
-@dataclass(frozen=True, slots=True)
 class ResolvedPolicy:
     schema: int
-    # constraints by name (stable keys)
     constraints: Dict[str, ConstraintSpec]
-    # domain inputs
-    fachwerk: FachwerkPolicySpec
+    domain: object
+
+    @property
+    def fachwerk(self) -> object:
+        """
+        Compatibility alias for the current timber-frame stack.
+
+        WHY:
+        The architecture is moving toward generic domain policy access
+        (`resolved_policy.domain`), but parts of the active timber-frame
+        pipeline still read `resolved_policy.fachwerk`.
+        """
+        return self.domain

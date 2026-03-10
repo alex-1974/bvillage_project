@@ -1,3 +1,4 @@
+# bvillage/core/site_manager.py
 from __future__ import annotations
 
 from bvillage.core.dispatch_registry import (
@@ -5,7 +6,7 @@ from bvillage.core.dispatch_registry import (
     resolve_provider_for_archetype,
 )
 from bvillage.core.plugin_bootstrap import ensure_plugins_loaded
-from bvillage.core.policy_stack import resolve_policy_stack
+from bvillage.core.policy_resolver import resolve_policy
 
 __all__ = ["SiteManager"]
 
@@ -26,6 +27,7 @@ class SiteManager:
     - no construction logic
     - no topology generation
     - no frame generation
+    - no roof generation
     - no renderer logic
     """
 
@@ -35,7 +37,7 @@ class SiteManager:
 
         ensure_plugins_loaded()
 
-        resolved_policy = resolve_policy_stack(ctx)
+        resolved_policy = resolve_policy(ctx)
 
         binding = resolve_provider_for_archetype(ctx.archetype_id)
         foreman = resolve_foreman_for_grammar(binding.construction_grammar)
