@@ -924,7 +924,7 @@ Loggers follow the module hierarchy via `__name__`:
 ```python
 import logging
 log = logging.getLogger(__name__)
-# Results in: bvillage.domains.fachwerk.core.derive_frameplan
+# Results in: bvillage.domains.timber_frame.core.derive_frameplan
 ```
 
 This enables granular runtime control:
@@ -937,7 +937,7 @@ logging.getLogger("bvillage").setLevel(logging.WARNING)
 logging.getLogger("bvillage").setLevel(logging.INFO)
 
 # Targeted debugging of one subsystem
-logging.getLogger("bvillage.domains.fachwerk").setLevel(logging.DEBUG)
+logging.getLogger("bvillage.domains.timber_frame").setLevel(logging.DEBUG)
 logging.getLogger("bvillage").setLevel(logging.WARNING)
 ```
 
