@@ -154,7 +154,7 @@ be conflated.
 
 Physics applies always. A beam of given cross-section and span carries a given load or
 it does not. This is true in the thirteenth century, in the seventeenth, and today. The
-PhysicalPlausibilityValidator operates on timeless mechanics. It knows no region, no
+Inspector (`validate_physics.py`) operates on timeless mechanics. It knows no region, no
 epoch, no culture.
 
 Physical constraints are absolute. A building that violates physics is never generated.
@@ -414,17 +414,17 @@ Foreman       — master of the site. Last authority. Knows the plot and all
                 context constraints. Coordinates the team, resolves conflicts
                 that roles cannot resolve themselves. Builds nothing.
 
-Architect     — the structural exterior. Load-bearing frame, outer shell,
+Frame Producer — the structural exterior. Load-bearing frame, outer shell,
                 openings, vertical elements that penetrate all floors
                 (stairs, chimneys, shafts). Floor dimensions may vary
                 per storey. Underground floors are floors with different rules.
 
-Roofer        — everything from eave height upward. Roof type, pitch,
+Roof Producer  — everything from eave height upward. Roof type, pitch,
                 ridge direction, roof structure, overhang. Receives wall
-                geometry from Architect.
+                geometry from Frame Producer.
 
-Planner       — interior space. Room arrangement, zoning, circulation,
-                room function. Plans within what Architect declares.
+Joiner         — interior space. Room arrangement, zoning, circulation,
+                room function. Plans within what Frame Producer declares.
                 Never touches load-bearing structure.
 
 Furnisher     — room contents. Furniture, lighting, equipment. Plans within
@@ -432,7 +432,7 @@ Furnisher     — room contents. Furniture, lighting, equipment. Plans within
 
 Landscaper    — everything outside the building envelope. Garden, paths,
                 enclosures, vegetation, outdoor structures. Receives
-                opening positions from Architect.
+                opening positions from Frame Producer.
 ```
 
 Each role owns exactly one decision domain. What falls within that domain is decided
@@ -449,29 +449,29 @@ and the system has no stable foundation.
 
 ```
 Foreman      owns:  plot boundary, context constraints, conflict resolution
-Architect    owns:  load-bearing structure, outer shell, opening positions,
+Frame Producer owns: load-bearing structure, outer shell, opening positions,
                     vertical penetrating elements, floor-by-floor geometry
-Roofer       owns:  everything above eave height
-Planner      owns:  room arrangement, zoning, room function, circulation
+Roof Producer owns: everything above eave height
+Joiner        owns: room arrangement, zoning, room function, circulation
 Furnisher    owns:  room contents — furniture, lighting, equipment
 Landscaper   owns:  everything outside the building envelope
 ```
 
-The boundary between Architect and Planner is the most active. The Architect thinks in
-structural possibility — what can be built. The Planner thinks in spatial requirement —
-what is needed. When a structural element occupies space the Planner needs, that is a
+The boundary between Frame Producer and Joiner is the most active. The Frame Producer thinks in
+structural possibility — what can be built. The Joiner thinks in spatial requirement —
+what is needed. When a structural element occupies space the Joiner needs, that is a
 genuine conflict between two legitimate demands. Neither is wrong.
 
-The boundary between Architect and Roofer is eave height. Below it: Architect. Above
-it: Roofer. Roof pitch and ridge height affect total building height, which the Foreman
+The boundary between Frame Producer and Roof Producer is eave height. Below it: Frame Producer. Above
+it: Roof Producer. Roof pitch and ridge height affect total building height, which the Foreman
 constrains — this is the primary escalation path from Roofer to Foreman.
 
 The boundary between Planner and Furnisher is the room boundary. The Planner defines
 the room; the Furnisher works within it. Conflicts here are rare and typically soft —
 a room too small for its required furnishing is scored, not blocked.
 
-The boundary between Architect and Landscaper is the building envelope. The Landscaper
-receives opening positions from the Architect as fixed inputs and works outward from
+The boundary between Frame Producer and Landscaper is the building envelope. The Landscaper
+receives opening positions from the Frame Producer as fixed inputs and works outward from
 there.
 
 ---
@@ -479,21 +479,21 @@ there.
 ### 11.3 The Declaration Register
 
 Many structural elements have spatial consequences that cross role boundaries. A
-staircase is structural — Architect — but it consumes floor area in every storey the
-Planner must respect. A chimney is structural — Architect — but its footprint appears
-in every room it passes through. A window is structural — Architect — but it removes
-wall area the Planner may need.
+staircase is structural — Frame Producer — but it consumes floor area in every storey the
+Joiner must respect. A chimney is structural — Frame Producer — but its footprint appears
+in every room it passes through. A window is structural — Frame Producer — but it removes
+wall area the Joiner may need.
 
 The solution is not a new role for each cross-boundary element. The solution is a
-Declaration Register — a formal record produced by the Architect during the briefing
+Declaration Register — a formal record produced by the Frame Producer during the briefing
 phase that declares the spatial consequences of every element with cross-boundary effect.
 
 ```
-Architect declares:
-  post at u=2.4              → Planner: this position is structurally fixed
-  stair at u=3.2, 1.2×2.4m  → Planner: reserve this footprint on all connected floors
-  chimney at u=5.0, 0.6×0.6 → Planner: reserve this footprint through all floors
-  window south face, 1.2m   → Planner: this wall section is open
+Frame Producer declares:
+  post at u=2.4              → Joiner: this position is structurally fixed
+  stair at u=3.2, 1.2×2.4m  → Joiner: reserve this footprint on all connected floors
+  chimney at u=5.0, 0.6×0.6 → Joiner: reserve this footprint through all floors
+  window south face, 1.2m   → Joiner: this wall section is open
   bay window south, +0.8m   → Landscaper: this area is covered at floor 1 height
   balcony east, floor 2     → Landscaper: this area is covered, has access from floor 2
 ```
@@ -509,12 +509,14 @@ they occur.
 **Phase 1 — Briefing**
 
 The Foreman convenes all roles. Each role submits a Proposal: what it requires, what it
-prefers, what variants it can offer, and the cost of each variant. The Architect also
+prefers, what variants it can offer, and the cost of each variant. The Frame Producer also
 produces the initial Declaration Register.
 
 The Foreman reviews all proposals for feasibility and selects the variant combination
 that minimizes total cost within hard constraints. The result is the BuildingBrief —
 a binding document all roles receive before construction begins.
+
+The Declaration Register and Proposal mechanism are implemented in `foreman/plan_conflict.py`.
 
 No construction happens in this phase. Only planning and negotiation.
 
@@ -543,7 +545,7 @@ Every conflict between roles is resolved by the same mechanism regardless of whi
 roles are involved or what element is contested.
 
 Each role states its position and the cost of conceding. Cost is a score reduction on
-the overall candidate quality — expressed in the same units the Evaluator uses.
+the overall candidate quality — expressed in the same units the Appraiser uses.
 
 ```
 Example: window position conflict
@@ -551,7 +553,7 @@ Example: window position conflict
 Architect position:  window at u=3.6 — optimal for facade rhythm
   Cost if conceded:  facade rhythm broken, -0.08 score
 
-Planner position:    wall needed at u=3.0–4.2 — room partition required
+Joiner position:     wall needed at u=3.0–4.2 — room partition required
   Cost if conceded:  room loses partition, must be reorganized, -0.15 score
 
 Foreman decision:    Architect concedes — lower total cost
@@ -566,7 +568,7 @@ intervene.
 The Foreman decides by one principle: minimize total cost to the building. Not who
 asked first. Not who has higher rank. Total cost.
 
-All conflict resolutions are recorded and visible to the Evaluator. A candidate with
+All conflict resolutions are recorded and visible to the Appraiser. A candidate with
 many small-cost conflicts may score better than one with a single large-cost conflict.
 This feeds directly into multi-candidate search — the system can generate multiple
 candidates and select the one with the lowest accumulated conflict cost.
@@ -579,8 +581,8 @@ The Foreman mechanism is fully generic. It knows nothing about timber framing, m
 or log construction. It knows roles, proposals, declarations, conflicts, and costs.
 
 What is building-type-specific is the content each role carries — not the role itself.
-A timber-frame Architect knows post spacing, bracing patterns, and jettying. A masonry
-Architect knows wall thickness, lintel spans, and bonding. Both implement the same
+A timber-frame Frame Producer knows post spacing, bracing patterns, and jettying. A masonry
+Frame Producer knows wall thickness, lintel spans, and bonding. Both implement the same
 interface. The Foreman coordinates both identically.
 
 New building types require new role implementations — not new coordination architecture.
@@ -588,19 +590,19 @@ Optional roles — those that only exist for certain building types — register
 during briefing or remain silent. The Foreman does not ask for them.
 
 ```python
-class Architect(Protocol):
+class IFrameProducer(Protocol):
     def propose(self, context: BuildContext) -> RoleProposal: ...
     def declare(self, brief: BuildingBrief) -> DeclarationRegister: ...
-    def build(self, brief: BuildingBrief, declarations: DeclarationRegister) -> FramePlan: ...
+    def derive_frameplan(self, brief: BuildingBrief, declarations: DeclarationRegister) -> FramePlan: ...
     def resolve(self, conflict: Conflict) -> Resolution: ...
 
 # Domain-specific implementations
-class TimberFrameArchitect: ...   # knows posts, bracing, jettying
-class MasonryArchitect: ...       # knows walls, lintels, bonding
-class LogConstructionArchitect: ... # knows courses, corner joints, settlement
+class BoxFrameProducer: ...      # knows posts, bracing, jettying — BOX_FRAME grammar
+class StoreyFrameProducer: ...   # knows stacked storey frames — STOREY_FRAME grammar
+class MasonryFrameProducer: ...  # knows walls, lintels, bonding
 ```
 
-The Foreman receives any implementation of Architect. It never branches on type.
+The Foreman receives any implementation of IFrameProducer. It never branches on type.
 
 ---
 

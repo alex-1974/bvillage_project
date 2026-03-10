@@ -1,1 +1,0 @@
-# bvillage/domains/fachwerk/__init__.py

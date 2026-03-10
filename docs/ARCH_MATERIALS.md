@@ -48,7 +48,7 @@ A parameter defined at a lower level overrides the parent. A parameter not defin
 
 Each node carries two independent parameter sets:
 
-**Physics** — used by PhysicalPlausibilityValidator and DomainConstructor:
+**Physics** — used by Inspector (`validate_physics.py`) and Frame Producer:
 - `density_kg_m3`
 - `E_modulus_GPa`
 - `bending_strength_MPa`

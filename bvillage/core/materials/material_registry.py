@@ -12,6 +12,7 @@ from ..hot_path import hot, hot_api
 from bvillage.core.materials.policies.resolve import (
     default_material_id_for_member,
 )
+from bvillage.core.errors import MaterialResolveError
 
 LOG = logging.getLogger(__name__)
 

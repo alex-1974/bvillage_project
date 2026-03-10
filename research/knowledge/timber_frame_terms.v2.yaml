@@ -1,0 +1,1423 @@
+meta:
+  schema: bvillage.terminology.v2.1
+  languages:
+  - en
+  - de
+  - fr
+  tid_rules:
+    max_depth: 3
+    separator: .
+  global_enums:
+    axis:
+    - topology
+    - wall
+    - floor
+    - roof
+    - vertical
+    - opening
+    - joinery
+    - infill
+    - water
+    concept_kind:
+    - concept
+    - topology
+    - member
+    - component
+    - joint
+    - material_layer
+    - detail
+    structural_role:
+    - primary_load
+    - secondary_load
+    - bracing
+    - opening_support
+    - enclosure
+    - finish
+    - water_management
+    - connector
+  policy:
+  - Do not guess translations; use null and backfill from sources.
+  - Prefer traditional timber framing English (post/plate/rail/brace), avoid light-frame
+    semantics.
+  - Disambiguate same English surface term by axis (wall vs opening vs roof).
+  primary_sources:
+  - title: EU Timber Building Glossary
+    file: EU_timber_building_glossary.pdf
+  - title: International Bildwörterbuch Architektur
+    file: International_Bildwoerterbuch_Architektur.pdf
+  - title: DE LVR Heft 34 – Fachwerkentwicklung
+    file: DE_LVR_Heft34_Fachwerkentwicklung__b824b89c.pdf
+  - title: DE Fachwerk Development Overview
+    file: DE_fachwerk_development_overview.pdf
+  revision_notes:
+  - Removed bressumer from wall.sill_storey synonyms (moved to wall.jetty_beam).
+  - Added wall.jetty_beam (bressumer / jetty beam).
+  - Extended English synonym sets for rail and braces (girt / knee brace / etc.).
+  - Added roof.ridge load-bearing attributes (system-dependent).
+terms:
+- tid: topology.axis
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: axis
+  de: Achse
+  fr: axe
+  definition_en: Imaginary line defining structural alignment and spacing of frames/bays.
+  definition_de: Gedachte Linie zur Definition von Ausrichtung und Abstand von Gebinden/Gefachen.
+  sources: []
+- tid: topology.grid
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: structural grid
+  de: Tragwerksraster
+  fr: trame structurelle
+  definition_en: System of intersecting axes defining modular layout of bays and frames.
+  definition_de: System sich kreuzender Achsen zur Definition der modularen Anordnung von
+    Gefachen und Gebinden.
+  sources: []
+- tid: topology.module
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: module
+  de: Modul
+  fr: module
+  definition_en: Repeating dimensional unit determining bay width and frame spacing.
+  definition_de: Wiederkehrende Maßeinheit zur Bestimmung von Gefachbreite und Gebindeabstand.
+  sources: []
+- tid: topology.bay
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: bay
+  de: Achsfeld
+  fr: travée
+  definition_en: Structural unit defined by spacing between adjacent frames/posts; repeating
+    module along length.
+  definition_de: Konstruktive Einheit zwischen benachbarten Gebinden/Ständern; wiederholbares
+    Modul in Längsrichtung.
+  attributes:
+    disambiguation: Not wall 'space' (Gefach) — see wall.space.
+  sources: []
+- tid: topology.frame
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: frame
+  de: Gebinde
+  fr: null
+  definition_en: Primary structural assembly repeated along building length (cross-section
+    unit).
+  definition_de: Tragende Konstruktionseinheit (Querschnittseinheit), entlang der Gebäudelänge
+    wiederholt.
+  attributes:
+    orientation:
+    - transverse
+    - longitudinal
+  sources: []
+- tid: topology.aisle
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: aisle
+  de: Seitenschiff
+  fr: bas-côté
+  definition_en: Side space separated from a central hall by a row of posts.
+  definition_de: Seitlicher Raum, der durch eine Ständerreihe vom zentralen Hallenraum
+    getrennt ist.
+  sources: []
+- tid: topology.nave
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: nave
+  de: Mittelschiff
+  fr: nef
+  definition_en: Central longitudinal space in an aisled building.
+  definition_de: Zentraler Längsraum eines mehrschiffigen Gebäudes.
+  sources: []
+- tid: topology.opening
+  axis: topology
+  concept_kind: topology
+  structural_role: connector
+  en: opening (void)
+  de: Öffnung (Aussparung)
+  fr: baie
+  definition_en: Topological void within a wall frame intended for window/door/passage.
+  definition_de: Topologische Aussparung im Wandgerüst für Fenster/Tür/Durchlass.
+  attributes:
+    opening_kind:
+    - window
+    - door
+    - passage
+    - archway
+  sources: []
+- tid: wall.sill
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  en: sill
+  de: Schwelle
+  fr: sablière
+  definition_en: Long horizontal member forming the base of a wall frame; posts are set
+    onto its upper side.
+  definition_de: Langes waagerechtes Holz als Basis eines Wandgerüstes; Ständer stehen/greifen
+    darauf.
+  synonyms:
+    en:
+    - sill plate (Am., ambiguous)
+    - sill beam (generic usage)
+    de:
+    - Schwellenkranz (Schwellen von vier Wänden)
+    fr: []
+  attributes:
+    position:
+    - base
+    continuity:
+    - continuous
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.3
+- tid: wall.sill_ground
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.sill
+  en: sill beam
+  de: Grundschwelle
+  fr: sablière basse
+  definition_en: Lowest sill forming the basis of the whole timber building; rests on
+    substructure or ground.
+  definition_de: Unterste Schwelle als Basis des gesamten Holzbaues; liegt auf Fundament/Unterbau
+    oder Boden.
+  attributes:
+    position:
+    - ground
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.4
+- tid: wall.sill_storey
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.sill
+  en: storey sill
+  de: Stockwerkschwelle
+  fr: sablière d’étage
+  definition_en: Sill of an upper storey to which posts of the upper storey are attached.
+  definition_de: Schwelle eines oberen Stockwerks, in die Ständer der oberen Etage eingelassen/angebracht
+    sind.
+  synonyms:
+    en:
+    - girding beam (continuous wall context)
+    - upper sill plate (Am., light-frame context)
+    de:
+    - Stockschwelle
+    - Oberstockschwelle
+    - Setzschwelle
+    - Saumschwelle (regional)
+    fr: []
+  attributes:
+    position:
+    - storey
+    storey_relation:
+    - upper_storey_base
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.5
+- tid: wall.sill_interrupted
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.sill
+  en: interrupted sill
+  de: Schwellriegel
+  fr: sablière basse interrompue
+  definition_en: Horizontal timber tenoned/jointed between feet of posts; replaces a continuous
+    sill.
+  definition_de: Zwischen den Fußpunkten von Ständern verzimmerter Riegel; ersetzt eine
+    durchlaufende Schwelle.
+  attributes:
+    continuity:
+    - segmented
+    joinery_hint:
+    - tenoned_between_post_feet
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.6
+- tid: wall.sill_interrupted_row
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.sill_interrupted
+  en: interrupted sill (row of timbers)
+  de: Schwellriegel (Reihe von Hölzern)
+  fr: cours d’entretoises
+  definition_en: Variant term emphasizing the interrupted sill as a row of individual timbers.
+  definition_de: Variantenbegriff, der den Schwellriegel als Reihe einzelner Hölzer betont.
+  attributes:
+    terminology_variant: true
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.6 (FR variant)
+- tid: wall.plate
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  en: wall plate
+  de: Rähm
+  fr: sablière haute
+  definition_en: Horizontal timber along top of a wall frame, attached to the heads of posts.
+  definition_de: Waagerechtes oberes Abschlussholz des Wandgerüstes, verbindet die Ständer
+    oben.
+  attributes:
+    position:
+    - top
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.7
+- tid: wall.plate_jetty
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.plate
+  en: jetty plate
+  de: Vorkragungsrähm
+  fr: null
+  definition_en: Wall plate positioned below a projecting upper storey, supporting jetty
+    construction.
+  definition_de: Rähm unterhalb einer Vorkragung, der die auskragende Konstruktion aufnimmt/trägt.
+  attributes:
+    context:
+    - jetty
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.7 (subtype listed)
+- tid: wall.jetty_beam
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  en: jetty beam
+  de: Vorkragungsbalken
+  fr: null
+  definition_en: Horizontal beam supporting a projecting upper storey (jetty), carrying
+    the outer posts of the overhanging frame along the façade.
+  definition_de: Horizontaler Balken zur Aufnahme einer Vorkragung; trägt die äußeren Ständer
+    des auskragenden Geschosses entlang der Fassade.
+  synonyms:
+    en:
+    - bressumer (UK timber framing)
+    - jetty bressumer
+    de:
+    - Vorkragungsbalken (Fassade)
+    fr: []
+  attributes:
+    context:
+    - jetty
+    position:
+    - storey_transition
+    needs_source_backfill: true
+  sources: []
+- tid: wall.plate_arcade
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.plate
+  en: arcade plate
+  de: Arkadenrähm (Innenrähm)
+  fr: null
+  definition_en: Plate of an internal row of posts in an aisled building.
+  definition_de: Rähm einer inneren Ständerreihe in einem mehrschiffigen Gebäude.
+  attributes:
+    context:
+    - aisled_building
+    - internal_post_row
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.7 (subtype listed)
+- tid: wall.post
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  en: post
+  de: Ständer
+  fr: poteau
+  definition_en: Vertical primary load-bearing member of a wall frame.
+  definition_de: Vertikales tragendes Hauptbauteil einer Fachwerkwand.
+  synonyms:
+    en:
+    - principal post (context-specific)
+    de:
+    - Pfosten
+    fr: []
+  sources: []
+- tid: wall.post_principal
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.post
+  en: principal post
+  de: Bundständer
+  fr: poteau principal
+  definition_en: Post adjacent to a partition wall or part of a transverse frame.
+  definition_de: Ständer, an den im Winkel eine Wand anschließt oder der Bestandteil eines
+    Querbinders ist.
+  attributes:
+    context:
+    - partition_connection
+    - transverse_frame
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.18
+- tid: wall.post_corner
+  axis: wall
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - wall.post
+  en: corner post
+  de: Eckständer
+  fr: null
+  definition_en: Post at the outer corner of a timber-framed building; often more substantial.
+  definition_de: Ständer an der Außenecke; oft kräftiger ausgebildet als normale Wandständer.
+  attributes:
+    position:
+    - corner
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.19
+- tid: wall.rail
+  axis: wall
+  concept_kind: member
+  structural_role: secondary_load
+  en: rail
+  de: Riegel
+  fr: entretoise
+  definition_en: Horizontal timber in a timber-framed wall, jointed between posts.
+  definition_de: Waagerechtes Holz in einer Fachwerkwand, zwischen Ständern verzimmert.
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.34
+  synonyms:
+    en:
+    - girt (UK/vernacular context)
+    de: []
+    fr: []
+- tid: wall.rail_concealed
+  axis: wall
+  concept_kind: member
+  structural_role: secondary_load
+  parents:
+  - wall.rail
+  en: concealed rail
+  de: zurückliegender Riegel
+  fr: entretoise cachée par le hourdis
+  definition_en: Rail not flush with wall face/top, therefore covered by panel infill.
+  definition_de: Riegel nicht bündig; wird durch Ausfachung verdeckt.
+  attributes:
+    visibility:
+    - concealed_by_infill
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.35
+- tid: wall.rail_breast
+  axis: wall
+  concept_kind: member
+  structural_role: opening_support
+  parents:
+  - wall.rail
+  en: sill-height rail
+  de: Brüstungsriegel (Brustriegel)
+  fr: (pièce d’)appui
+  definition_en: Rail at window sill height; not to be confused with the wall base sill.
+  definition_de: Riegel in Brüstungshöhe; nicht mit der Wandschwelle verwechseln.
+  attributes:
+    position:
+    - window_sill_height
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.36
+- tid: wall.rail_breast_continuous
+  axis: wall
+  concept_kind: member
+  structural_role: opening_support
+  parents:
+  - wall.rail_breast
+  en: continuous sill-piece (rail)
+  de: durchlaufender Brüstungsriegel
+  fr: pièce d’appui filante
+  definition_en: Continuous version of the sill-height rail running along the wall.
+  definition_de: Durchlaufende Ausführung des Brüstungsriegels.
+  attributes:
+    continuity:
+    - continuous
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.36 (variant)
+- tid: wall.rail_breast_row
+  axis: wall
+  concept_kind: member
+  structural_role: opening_support
+  parents:
+  - wall.rail_breast
+  en: row of sill-height rails
+  de: Riegelkette in Brüstungshöhe
+  fr: cours d’entretoises au niveau de l’appui des baies
+  definition_en: Row of short rails aligned at window sill height.
+  definition_de: Reihe kurzer Riegel auf Brüstungshöhe.
+  attributes:
+    continuity:
+    - segmented_row
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.36 (variant)
+- tid: wall.rail_middle
+  axis: wall
+  concept_kind: member
+  structural_role: secondary_load
+  parents:
+  - wall.rail
+  en: middle rail
+  de: Schwertriegel
+  fr: sablière intermédiaire
+  definition_en: Rail spanning across several posts (often via halving), centrally placed
+    in a wall frame.
+  definition_de: Über mehrere Ständer laufender (oft geblatteter) Riegel; zentral im Wandfeld.
+  attributes:
+    spans_multiple_posts: true
+    joinery_hint:
+    - halved_across_posts
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.37
+  synonyms:
+    en:
+    - mid-rail
+    - mid girt (regional)
+    de: []
+    fr: []
+- tid: wall.rail_lintel
+  axis: wall
+  concept_kind: member
+  structural_role: opening_support
+  parents:
+  - wall.rail
+  en: door/window head
+  de: Sturzriegel
+  fr: linteau
+  definition_en: Rail spanning an opening (door or window) as the head member.
+  definition_de: Riegel als obere Begrenzung einer Öffnung (Tür/Fenster).
+  attributes:
+    function:
+    - opening_head
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.38
+- tid: wall.rail_lintel_row
+  axis: wall
+  concept_kind: member
+  structural_role: opening_support
+  parents:
+  - wall.rail_lintel
+  en: row of lintel-level rails
+  de: Riegelkette auf Sturzhöhe
+  fr: cours d’entretoises au niveau des linteaux
+  definition_en: Row of rails aligned at lintel height.
+  definition_de: Reihe von Riegeln auf Sturzhöhe.
+  attributes:
+    continuity:
+    - segmented_row
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.38 (variant)
+- tid: wall.rail_top
+  axis: wall
+  concept_kind: member
+  structural_role: secondary_load
+  parents:
+  - wall.rail
+  en: top rail
+  de: Kopfriegel
+  fr: sablière haute interrompue
+  definition_en: Rail inserted between tops of posts; may replace wall plate or sit immediately
+    below it.
+  definition_de: Riegel zwischen den Kopfenden der Ständer; kann Rähm ersetzen oder unterhalb
+    des Rähms liegen.
+  attributes:
+    position:
+    - top
+    may_replace:
+    - wall.plate
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.40
+- tid: wall.rail_row
+  axis: wall
+  concept_kind: member
+  structural_role: secondary_load
+  en: row of rails
+  de: Riegelkette
+  fr: null
+  definition_en: Row of rails jointed to posts at the same height.
+  definition_de: Reihe von Riegeln, die auf gleicher Höhe zwischen Ständern verzimmert
+    sind.
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.41
+- tid: wall.brace
+  axis: wall
+  concept_kind: member
+  structural_role: bracing
+  en: brace
+  de: Band/Strebe
+  fr: lien
+  definition_en: Diagonal timber providing lateral stability by resisting racking.
+  definition_de: Diagonalholz zur Aussteifung gegen Schubverformung.
+  sources: []
+- tid: wall.brace_short_down
+  axis: wall
+  concept_kind: member
+  structural_role: bracing
+  parents:
+  - wall.brace
+  en: (short) downward brace
+  de: Fußband
+  fr: lien (entre poteau et sablière basse)
+  definition_en: Short brace running downwards from a vertical to a horizontal member (e.g.,
+    post to sill).
+  definition_de: Kurzes Band, das nach unten von einem senkrechten zu einem waagerechten
+    Holz läuft.
+  attributes:
+    length_class:
+    - short
+    position:
+    - foot_corner
+    direction:
+    - downward
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.51
+  synonyms:
+    en:
+    - foot brace (rare/vernacular)
+    de: []
+    fr: []
+- tid: wall.brace_short_up
+  axis: wall
+  concept_kind: member
+  structural_role: bracing
+  parents:
+  - wall.brace
+  en: (short) upward brace
+  de: Kopfband
+  fr: lien (entre poteau et sablière haute)
+  definition_en: Short brace running upwards from a vertical to a horizontal member.
+  definition_de: Kurzes Band, das nach oben von einem senkrechten zu einem waagerechten
+    Holz läuft.
+  attributes:
+    length_class:
+    - short
+    position:
+    - head_corner
+    direction:
+    - upward
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.52
+  synonyms:
+    en:
+    - knee brace (UK/vernacular)
+    de: []
+    fr: []
+- tid: wall.brace_angle_foot
+  axis: wall
+  concept_kind: member
+  structural_role: bracing
+  parents:
+  - wall.brace_short_down
+  en: angle brace (fills whole angle)
+  de: Fußwinkelholz
+  fr: null
+  definition_en: Very short brace filling the whole corner angle at the foot.
+  definition_de: Sehr kurze Strebe, die den gesamten Winkel im Fußbereich ausfüllt.
+  attributes:
+    geometry:
+    - angle_filling
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.51 (note)
+- tid: wall.brace_angle_head
+  axis: wall
+  concept_kind: member
+  structural_role: bracing
+  parents:
+  - wall.brace_short_up
+  en: angle brace (fills whole angle)
+  de: Kopfwinkelholz
+  fr: null
+  definition_en: Very short brace filling the whole corner angle at the head.
+  definition_de: Sehr kurze Strebe, die den gesamten Winkel im Kopfbereich ausfüllt.
+  attributes:
+    geometry:
+    - angle_filling
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.4.52 (note)
+- tid: wall.brace_long
+  axis: wall
+  concept_kind: member
+  structural_role: bracing
+  parents:
+  - wall.brace
+  en: long brace
+  de: Langstrebe / Schrägband
+  fr: null
+  definition_en: Long diagonal timber spanning across multiple bays for large-scale lateral
+    bracing.
+  definition_de: Lange Diagonalstrebe über mehrere Gefache zur großflächigen Aussteifung.
+  attributes:
+    length_class:
+    - long
+    spans_multiple_bays: true
+  sources: []
+- tid: wall.space
+  axis: wall
+  concept_kind: concept
+  structural_role: enclosure
+  en: wall compartment
+  de: Gefach
+  fr: null
+  definition_en: Compartment bounded by wall members (posts/rails/sill/plate); may be infilled
+    or be an opening.
+  definition_de: Von Konstruktionshölzern begrenzter Wandabschnitt; kann ausgemauert/ausgefacht
+    oder Öffnung sein.
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: '2.9'
+- tid: infill.panel
+  axis: infill
+  concept_kind: material_layer
+  structural_role: enclosure
+  en: panel infill
+  de: Ausfachung
+  fr: panneau
+  definition_en: Infill closing a wall compartment, executed in timber/brick/clay/stone
+    etc.
+  definition_de: Füllung eines Gefaches aus Holz/Ziegel/Lehm/Stein usw.
+  synonyms:
+    en:
+    - infill
+    - infill panel
+    - infilling
+    de:
+    - Wandfüllung
+    fr: []
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.9.1
+- tid: infill.masonry
+  axis: infill
+  concept_kind: material_layer
+  structural_role: enclosure
+  parents:
+  - infill.panel
+  en: masonry infill
+  de: Ausmauerung
+  fr: hourdis
+  definition_en: Panel infill executed as masonry (brick/clay units/rubble stone).
+  definition_de: Ausfachung als Mauerwerk (Backstein/Lehmsteine/Bruchstein).
+  synonyms:
+    en:
+    - brick infill
+    - nogging (context-dependent)
+    de:
+    - Gefachausmauerung
+    fr:
+    - panneau de hourdis
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.9.2
+- tid: infill.breast_panel
+  axis: infill
+  concept_kind: material_layer
+  structural_role: enclosure
+  parents:
+  - infill.panel
+  en: breast panel
+  de: Brüstungsgefach
+  fr: allège
+  definition_en: Panel zone below a window opening (breastwork zone).
+  definition_de: Gefachzone unterhalb einer Fensteröffnung (Brüstungszone).
+  attributes:
+    position:
+    - below_window_opening
+  sources:
+  - file: EU_timber_building_glossary.pdf
+    ref: 2.9.3
+- tid: floor.structure
+  axis: floor
+  concept_kind: concept
+  structural_role: connector
+  en: floor structure
+  de: Geschossdecke
+  fr: plancher
+  definition_en: Structural assembly separating storeys, consisting of beams/joists and
+    decking.
+  definition_de: Tragende Konstruktion zur Trennung von Geschossen aus Balken/Joists und
+    Auflage.
+  sources: []
+- tid: floor.beam
+  axis: floor
+  concept_kind: member
+  structural_role: primary_load
+  en: floor beam
+  de: Deckenbalken
+  fr: solive maîtresse
+  definition_en: Primary horizontal load-bearing beam forming part of a floor structure.
+  definition_de: Tragender horizontaler Balken der Geschossdecke.
+  sources: []
+- tid: floor.girder
+  axis: floor
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - floor.beam
+  en: girding beam
+  de: Unterzug
+  fr: poutre maîtresse
+  definition_en: Major beam supporting other floor beams/joists, often spanning between
+    principal posts.
+  definition_de: Hauptbalken, der andere Balken trägt; oft zwischen Bundständern gespannt.
+  sources: []
+- tid: floor.joist
+  axis: floor
+  concept_kind: member
+  structural_role: secondary_load
+  en: joist
+  de: Deckenbalken (sekundär)
+  fr: solive
+  definition_en: Secondary horizontal timber spanning between primary beams, carrying
+    floor boarding.
+  definition_de: Sekundärer Balken zwischen Hauptbalken, trägt Dielung/Belag.
+  sources: []
+- tid: floor.boarding
+  axis: floor
+  concept_kind: material_layer
+  structural_role: finish
+  en: floor boarding
+  de: Dielung
+  fr: plancher (revêtement)
+  definition_en: Timber boards forming the walking surface above joists.
+  definition_de: Holzbretter als begehbare Oberfläche über den Deckenbalken.
+  sources: []
+- tid: vertical.storey
+  axis: vertical
+  concept_kind: concept
+  structural_role: connector
+  en: storey
+  de: Geschoss
+  fr: étage
+  definition_en: Vertical level of a building defined by a structural floor and bounded
+    by walls.
+  definition_de: Vertikale Ebene, definiert durch Geschossdecke und begrenzt durch Wände.
+  sources: []
+- tid: vertical.storey_frame
+  axis: vertical
+  concept_kind: concept
+  structural_role: connector
+  en: storey frame
+  de: Stockwerksgerüst
+  fr: null
+  definition_en: Structural frame forming one storey (posts, rails, sill, plate) in a
+    multi-storey timber building.
+  definition_de: Tragendes Gerüst eines einzelnen Geschosses (Ständer/Riegel/Schwelle/Rähm).
+  sources: []
+- tid: vertical.post_one
+  axis: vertical
+  concept_kind: concept
+  structural_role: connector
+  en: post rising through one storey
+  de: durchlaufender Ständer (ein Geschoss)
+  fr: null
+  definition_en: Vertical post extending through a single storey height.
+  definition_de: Ständer, der genau ein Geschoss überbrückt.
+  sources: []
+- tid: vertical.post_two
+  axis: vertical
+  concept_kind: concept
+  structural_role: connector
+  en: post rising through two storeys
+  de: durchlaufender Ständer (mehrgeschossig)
+  fr: null
+  definition_en: Vertical post extending continuously through more than one storey.
+  definition_de: Ständer, der über mehrere Geschosse hinweg durchläuft.
+  sources: []
+- tid: vertical.jetty_frame
+  axis: vertical
+  concept_kind: concept
+  structural_role: connector
+  en: jettied storey frame
+  de: vorkragendes Stockwerksgerüst
+  fr: null
+  definition_en: Storey frame projecting beyond the plane of the lower wall, supported
+    by beams or jetty plates.
+  definition_de: Stockwerksgerüst, das über die Wandflucht des unteren Geschosses hinauskragt
+    und durch Balken oder spezielle Rähme getragen wird.
+  sources: []
+- tid: opening.frame
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  en: frame
+  de: Rahmen
+  fr: null
+  definition_en: Enclosing frame assembly for an opening.
+  definition_de: Umschließender Rahmen einer Öffnung.
+  sources: []
+- tid: opening.jamb
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  en: jamb
+  de: Laibungspfosten
+  fr: montant
+  definition_en: Vertical side member forming the lateral boundary of an opening.
+  definition_de: Vertikales Seitenteil als seitliche Begrenzung einer Öffnung.
+  sources: []
+- tid: opening.head
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  en: head (lintel)
+  de: Sturz
+  fr: linteau
+  definition_en: Horizontal member forming the upper boundary of an opening.
+  definition_de: Horizontales Holz als obere Begrenzung einer Öffnung.
+  synonyms:
+    en:
+    - lintel
+    de:
+    - Sturzholz
+    fr: []
+  sources: []
+- tid: opening.window_sill
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  en: window sill
+  de: Fensterschwelle
+  fr: appui de fenêtre
+  definition_en: Horizontal member forming the lower boundary of a window opening.
+  definition_de: Horizontales Holz als untere Begrenzung einer Fensteröffnung.
+  attributes:
+    disambiguation: Not wall base sill — see wall.sill.
+  sources: []
+- tid: opening.threshold
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  en: threshold
+  de: Türschwelle
+  fr: seuil
+  definition_en: Horizontal member at the base of a door opening; transition between inside
+    and outside.
+  definition_de: Unteres Abschluss-Holz einer Türöffnung; Übergang innen/außen.
+  sources: []
+- tid: opening.mullion
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  en: mullion
+  de: Fensterpfosten
+  fr: meneau
+  definition_en: Vertical member dividing a window opening into multiple lights.
+  definition_de: Vertikales Teilungselement innerhalb einer Fensteröffnung.
+  sources: []
+- tid: opening.transom
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  en: transom
+  de: Kämpfer (Fensterquerholz)
+  fr: traverse
+  definition_en: Horizontal member dividing a window opening.
+  definition_de: Horizontales Teilungselement innerhalb einer Fensteröffnung.
+  sources: []
+- tid: opening.window_frame
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  parents:
+  - opening.frame
+  en: window frame
+  de: Fensterrahmen
+  fr: châssis
+  definition_en: Frame assembly enclosing a window opening.
+  definition_de: Rahmenkonstruktion einer Fensteröffnung.
+  attributes:
+    opening_kind:
+    - window
+    has_components:
+    - opening.head
+    - opening.jamb
+    - opening.window_sill
+  sources: []
+- tid: opening.door_frame
+  axis: opening
+  concept_kind: component
+  structural_role: opening_support
+  parents:
+  - opening.frame
+  en: door frame
+  de: Türrahmen
+  fr: huisserie
+  definition_en: Frame assembly enclosing a door opening.
+  definition_de: Rahmenkonstruktion einer Türöffnung.
+  attributes:
+    opening_kind:
+    - door
+    has_components:
+    - opening.head
+    - opening.jamb
+    - opening.threshold
+  sources: []
+- tid: roof.structure
+  axis: roof
+  concept_kind: concept
+  structural_role: connector
+  en: roof structure
+  de: Dachtragwerk
+  fr: charpente de toiture
+  definition_en: Structural framework transferring roof loads to walls.
+  definition_de: Tragende Dachkonstruktion zur Ableitung der Dachlasten in die Wände.
+  sources: []
+- tid: roof.rafter
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  en: rafter
+  de: Sparren
+  fr: chevron
+  definition_en: Inclined timber forming roof slope; runs from ridge/purlin down to plate/tie.
+  definition_de: Geneigtes Holz des Dachs; verläuft von First/Pfette zu Rähm/Zugbalken.
+  sources: []
+- tid: roof.rafter_principal
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - roof.rafter
+  en: principal rafter
+  de: Hauptsparren
+  fr: chevron principal
+  definition_en: Major rafter forming part of principal frame; often supports purlins.
+  definition_de: Hauptsparren eines Gebindes; trägt oft Pfetten.
+  sources: []
+- tid: roof.rafter_common
+  axis: roof
+  concept_kind: member
+  structural_role: secondary_load
+  parents:
+  - roof.rafter
+  en: common rafter
+  de: Nebensparren
+  fr: chevron secondaire
+  definition_en: Secondary rafter placed between principal rafters, supporting roof covering.
+  definition_de: Zwischen Hauptsparren liegender Sparren, trägt Dachdeckung.
+  sources: []
+- tid: roof.ridge
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  en: ridge beam
+  de: Firstbalken
+  fr: poutre faîtière
+  definition_en: Horizontal timber at roof apex receiving upper ends of rafters (load-bearing
+    ridge).
+  definition_de: Waagerechtes Holz am Dachfirst, nimmt obere Sparrenenden auf.
+  sources: []
+  attributes:
+    load_bearing:
+    - system-dependent
+    structural_system:
+    - rafter_roof
+    - purlin_roof
+- tid: roof.ridge_board
+  axis: roof
+  concept_kind: detail
+  structural_role: connector
+  parents:
+  - roof.ridge
+  en: ridge board
+  de: Firstbrett
+  fr: planche faîtière
+  definition_en: Non-load-bearing board at ridge aligning rafters.
+  definition_de: Nichttragendes Brett zur Ausrichtung der Sparren am First.
+  attributes:
+    load_bearing: false
+  sources: []
+- tid: roof.purlin
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  en: purlin
+  de: Pfette
+  fr: panne
+  definition_en: Longitudinal horizontal timber supporting rafters between ridge and wall
+    plate.
+  definition_de: Längs verlaufendes Holz zur Unterstützung der Sparren.
+  sources: []
+- tid: roof.purlin_ridge
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - roof.purlin
+  en: ridge purlin
+  de: Firstpfette
+  fr: panne faîtière
+  definition_en: Purlin positioned near the ridge line.
+  definition_de: Pfette in Firstnähe.
+  attributes:
+    position:
+    - ridge_level
+  sources: []
+- tid: roof.purlin_wall
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - roof.purlin
+  en: wall purlin
+  de: Traufpfette
+  fr: panne sablière
+  definition_en: Purlin near wall plate level at the eaves zone.
+  definition_de: Pfette in Traufnähe nahe dem Rähm.
+  attributes:
+    position:
+    - eaves_level
+  sources: []
+- tid: roof.tie
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  en: tie beam
+  de: Zugbalken
+  fr: entrait
+  definition_en: Horizontal member tying rafter feet, preventing outward thrust.
+  definition_de: Horizontaler Balken, verbindet Sparrenfüße, verhindert Wandschub.
+  sources: []
+- tid: roof.collar
+  axis: roof
+  concept_kind: member
+  structural_role: secondary_load
+  parents:
+  - roof.tie
+  en: collar tie
+  de: Kehlbalken
+  fr: entrait retroussé
+  definition_en: Horizontal member connecting opposing rafters above tie-beam level.
+  definition_de: Horizontaler Balken zwischen gegenüberliegenden Sparren oberhalb der Fußpunkte.
+  attributes:
+    position:
+    - upper_in_rafter_pair
+  sources: []
+- tid: roof.king_post
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  en: king post
+  de: Königspfosten
+  fr: poinçon
+  definition_en: Central vertical post in a truss extending from tie beam to ridge.
+  definition_de: Zentraler vertikaler Pfosten im Binder vom Zugbalken zum First.
+  sources: []
+- tid: roof.queen_post
+  axis: roof
+  concept_kind: member
+  structural_role: primary_load
+  parents:
+  - roof.king_post
+  en: queen post
+  de: Königinnenpfosten
+  fr: potelet
+  definition_en: One of two vertical posts in a truss (paired configuration).
+  definition_de: Einer von zwei vertikalen Pfosten im Binder (paarig).
+  attributes:
+    configuration:
+    - paired
+  sources: []
+- tid: roof.overhang
+  axis: roof
+  concept_kind: detail
+  structural_role: water_management
+  en: roof overhang
+  de: Dachüberstand
+  fr: débord de toiture
+  definition_en: Projection of the roof beyond the external face of the wall.
+  definition_de: Auskragung der Dachkonstruktion über die Außenwand hinaus.
+  sources: []
+- tid: roof.eaves
+  axis: roof
+  concept_kind: detail
+  structural_role: water_management
+  en: eaves
+  de: Traufe
+  fr: égout
+  definition_en: Lower horizontal edge of a roof where water drips off.
+  definition_de: Untere horizontale Dachkante, an der Regenwasser abtropft.
+  sources: []
+- tid: roof.verge
+  axis: roof
+  concept_kind: detail
+  structural_role: water_management
+  en: verge
+  de: Ortgang
+  fr: rive
+  definition_en: Sloping edge of a roof at the gable end.
+  definition_de: Schräge Dachkante am Giebel.
+  sources: []
+- tid: roof.rafter_foot
+  axis: roof
+  concept_kind: detail
+  structural_role: connector
+  en: rafter foot
+  de: Sparrenfuß
+  fr: pied de chevron
+  definition_en: Lower end of a rafter resting on wall plate or tie.
+  definition_de: Unteres Ende eines Sparrens, das auf Rähm/Zugbalken aufliegt.
+  sources: []
+- tid: roof.seat_cut
+  axis: roof
+  concept_kind: detail
+  structural_role: connector
+  en: birdsmouth joint
+  de: Sparrenversatz
+  fr: null
+  definition_en: Notched cut in a rafter allowing it to seat securely on a plate.
+  definition_de: Einschnitt im Sparren zur formschlüssigen Auflagerung auf dem Rähm.
+  sources: []
+- tid: roof.soffit
+  axis: roof
+  concept_kind: detail
+  structural_role: finish
+  en: soffit
+  de: Untersicht
+  fr: sous-face
+  definition_en: Underside surface of a roof overhang.
+  definition_de: Unterseite eines Dachüberstands.
+  sources: []
+- tid: roof.fascia
+  axis: roof
+  concept_kind: detail
+  structural_role: finish
+  en: fascia board
+  de: Traufbrett
+  fr: planche de rive
+  definition_en: Board fixed to ends of rafters at the eaves.
+  definition_de: Brett an den Sparrenköpfen an der Traufe.
+  sources: []
+- tid: roof.bargeboard
+  axis: roof
+  concept_kind: detail
+  structural_role: finish
+  en: bargeboard
+  de: Ortgangbrett
+  fr: planche de rive de pignon
+  definition_en: Board fixed along the verge of a roof, often decorative.
+  definition_de: Brett entlang des Ortgangs, häufig dekorativ ausgeführt.
+  sources: []
+- tid: water.gutter
+  axis: water
+  concept_kind: detail
+  structural_role: water_management
+  en: gutter
+  de: Dachrinne
+  fr: gouttière
+  definition_en: Channel along eaves collecting and directing rainwater.
+  definition_de: Rinne entlang der Traufe zur Sammlung und Ableitung von Regenwasser.
+  attributes:
+    historical_presence:
+    - variable_by_period_region
+  sources: []
+- tid: water.drip_edge
+  axis: water
+  concept_kind: detail
+  structural_role: water_management
+  en: drip edge
+  de: Tropfkante
+  fr: larmier
+  definition_en: Edge detail directing water away from wall surface.
+  definition_de: Kante/Detail zur Ableitung von Wasser von der Wandoberfläche weg.
+  sources: []
+- tid: joinery.joint
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  en: joint
+  de: Holzverbindung
+  fr: assemblage
+  definition_en: Structural connection between timbers transferring forces by interlocking
+    and/or fastening.
+  definition_de: Konstruktive Verbindung zwischen Hölzern zur Kraftübertragung durch Formschluss/Verbinder.
+  sources: []
+- tid: joinery.mortise
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.joint
+  en: mortise and tenon joint
+  de: Zapfenverbindung
+  fr: tenon et mortaise
+  definition_en: Tenon inserted into matching mortise cavity.
+  definition_de: Zapfen wird in passende Mortaise (Zapfenloch) eingeführt.
+  sources: []
+- tid: joinery.mortise_pegged
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.mortise
+  en: pegged mortise and tenon
+  de: gezapft und gedübelt (Holznagel)
+  fr: assemblage chevillé
+  definition_en: Mortise-and-tenon secured with a wooden peg.
+  definition_de: Zapfenverbindung, gesichert durch Holznagel/Holzdübel.
+  sources: []
+- tid: joinery.mortise_housed
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.mortise
+  en: housed tenon
+  de: eingelassener Zapfen
+  fr: null
+  definition_en: Tenon joint with shallow housing to increase bearing area.
+  definition_de: Zapfenverbindung mit Einlassung zur größeren Auflagefläche.
+  sources: []
+- tid: joinery.lap
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.joint
+  en: lap joint
+  de: Überblattung
+  fr: assemblage à mi-bois
+  definition_en: Two timbers overlap after partial material removal.
+  definition_de: Zwei Hölzer überlappen nach teilweisem Ausklinken.
+  sources: []
+- tid: joinery.lap_half
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.lap
+  en: half-lap joint
+  de: Halbholzverbindung
+  fr: mi-bois
+  definition_en: Each timber cut to about half thickness at the overlap.
+  definition_de: Beide Hölzer bis etwa zur halben Stärke ausgeklinkt.
+  sources: []
+- tid: joinery.lap_cross
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.lap
+  en: cross-lap joint
+  de: Kreuzüberblattung
+  fr: null
+  definition_en: Lap joint forming a crossing intersection.
+  definition_de: Überblattung zweier sich kreuzender Hölzer.
+  sources: []
+- tid: joinery.scarf
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.joint
+  en: scarf joint
+  de: Schäftung
+  fr: enture
+  definition_en: End-to-end joint to create a longer timber member.
+  definition_de: Stoß-/Verlängerungsverbindung zur Herstellung eines längeren Holzes.
+  sources: []
+- tid: joinery.scarf_blade
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.scarf
+  en: bladed scarf joint
+  de: Blattschäftung
+  fr: null
+  definition_en: Scarf joint with interlocking flat blade-like surfaces.
+  definition_de: Schäftung mit übergreifenden flachen Kontaktflächen.
+  sources: []
+- tid: joinery.scarf_tabled
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.scarf
+  en: tabled scarf joint
+  de: abgesetzte (getreppte) Schäftung
+  fr: null
+  definition_en: Scarf joint with stepped/tabled surfaces resisting sliding.
+  definition_de: Schäftung mit abgestuften Flächen zur Sicherung gegen Verschieben.
+  sources: []
+- tid: joinery.dovetail
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.joint
+  en: dovetail joint
+  de: Schwalbenschwanzverbindung
+  fr: queue d’aronde
+  definition_en: Flared joint geometry preventing withdrawal.
+  definition_de: Keilförmig verbreitertes Profil verhindert Herausziehen.
+  sources: []
+- tid: joinery.peg
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  en: wooden peg
+  de: Holznagel
+  fr: cheville en bois
+  definition_en: Wooden dowel securing timber joints.
+  definition_de: Holzdübel zur Sicherung von Holzverbindungen.
+  sources: []
+- tid: joinery.drawbore
+  axis: joinery
+  concept_kind: joint
+  structural_role: connector
+  parents:
+  - joinery.peg
+  en: drawbored joint
+  de: versetzter Zapfen (drawbore)
+  fr: null
+  definition_en: Peg hole offset to pull the joint tight when the peg is driven.
+  definition_de: Nagelloch versetzt, sodass die Verbindung beim Einschlagen angezogen wird.
+  sources: []
+- tid: wall.jetty
+  axis: wall
+  concept_kind: concept
+  structural_role: connector
+  en: jetty
+  de: Vorkragung
+  fr: encorbellement
+  definition_en: Projection of an upper storey beyond the face of the lower wall.
+  definition_de: Auskragung eines oberen Geschosses über die Wandflucht des unteren.
+  sources: []

@@ -11,6 +11,10 @@
 #   ./tools/arch_scan.sh . --archive               # writes to docs/archive with timestamp
 #   ./tools/arch_scan.sh . --summary-only          # only summary sections (no per-file overview)
 #
+# Default output:
+# - text -> tmp/ARCH_SCAN.txt
+# - json -> tmp/ARCH_SCAN.json
+#
 # Header rule:
 # - If line 1 starts with '#!' (shebang), then line 2 must be '# <repo path>'
 # - Else line 1 must be '# <repo path>'
@@ -35,7 +39,7 @@ while [[ $# -gt 0 ]]; do
     --archive) ARCHIVE=1; shift ;;
     --summary-only) SUMMARY_ONLY=1; shift ;;
     -h|--help)
-      sed -n '1,80p' "$0"
+      sed -n '1,100p' "$0"
       exit 0
       ;;
     *)
@@ -57,10 +61,24 @@ if [[ "$ARCHIVE" -eq 1 ]]; then
   [[ "$MODE" == "--json" ]] && ext="json"
   mkdir -p "$ROOT/docs/archive"
   OUT_PATH="$ROOT/docs/archive/ARCH_SCAN_${ts}.${ext}"
+else
+  if [[ -z "$OUT_PATH" ]]; then
+    if [[ "$MODE" == "--json" ]]; then
+      OUT_PATH="$ROOT/generated/ARCH_SCAN.json"
+    else
+      OUT_PATH="$ROOT/generated/ARCH_SCAN.txt"
+    fi
+  fi
+  mkdir -p "$(dirname "$OUT_PATH")"
 fi
 
+PY_FILE="$(mktemp)"
+cleanup() {
+  rm -f "$PY_FILE"
+}
+trap cleanup EXIT
 
-PY_SCAN="$(cat << 'PYEOF'
+cat > "$PY_FILE" <<'PYEOF'
 import ast
 import json
 import sys
@@ -74,6 +92,7 @@ MODE = (sys.argv[2] if len(sys.argv) > 2 else "--text").strip()
 SUMMARY_ONLY = (sys.argv[3] if len(sys.argv) > 3 else "0").strip() == "1"
 
 INCLUDE_TOP = ("bvillage", "tests", "tools")
+ROOT_ENTRY_FILES = ("run_in_blender.py",)
 
 EXCLUDE_DIRS = {
     ".venv", ".git", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache",
@@ -96,9 +115,6 @@ LEGACY_TYPING_MODERN = {
     "typing.Union": "X | Y",
 }
 
-# ---------------------------------------------------------------------------
-# Path / layer helpers
-# ---------------------------------------------------------------------------
 
 def relpath(p):
     try:
@@ -106,15 +122,24 @@ def relpath(p):
     except Exception:
         return p.as_posix()
 
+
 def detect_layer(rp):
+    if rp == "run_in_blender.py":
+        return "entry"
     if rp.startswith("bvillage/core/"):
         return "core"
+    if rp.startswith("bvillage/domains/") and "/contracts/" in rp:
+        return "domain-contracts"
+    if rp.startswith("bvillage/domains/") and "/validation/" in rp:
+        return "domain-validation"
     if rp.startswith("bvillage/domains/") and "/blender/" in rp:
         return "domain-blender"
     if rp.startswith("bvillage/domains/") and "/core/" in rp:
         return "domain-core"
     if rp.startswith("bvillage/blender/"):
         return "blender"
+    if rp.startswith("bvillage/types/") and "/contracts/" in rp:
+        return "type-contracts"
     if rp.startswith("bvillage/types/"):
         return "type"
     if rp.startswith("tests/"):
@@ -125,6 +150,7 @@ def detect_layer(rp):
         return "package"
     return "other"
 
+
 def should_skip(p):
     if p.suffix in EXCLUDE_SUFFIXES:
         return True
@@ -132,15 +158,19 @@ def should_skip(p):
         return True
     return False
 
+
 def first_line(text):
     return text.splitlines()[0] if text else ""
+
 
 def second_line(text):
     lines = text.splitlines()
     return lines[1] if len(lines) > 1 else ""
 
+
 def header_expected(rp):
     return f"# {rp}"
+
 
 def check_header(rp, text):
     exp = header_expected(rp)
@@ -154,12 +184,8 @@ def check_header(rp, text):
         return f"First line header mismatch. Expected: {exp!r}, got: {fl!r}"
     return None
 
-# ---------------------------------------------------------------------------
-# AST helpers — full typed signatures
-# ---------------------------------------------------------------------------
 
 def _ann(node):
-    """Render an AST annotation node as a compact string."""
     if node is None:
         return ""
     if isinstance(node, ast.Name):
@@ -174,7 +200,6 @@ def _ann(node):
         return ", ".join(_ann(e) for e in node.elts)
     if isinstance(node, ast.Constant):
         return repr(node.value)
-    # Python 3.8 compat: ast.Index wrapper
     if hasattr(ast, "Index") and isinstance(node, ast.Index):
         return _ann(node.value)
     try:
@@ -182,24 +207,22 @@ def _ann(node):
     except Exception:
         return "?"
 
+
 def _arg(a):
-    """Render one argument with optional type annotation."""
     if a.annotation:
         return f"{a.arg}: {_ann(a.annotation)}"
     return a.arg
 
+
 def _func_sig(node):
-    """Render a complete function signature including all arg kinds and return type."""
     args = node.args
     parts = []
 
-    # positional-only (before /)
     for a in args.posonlyargs:
         parts.append(_arg(a))
     if args.posonlyargs:
         parts.append("/")
 
-    # regular args with defaults
     n = len(args.args)
     nd = len(args.defaults)
     offset = n - nd
@@ -213,13 +236,11 @@ def _func_sig(node):
                 s += "=..."
         parts.append(s)
 
-    # *args or bare *
     if args.vararg:
         parts.append(f"*{_arg(args.vararg)}")
     elif args.kwonlyargs:
         parts.append("*")
 
-    # keyword-only
     for i, a in enumerate(args.kwonlyargs):
         s = _arg(a)
         if args.kw_defaults[i] is not None:
@@ -229,7 +250,6 @@ def _func_sig(node):
                 s += "=..."
         parts.append(s)
 
-    # **kwargs
     if args.kwarg:
         parts.append(f"**{_arg(args.kwarg)}")
 
@@ -238,8 +258,8 @@ def _func_sig(node):
     prefix = "async def" if isinstance(node, ast.AsyncFunctionDef) else "def"
     return f"{prefix} {node.name}{sig}{ret}"
 
+
 def _dc_fields(node):
-    """Extract annotated field definitions from a dataclass body."""
     fields = []
     for item in node.body:
         if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
@@ -255,8 +275,8 @@ def _dc_fields(node):
                 fields.append(f"{name}: {typ}")
     return fields
 
+
 def _dc_decorator_args(node):
-    """Return @dataclass(...) argument string, e.g. '(frozen=True, slots=True)'."""
     for d in node.decorator_list:
         if isinstance(d, ast.Call):
             func = d.func
@@ -273,6 +293,7 @@ def _dc_decorator_args(node):
                     return "(...)"
     return ""
 
+
 def is_dataclass_decorated(node):
     for d in node.decorator_list:
         if isinstance(d, ast.Name) and d.id == "dataclass":
@@ -285,11 +306,13 @@ def is_dataclass_decorated(node):
             return True
     return False
 
+
 def module_docstring(tree):
     try:
         return ast.get_docstring(tree)
     except Exception:
         return None
+
 
 def parse_imports(tree):
     out = []
@@ -305,6 +328,7 @@ def parse_imports(tree):
                 else:
                     out.append(f"{mod}.{n.name}".strip("."))
     return out
+
 
 def top_defs(tree):
     funcs = []
@@ -325,9 +349,6 @@ def top_defs(tree):
             classes.append(entry)
     return funcs, classes
 
-# ---------------------------------------------------------------------------
-# Signal detection
-# ---------------------------------------------------------------------------
 
 def find_calls(tree, names):
     counts = {n: 0 for n in names}
@@ -342,43 +363,42 @@ def find_calls(tree, names):
     V().visit(tree)
     return counts
 
+
 def find_substrings(text, subs):
     return {s: text.count(s) for s in subs}
 
-# ---------------------------------------------------------------------------
-# Issue checks — original
-# ---------------------------------------------------------------------------
-
-def check_header_issue(header_issue):
-    return [header_issue] if header_issue else []
 
 def check_layer_import_rules(layer, imports):
     issues = []
     has_bpy = any(i == "bpy" or i.startswith("bpy.") for i in imports)
     has_bmesh = any(i == "bmesh" or i.startswith("bmesh.") for i in imports)
-    if layer in ("core", "domain-core", "type") and (has_bpy or has_bmesh):
+    if layer in ("core", "domain-core", "type", "domain-contracts", "type-contracts", "domain-validation") and (has_bpy or has_bmesh):
         issues.append("Forbidden Blender import in non-Blender layer (bpy/bmesh).")
     return issues
 
+
 def check_print_statements(tree, layer):
     issues = []
-    if layer in ("core", "domain-core", "domain-blender", "type"):
+    if layer in ("core", "domain-core", "domain-blender", "type", "domain-contracts", "type-contracts", "domain-validation"):
         class V(ast.NodeVisitor):
             found = 0
             def visit_Call(self, node):
                 if isinstance(node.func, ast.Name) and node.func.id == "print":
                     self.found += 1
                 self.generic_visit(node)
-        v = V(); v.visit(tree)
+        v = V()
+        v.visit(tree)
         if v.found:
             issues.append(f"print() used ({v.found}x). Prefer logging.")
     return issues
+
 
 def check_notes_schema(text):
     issues = []
     if "notes[" in text and '"domains"' not in text and "'domains'" not in text:
         issues.append("Notes accessed but 'domains' schema not visible here (review).")
     return issues
+
 
 def check_determinism_smells(text, layer):
     issues = []
@@ -388,9 +408,6 @@ def check_determinism_smells(text, layer):
                 issues.append("random used without local Random(seed) (review determinism).")
     return issues
 
-# ---------------------------------------------------------------------------
-# Issue checks — new (coding guide)
-# ---------------------------------------------------------------------------
 
 def check_legacy_typing(imports, layer):
     if layer == "tools":
@@ -401,8 +418,8 @@ def check_legacy_typing(imports, layer):
     suggestions = ", ".join(f"{f} -> {LEGACY_TYPING_MODERN.get(f, 'builtin')}" for f in found)
     return [f"Legacy typing aliases (use builtins): {suggestions}"]
 
+
 def check_dataclass_flags(tree, layer):
-    """Check that dataclasses in core/domain-core/type use frozen=True, slots=True."""
     issues = []
     if layer not in ("core", "domain-core", "type"):
         return issues
@@ -422,37 +439,20 @@ def check_dataclass_flags(tree, layer):
             )
     return issues
 
+
 def check_logger_name(tree, text, layer=""):
-    """Detect hardcoded string logger names used for logging (not for configuration).
-
-    A hardcoded name in getLogger() is legitimate when the call is part of a
-    logging configuration function — i.e. when setLevel, addHandler, or
-    removeHandler is called on the same variable in the same function scope.
-    Example: logging_conf.py sets getLogger("bvillage") intentionally to
-    configure the project root logger. That is correct and must not be flagged.
-
-    Tests are excluded entirely: hardcoded names in tests are used deliberately
-    to assert logger tree behaviour (e.g. getLogger("bvillage.test")).
-
-    All other hardcoded string names should use __name__ instead.
-    """
     if layer == "tests":
         return []
     if "logging.getLogger" not in text:
         return []
 
-    # Collect names of loggers that are configured (setLevel / addHandler / removeHandler)
-    # in the same assignment scope. We do a simple text-level check: if any of these
-    # methods appear in the file, the hardcoded name is considered intentional.
     CONFIG_METHODS = {"setLevel", "addHandler", "removeHandler", "setFormatter"}
 
     class V(ast.NodeVisitor):
-        # list of (string_name, parent_assign_name) tuples
-        getlogger_vars: list = []   # (literal_value, assigned_to_name_or_None)
-        configured_vars: set = set()  # variable names that have config calls
+        getlogger_vars = []
+        configured_vars = set()
 
         def visit_Assign(self, node):
-            # catch: logger = logging.getLogger("some.name")
             if (len(node.targets) == 1 and
                     isinstance(node.targets[0], ast.Name) and
                     isinstance(node.value, ast.Call)):
@@ -470,27 +470,14 @@ def check_logger_name(tree, text, layer=""):
 
         def visit_Call(self, node):
             fn = node.func
-            # catch: logger.setLevel(...) / logger.addHandler(...)
             if isinstance(fn, ast.Attribute) and fn.attr in CONFIG_METHODS:
                 if isinstance(fn.value, ast.Name):
                     self.configured_vars.add(fn.value.id)
-            # also catch bare getLogger("name") not assigned to a variable
-            is_gl = (
-                (isinstance(fn, ast.Attribute) and fn.attr == "getLogger") or
-                (isinstance(fn, ast.Name) and fn.id == "getLogger")
-            )
-            if is_gl and node.args:
-                arg = node.args[0]
-                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                    # check if this call itself is not an assignment (already handled above)
-                    # We'll catch unassigned ones separately below
-                    pass
             self.generic_visit(node)
 
     v = V()
     v.visit(tree)
 
-    # Filter: only report hardcoded names where the variable is NOT configured
     offenders = [
         repr(name)
         for name, var in v.getlogger_vars
@@ -500,8 +487,8 @@ def check_logger_name(tree, text, layer=""):
         return [f"Hardcoded logger name(s): {', '.join(offenders)}. Use logging.getLogger(__name__)."]
     return []
 
+
 def check_fstring_in_log(tree):
-    """Detect f-strings passed directly to log.debug/info/warning/error calls."""
     LOG_METHODS = {"debug", "info", "warning", "error", "critical", "exception"}
     class V(ast.NodeVisitor):
         count = 0
@@ -511,7 +498,8 @@ def check_fstring_in_log(tree):
                 if node.args and isinstance(node.args[0], ast.JoinedStr):
                     self.count += 1
             self.generic_visit(node)
-    v = V(); v.visit(tree)
+    v = V()
+    v.visit(tree)
     if v.count:
         return [
             f"f-string in log call ({v.count}x). "
@@ -519,9 +507,9 @@ def check_fstring_in_log(tree):
         ]
     return []
 
+
 def check_all_defined(tree, layer, funcs):
-    """Check that modules with public functions define __all__."""
-    if layer in ("tools", "tests", "package"):
+    if layer in ("tools", "tests", "package", "entry"):
         return []
     public = [f for f in funcs if not f.startswith("def _") and not f.startswith("async def _")]
     if not public:
@@ -535,9 +523,6 @@ def check_all_defined(tree, layer, funcs):
         return ["__all__ not defined. Declare public API explicitly."]
     return []
 
-# ---------------------------------------------------------------------------
-# File scan
-# ---------------------------------------------------------------------------
 
 def load_bvillage_version():
     try:
@@ -546,6 +531,7 @@ def load_bvillage_version():
         return getattr(bvillage, "__version__", None)
     except Exception:
         return None
+
 
 @dataclass
 class FileReport:
@@ -560,6 +546,7 @@ class FileReport:
     dataclasses: List[str]
     signals: Dict[str, Any]
     issues: List[str]
+
 
 def scan_file(p):
     rp = relpath(p)
@@ -577,11 +564,17 @@ def scan_file(p):
             issues.append(header_issue)
         issues.append("AST parse error.")
         return FileReport(
-            path=rp, layer=layer,
-            header_ok=header_ok, header_issue=header_issue,
-            docstring="(parse error)", imports=[],
-            funcs=[], classes=[], dataclasses=[],
-            signals={"parse_error": str(e)}, issues=issues,
+            path=rp,
+            layer=layer,
+            header_ok=header_ok,
+            header_issue=header_issue,
+            docstring="(parse error)",
+            imports=[],
+            funcs=[],
+            classes=[],
+            dataclasses=[],
+            signals={"parse_error": str(e)},
+            issues=issues,
         )
 
     doc = (module_docstring(tree) or "(no module docstring)").strip()
@@ -591,9 +584,13 @@ def scan_file(p):
 
     calls = find_calls(tree, ("set_domain_artifact", "get_domain_artifact", "configure_logging"))
     substr = find_substrings(text, [
-        "notes[", 'notes["domains"]', "notes['domains']",
+        "notes[",
+        'notes["domains"]',
+        "notes['domains']",
         "structure.notes",
-        "axes_u", "axes_v", "axes_u", "axes_z",
+        "axes_u",
+        "axes_v",
+        "axes_z",
         "frameplan",
         "logging.getLogger",
     ])
@@ -605,7 +602,6 @@ def scan_file(p):
     issues.extend(check_print_statements(tree, layer))
     issues.extend(check_determinism_smells(text, layer))
     issues.extend(check_notes_schema(text))
-    # new coding-guide checks
     issues.extend(check_legacy_typing(imps, layer))
     issues.extend(check_dataclass_flags(tree, layer))
     issues.extend(check_logger_name(tree, text, layer))
@@ -615,29 +611,50 @@ def scan_file(p):
     signals = {"calls": calls, "substr": {k: v for k, v in substr.items() if v}}
 
     return FileReport(
-        path=rp, layer=layer,
-        header_ok=header_ok, header_issue=header_issue,
-        docstring=doc, imports=imps,
-        funcs=funcs, classes=classes, dataclasses=dcs,
-        signals=signals, issues=issues,
+        path=rp,
+        layer=layer,
+        header_ok=header_ok,
+        header_issue=header_issue,
+        docstring=doc,
+        imports=imps,
+        funcs=funcs,
+        classes=classes,
+        dataclasses=dcs,
+        signals=signals,
+        issues=issues,
     )
 
-def scan_repo():
-    reports = []
+
+def iter_repo_files():
+    seen = set()
+
+    for entry_name in ROOT_ENTRY_FILES:
+        p = ROOT / entry_name
+        if p.exists() and p.suffix == ".py" and not should_skip(p):
+            rp = relpath(p)
+            if rp not in seen:
+                seen.add(rp)
+                yield p
+
     for top in INCLUDE_TOP:
         base = ROOT / top
         if not base.exists():
             continue
-        for p in base.rglob("*.py"):
+        for p in sorted(base.rglob("*.py"), key=lambda x: x.as_posix()):
             if should_skip(p):
                 continue
-            reports.append(scan_file(p))
+            rp = relpath(p)
+            if rp in seen:
+                continue
+            seen.add(rp)
+            yield p
+
+
+def scan_repo():
+    reports = [scan_file(p) for p in iter_repo_files()]
     reports.sort(key=lambda r: r.path)
     return reports
 
-# ---------------------------------------------------------------------------
-# Rendering
-# ---------------------------------------------------------------------------
 
 def render_text(reports, meta):
     total = len(reports)
@@ -739,6 +756,7 @@ def render_text(reports, meta):
             lines.append("")
     return "\n".join(lines)
 
+
 def render_json(reports, meta):
     def to_dict(r):
         return {
@@ -757,6 +775,7 @@ def render_json(reports, meta):
     payload = {"meta": meta, "files": [to_dict(r) for r in reports]}
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
+
 def main():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     meta = {
@@ -771,14 +790,14 @@ def main():
     else:
         print(render_text(reports, meta))
 
+
 if __name__ == "__main__":
     main()
 PYEOF
-)"
 
 if [[ -n "$OUT_PATH" ]]; then
-  python3 - "$ROOT" "$MODE" "$SUMMARY_ONLY" <<<"$PY_SCAN" > "$OUT_PATH"
+  python3 "$PY_FILE" "$ROOT" "$MODE" "$SUMMARY_ONLY" > "$OUT_PATH"
   echo "Wrote: $OUT_PATH" >&2
 else
-  python3 - "$ROOT" "$MODE" "$SUMMARY_ONLY" <<<"$PY_SCAN"
+  python3 "$PY_FILE" "$ROOT" "$MODE" "$SUMMARY_ONLY"
 fi

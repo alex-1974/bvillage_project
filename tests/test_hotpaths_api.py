@@ -1,3 +1,5 @@
+# tests/test_hotpaths_api.py
+
 """
 API hot path audit for @hot_api functions.
 

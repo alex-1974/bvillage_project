@@ -14,6 +14,7 @@ EXCLUDE_DIRS = {
     ".git", ".venv", "venv", "__pycache__", ".mypy_cache", ".pytest_cache",
     "dist", "build", ".tox", ".ruff_cache",
     "bvillage.egg-info", "bvillage_project.egg-info",
+    "research", "generated", 
 }
 
 

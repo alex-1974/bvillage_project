@@ -9,7 +9,7 @@
         "label": "Fachwerk (North German Plain) core phase",
         "role": "core_phase",
         "domain_ids": ["timber_frame"],
-        "archetype_ids": ["fachwerk.hallenhaus"],
+        "archetype_ids": ["FW-LH-ND"],
         "core_time": { "start_year": 1350, "end_year": 1550 },
         "halo_time": { "start_year": 1200, "end_year": 1750 },
         "typicality": 1.0,

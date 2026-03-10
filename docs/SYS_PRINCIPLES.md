@@ -71,7 +71,7 @@ Variation comes from controlled, seed-based sampling within defined parameter ra
 
 ## 6. Physics is universal — construction culture is historical
 
-Mechanics always apply. A beam with a given cross-section carries a given load — that holds in the thirteenth century as much as today. The PhysicalPlausibilityValidator checks exactly this: would this structure physically hold?
+Mechanics always apply. A beam with a given cross-section carries a given load — that holds in the thirteenth century as much as today. The Inspector (`validate_physics.py`) checks exactly this: would this structure physically hold?
 
 How close to the physical limit builders of a given epoch and region actually operated is historical and cultural. The ConstructionCulturePolicy carries this knowledge: how much did they overdimension? What redundancy did they prefer? Which spans were common in their tradition, which were not? This layer prevents anachronistic optimization — a medieval house dimensioned like a modern engineered structure is historically wrong, even if it passes physics.
 

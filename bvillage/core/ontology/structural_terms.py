@@ -1,4 +1,5 @@
 # bvillage/core/ontology/structural_terms.py
+
 """
 BVILLAGE Structural Ontology
 
@@ -40,13 +41,23 @@ POST_PRIMARY: Final[str] = "post.primary"
 POST_OPENING_JAMB: Final[str] = "post.opening_jamb"
 POST_INTERIOR: Final[str] = "post.interior"
 
+# v0.4.0 Zimmermannslogik (Rohskelett)
+POST_HALL: Final[str] = "post.hall"
+
 # Beams
 BEAM_EAVES_PLATE: Final[str] = "beam.eaves_plate"
 BEAM_OPENING_LINTEL: Final[str] = "beam.opening_lintel"
 BEAM_OPENING_SILL: Final[str] = "beam.opening_sill"
 
+# v0.4.0 Zimmermannslogik (Rohskelett)
+BEAM_TIE: Final[str] = "beam.tie"
+BEAM_HALL_PLATE: Final[str] = "beam.hall_plate"
+
 # Braces
 BRACE_DIAGONAL: Final[str] = "brace.diagonal"
+
+# v0.4.0 Zimmermannslogik (Rohskelett)
+BRACE_KNEE: Final[str] = "brace.knee"
 
 # Infills
 INFILL_CELL: Final[str] = "infill.cell"
@@ -70,31 +81,49 @@ BEAM_SILL: Final[str] = BEAM_OPENING_SILL
 
 VALID_TIDS: Final[FrozenSet[str]] = frozenset(
     {
+        # posts
         POST_PRIMARY,
         POST_OPENING_JAMB,
         POST_INTERIOR,
+        POST_HALL,
+
+        # beams
         BEAM_EAVES_PLATE,
         BEAM_OPENING_LINTEL,
         BEAM_OPENING_SILL,
+        BEAM_TIE,
+        BEAM_HALL_PLATE,
+
+        # braces
         BRACE_DIAGONAL,
+        BRACE_KNEE,
+
+        # infills
         INFILL_CELL,
     }
 )
 
 TID_CLASS: Final[Mapping[str, str]] = {
+    # posts
     POST_PRIMARY: CLASS_POST,
     POST_OPENING_JAMB: CLASS_POST,
     POST_INTERIOR: CLASS_POST,
+    POST_HALL: CLASS_POST,
 
+    # beams
     BEAM_EAVES_PLATE: CLASS_BEAM,
     BEAM_OPENING_LINTEL: CLASS_BEAM,
     BEAM_OPENING_SILL: CLASS_BEAM,
+    BEAM_TIE: CLASS_BEAM,
+    BEAM_HALL_PLATE: CLASS_BEAM,
 
+    # braces
     BRACE_DIAGONAL: CLASS_BRACE,
+    BRACE_KNEE: CLASS_BRACE,
 
+    # infills
     INFILL_CELL: CLASS_INFILL,
 }
-
 
 # -------------------------------------------------------------
 # Helpers
@@ -130,9 +159,9 @@ __all__ = [
     # classes
     "CLASS_POST", "CLASS_BEAM", "CLASS_BRACE", "CLASS_INFILL", "STRUCTURAL_CLASSES",
     # canonical tids
-    "POST_PRIMARY", "POST_OPENING_JAMB", "POST_INTERIOR",
-    "BEAM_EAVES_PLATE", "BEAM_OPENING_LINTEL", "BEAM_OPENING_SILL",
-    "BRACE_DIAGONAL",
+    "POST_PRIMARY", "POST_OPENING_JAMB", "POST_INTERIOR", "POST_HALL",
+    "BEAM_EAVES_PLATE", "BEAM_OPENING_LINTEL", "BEAM_OPENING_SILL", "BEAM_TIE", "BEAM_HALL_PLATE",
+    "BRACE_DIAGONAL", "BRACE_KNEE",
     "INFILL_CELL",
     # aliases
     "POST_JAMB",
