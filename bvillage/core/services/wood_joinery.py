@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Iterable
 
+from bvillage.core.hot_path import hot, hot_api
 from bvillage.core.contracts.joinery import (
     FaceId,
     JoineryRequest,
@@ -71,6 +72,7 @@ class WoodJoineryService:
     def list_joinery_ids(self) -> tuple[str, ...]:
         return tuple(sorted(self._registry.keys()))
 
+    @hot_api
     def resolve_visible_marks(self, request: JoineryRequest) -> tuple[VisibleMark, ...]:
         runtime = self._registry.get(request.joinery_id)
         if runtime is None:
@@ -98,6 +100,7 @@ class WoodJoineryService:
             request,
         )
 
+    @hot
     @lru_cache(maxsize=2048)
     def _resolve_cached(
         self,
