@@ -2,415 +2,372 @@
 # tools/import_graph.py
 
 """
-BVILLAGE Import Graph Generator
+BVILLAGE Import Graph Scanner
 
-Erzeugt einen statischen Importgraphen des Engine-Codes und schreibt ihn
-in eine TXT-Datei.
+Purpose
+-------
+Extract the import dependency graph of the productive BVILLAGE codebase.
 
-Default scan scope:
-- run_in_blender.py
-- bvillage/
-- tests/   (abschaltbar)
+This tool analyzes Python modules and extracts:
 
-Explizit ausgeschlossen:
-- research/
-- docs/
-- .venv/
-- build/
-- dist/
-- sonstige Nicht-Engine-Bereiche
+- internal module dependencies
+- external imports
+- module inventory
+- dependency edges
+- dependency cycles
+- layer classification
 
-Default output:
-    tmp/IMPORT_GRAPH.txt
+Output
+------
+generated/IMPORT_GRAPH.md
+
+Scope
+-----
+- bvillage package
+- selected entry files (e.g. run_in_blender.py)
+
+Excludes
+--------
+- caches
+- build artifacts
+- tests
+- virtual environments
 """
 
 from __future__ import annotations
 
-import argparse
 import ast
-from collections import defaultdict
 from pathlib import Path
+from collections import defaultdict
+from typing import Dict, List, Set
+
+# ------------------------------------------------------------
+# CONFIG
+# ------------------------------------------------------------
+
+PROJECT_ROOT = Path(".").resolve()
+
+CODE_ROOT = PROJECT_ROOT / "bvillage"
+
+OUT = PROJECT_ROOT / "generated" / "IMPORT_GRAPH.md"
+
+EXTRA_FILES = [
+    PROJECT_ROOT / "run_in_blender.py",
+]
+
+INCLUDE_PATTERNS = [
+    "bvillage/**/*.py",
+]
+
+EXCLUDE_PATTERNS = [
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/.venv/**",
+    "**/venv/**",
+    "**/env/**",
+    "**/generated/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/tests/**",
+    "**/tmp/**",
+]
 
 
-ROOT = Path(".").resolve()
+# ------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------
 
-EXCLUDE = {
-    ".git",
-    "__pycache__",
-    ".venv",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    ".tox",
-    "build",
-    "dist",
-    ".eggs",
-    "bvillage.egg-info",
-    "bvillage_project.egg-info",
-}
+def relpath(path: Path) -> str:
+    return path.relative_to(PROJECT_ROOT).as_posix()
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate static import graph for BVILLAGE engine code.")
-    parser.add_argument(
-        "--with-tests",
-        dest="with_tests",
-        action="store_true",
-        default=True,
-        help="Include tests/ in scan scope (default: on).",
-    )
-    parser.add_argument(
-        "--no-tests",
-        dest="with_tests",
-        action="store_false",
-        help="Exclude tests/ from scan scope.",
-    )
-    parser.add_argument(
-        "--outdir",
-        type=str,
-        default="generated",
-        help="Output directory for IMPORT_GRAPH.txt (default: tmp). Ignored if --outfile is set.",
-    )
-    parser.add_argument(
-        "--outfile",
-        type=str,
-        default="",
-        help="Explicit output file path.",
-    )
-    return parser.parse_args()
+def module_name(path: Path) -> str:
+    rel = path.relative_to(PROJECT_ROOT)
+
+    if rel.name == "run_in_blender.py":
+        return "run_in_blender"
+
+    parts = list(rel.with_suffix("").parts)
+    return ".".join(parts)
 
 
-def resolve_outfile(root: Path, outdir: str, outfile: str) -> Path:
-    if outfile:
-        out = Path(outfile)
-        if not out.is_absolute():
-            out = root / out
-        return out
-    return root / outdir / "IMPORT_GRAPH.txt"
+def layer_of_module(mod: str) -> str:
 
-
-def discover_python_files(root: Path, include_tests: bool = True) -> list[Path]:
-    files: list[Path] = []
-
-    root_entry = root / "run_in_blender.py"
-    if root_entry.exists():
-        files.append(root_entry)
-
-    engine_dir = root / "bvillage"
-    if engine_dir.exists():
-        for path in engine_dir.rglob("*.py"):
-            if any(part in EXCLUDE for part in path.parts):
-                continue
-            files.append(path)
-
-    if include_tests:
-        tests_dir = root / "tests"
-        if tests_dir.exists():
-            for path in tests_dir.rglob("*.py"):
-                if any(part in EXCLUDE for part in path.parts):
-                    continue
-                files.append(path)
-
-    return sorted(set(files), key=lambda p: p.as_posix())
-
-
-def module_name(root: Path, file: Path) -> str:
-    rel = file.relative_to(root)
-
-    if rel.name == "__init__.py":
-        rel = rel.parent
-    else:
-        rel = rel.with_suffix("")
-
-    return ".".join(rel.parts)
-
-
-def module_package_name(module: str) -> str:
-    if "." not in module:
-        return ""
-    return module.rsplit(".", 1)[0]
-
-
-def resolve_from_import_base(current_module: str, is_package: bool, level: int, module: str | None) -> str:
-    if level == 0:
-        return module or ""
-
-    base_parts = current_module.split(".")
-    if not is_package and base_parts:
-        base_parts = base_parts[:-1]
-
-    up = level - 1
-    if up > 0:
-        if up > len(base_parts):
-            return ""
-        base_parts = base_parts[:-up]
-
-    if module:
-        base_parts.extend(part for part in module.split(".") if part)
-
-    return ".".join(base_parts)
-
-
-def parse_imports(file: Path, current_module: str, is_package: bool) -> list[tuple[str, int, str]]:
-    imports: list[tuple[str, int, str]] = []
-
-    try:
-        text = file.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        text = file.read_text(encoding="utf-8", errors="replace")
-
-    try:
-        tree = ast.parse(text, filename=str(file))
-    except SyntaxError:
-        return imports
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                imports.append((alias.name, node.lineno, "import"))
-
-        elif isinstance(node, ast.ImportFrom):
-            base = resolve_from_import_base(
-                current_module=current_module,
-                is_package=is_package,
-                level=node.level,
-                module=node.module,
-            )
-
-            if any(alias.name == "*" for alias in node.names):
-                if base:
-                    imports.append((base, node.lineno, "from-import-*"))
-                continue
-
-            if base:
-                imports.append((base, node.lineno, "from-import-base"))
-
-            for alias in node.names:
-                if base:
-                    imports.append((f"{base}.{alias.name}", node.lineno, "from-import-name"))
-                else:
-                    imports.append((alias.name, node.lineno, "from-import-name"))
-
-    return imports
-
-
-def detect_layer(path: str) -> str:
-    path = path.replace("\\", "/")
-
-    if path == "run_in_blender.py":
+    if mod == "run_in_blender":
         return "entry"
 
-    if path.startswith("bvillage/core/"):
+    if mod.startswith("bvillage.core"):
         return "core"
 
-    if path.startswith("bvillage/domains/") and "/contracts/" in path:
-        return "domain-contracts"
+    if mod.startswith("bvillage.types"):
+        return "types"
 
-    if path.startswith("bvillage/domains/") and "/validation/" in path:
-        return "domain-validation"
+    if mod.startswith("bvillage.domains"):
 
-    if path.startswith("bvillage/domains/") and "/core/" in path:
+        if ".blender." in mod:
+            return "domain-blender"
+
+        if ".validation." in mod:
+            return "domain-validation"
+
+        if ".contracts." in mod:
+            return "domain-contracts"
+
         return "domain-core"
 
-    if path.startswith("bvillage/domains/") and "/blender/" in path:
-        return "domain-blender"
-
-    if path.startswith("bvillage/types/") and "/contracts/" in path:
-        return "type-contracts"
-
-    if path.startswith("bvillage/types/"):
-        return "type"
-
-    if path.startswith("bvillage/blender/"):
+    if mod.startswith("bvillage.blender"):
         return "blender"
 
-    if path.startswith("tests/"):
-        return "tests"
-
-    if path.startswith("tools/"):
+    if mod.startswith("bvillage.tools"):
         return "tools"
-
-    if path.startswith("bvillage/"):
-        return "package"
 
     return "other"
 
 
-def resolve_internal_target(imp: str, modules: set[str]) -> str | None:
-    if not imp:
-        return None
+def collect_files() -> List[Path]:
 
-    if imp in modules:
-        return imp
+    files: Set[Path] = set()
 
-    probe = imp
-    while "." in probe:
-        probe = probe.rsplit(".", 1)[0]
-        if probe in modules:
-            return probe
+    for pattern in INCLUDE_PATTERNS:
+        for path in PROJECT_ROOT.glob(pattern):
+            if path.is_file():
+                files.add(path.resolve())
 
-    return None
+    for p in EXTRA_FILES:
+        if p.exists():
+            files.add(p.resolve())
 
-
-def find_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
-    visited: set[str] = set()
-    stack: list[str] = []
-    on_stack: set[str] = set()
-    cycles: set[tuple[str, ...]] = set()
-
-    def canonicalize(cycle: list[str]) -> tuple[str, ...]:
-        core = cycle[:-1]
-        if not core:
-            return tuple()
-
-        rotations = []
-        for i in range(len(core)):
-            rotated = core[i:] + core[:i]
-            rotations.append(tuple(rotated))
-
-        return min(rotations)
-
-    def dfs(node: str) -> None:
-        visited.add(node)
-        stack.append(node)
-        on_stack.add(node)
-
-        for neigh in graph.get(node, []):
-            if neigh not in visited:
-                dfs(neigh)
-            elif neigh in on_stack:
-                i = stack.index(neigh)
-                cycle = stack[i:] + [neigh]
-                canon = canonicalize(cycle)
-                if canon:
-                    cycles.add(canon)
-
-        stack.pop()
-        on_stack.remove(node)
-
-    for node in sorted(graph.keys()):
-        if node not in visited:
-            dfs(node)
-
-    return [list(cycle) for cycle in sorted(cycles)]
-
-
-def main() -> None:
-    args = parse_args()
-
-    files = discover_python_files(ROOT, include_tests=args.with_tests)
-    outfile = resolve_outfile(ROOT, args.outdir, args.outfile)
-
-    module_map: dict[str, Path] = {}
-    package_modules: set[str] = set()
+    result = []
 
     for f in files:
-        mod = module_name(ROOT, f)
-        module_map[mod] = f
-        if f.name == "__init__.py":
-            package_modules.add(mod)
+        r = f.relative_to(PROJECT_ROOT)
+        if any(r.match(p) for p in EXCLUDE_PATTERNS):
+            continue
+        result.append(f)
 
-    modules = set(module_map.keys())
+    result.sort()
+    return result
 
-    imports_out: dict[str, list[str]] = defaultdict(list)
-    imports_in: dict[str, list[str]] = defaultdict(list)
-    import_details: dict[str, list[tuple[str, str, int, str]]] = defaultdict(list)
-    unresolved_imports: dict[str, list[tuple[str, int, str]]] = defaultdict(list)
-    external_imports: dict[str, list[tuple[str, int, str]]] = defaultdict(list)
 
-    for mod, path in sorted(module_map.items()):
-        parsed_imports = parse_imports(path, current_module=mod, is_package=(mod in package_modules))
+# ------------------------------------------------------------
+# Import extraction
+# ------------------------------------------------------------
 
-        for raw_import, lineno, kind in parsed_imports:
-            target = resolve_internal_target(raw_import, modules)
+def extract_imports(path: Path):
 
-            if target is not None:
-                imports_out[mod].append(target)
-                imports_in[target].append(mod)
-                import_details[mod].append((raw_import, target, lineno, kind))
-            else:
-                top = raw_import.split(".", 1)[0] if raw_import else ""
-                if top in {"bvillage", "tests", "run_in_blender"}:
-                    unresolved_imports[mod].append((raw_import, lineno, kind))
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    internal = set()
+    external = set()
+
+    for node in ast.walk(tree):
+
+        if isinstance(node, ast.Import):
+
+            for alias in node.names:
+
+                name = alias.name
+
+                if name.startswith("bvillage"):
+                    internal.add(name)
                 else:
-                    external_imports[mod].append((raw_import, lineno, kind))
+                    external.add(name.split(".")[0])
 
-    graph: dict[str, list[str]] = {}
-    for mod in modules:
-        graph[mod] = sorted(set(imports_out.get(mod, [])))
+        elif isinstance(node, ast.ImportFrom):
 
-    cycles = find_cycles(graph)
+            mod = node.module or ""
 
-    lines: list[str] = []
-    lines.append("BVILLAGE IMPORT GRAPH")
+            if mod.startswith("bvillage"):
+                internal.add(mod)
+            else:
+                if mod:
+                    external.add(mod.split(".")[0])
+
+    return internal, external
+
+
+# ------------------------------------------------------------
+# Graph utilities
+# ------------------------------------------------------------
+
+def detect_cycles(graph: Dict[str, Set[str]]) -> List[List[str]]:
+
+    visited = set()
+    stack = []
+    cycles = []
+
+    def visit(node):
+
+        if node in stack:
+
+            idx = stack.index(node)
+            cycles.append(stack[idx:] + [node])
+            return
+
+        if node in visited:
+            return
+
+        visited.add(node)
+        stack.append(node)
+
+        for dep in graph.get(node, []):
+            visit(dep)
+
+        stack.pop()
+
+    for n in graph:
+        visit(n)
+
+    return cycles
+
+
+# ------------------------------------------------------------
+# Scan
+# ------------------------------------------------------------
+
+def build_graph(files: List[Path]):
+
+    module_by_path = {}
+    graph = defaultdict(set)
+    external = defaultdict(set)
+
+    for path in files:
+
+        mod = module_name(path)
+        module_by_path[path] = mod
+
+    for path in files:
+
+        mod = module_by_path[path]
+
+        internal, ext = extract_imports(path)
+
+        for dep in internal:
+
+            graph[mod].add(dep)
+
+        for e in ext:
+
+            external[mod].add(e)
+
+    return graph, external
+
+
+# ------------------------------------------------------------
+# Markdown
+# ------------------------------------------------------------
+
+def render(graph, external, files):
+
+    modules = sorted(graph.keys())
+
+    cycles = detect_cycles(graph)
+
+    lines = []
+
+    lines.append("# IMPORT GRAPH")
     lines.append("")
-    lines.append(f"root: {ROOT}")
-    lines.append(f"modules: {len(modules)}")
-    lines.append(f"include_tests: {args.with_tests}")
-    lines.append(f"outfile: {outfile}")
+
+    lines.append("## Summary")
     lines.append("")
 
-    for mod in sorted(modules):
-        path = module_map[mod]
-        rel = path.relative_to(ROOT)
-        layer = detect_layer(str(rel))
+    lines.append(f"- modules: {len(modules)}")
 
-        lines.append("=" * 60)
-        lines.append(f"FILE: {rel}")
-        lines.append(f"MODULE: {mod}")
-        lines.append(f"LAYER: {layer}")
-        lines.append("")
+    edges = sum(len(v) for v in graph.values())
+    lines.append(f"- internal edges: {edges}")
 
-        lines.append("IMPORTS:")
-        details = sorted(import_details.get(mod, []), key=lambda x: (x[2], x[0], x[1], x[3]))
-        if not details:
-            lines.append("  (none)")
-        else:
-            for raw, target, lineno, kind in details:
-                lines.append(f"  - {target}    [raw={raw}, line={lineno}, kind={kind}]")
+    ext = sum(len(v) for v in external.values())
+    lines.append(f"- external imports: {ext}")
 
-        lines.append("")
-        lines.append("IMPORTED BY:")
-        incoming = sorted(set(imports_in.get(mod, [])))
-        if not incoming:
-            lines.append("  (none)")
-        else:
-            for src in incoming:
-                lines.append(f"  - {src}")
+    lines.append(f"- cycles: {len(cycles)}")
 
-        lines.append("")
-        lines.append("UNRESOLVED INTERNAL IMPORTS:")
-        unresolved = sorted(set(unresolved_imports.get(mod, [])), key=lambda x: (x[1], x[0], x[2]))
-        if not unresolved:
-            lines.append("  (none)")
-        else:
-            for raw, lineno, kind in unresolved:
-                lines.append(f"  - {raw}    [line={lineno}, kind={kind}]")
-
-        lines.append("")
-        lines.append("EXTERNAL IMPORTS:")
-        external = sorted(set(external_imports.get(mod, [])), key=lambda x: (x[1], x[0], x[2]))
-        if not external:
-            lines.append("  (none)")
-        else:
-            for raw, lineno, kind in external:
-                lines.append(f"  - {raw}    [line={lineno}, kind={kind}]")
-
-        lines.append("")
-        lines.append("")
-
-    lines.append("CYCLES")
     lines.append("")
-    if not cycles:
-        lines.append("(none)")
+
+    lines.append("## Module Inventory")
+    lines.append("")
+
+    for m in modules:
+
+        lines.append(f"### {m}")
+        lines.append("")
+
+        layer = layer_of_module(m)
+
+        lines.append(f"- layer: `{layer}`")
+        lines.append("")
+
+        lines.append("internal imports:")
+
+        deps = sorted(graph[m])
+
+        if deps:
+            for d in deps:
+                lines.append(f"- {m} -> {d}")
+        else:
+            lines.append("- none")
+
+        lines.append("")
+
+        lines.append("external imports:")
+
+        ex = sorted(external[m])
+
+        if ex:
+            for e in ex:
+                lines.append(f"- {e}")
+        else:
+            lines.append("- none")
+
+        lines.append("")
+
+    lines.append("## Dependency Edges")
+    lines.append("")
+
+    for src in sorted(graph):
+
+        for dst in sorted(graph[src]):
+
+            lines.append(f"- {src} -> {dst}")
+
+    lines.append("")
+
+    lines.append("## Cycles")
+    lines.append("")
+
+    if cycles:
+
+        for c in cycles:
+
+            lines.append("- " + " -> ".join(c))
+
     else:
-        for cycle in cycles:
-            lines.append(" -> ".join(cycle + [cycle[0]]))
 
-    outfile.parent.mkdir(parents=True, exist_ok=True)
-    outfile.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        lines.append("no cycles detected")
 
-    print(f"Import graph written to {outfile}")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+# ------------------------------------------------------------
+# Main
+# ------------------------------------------------------------
+
+def main():
+
+    files = collect_files()
+
+    graph, external = build_graph(files)
+
+    OUT.parent.mkdir(exist_ok=True)
+
+    md = render(graph, external, files)
+
+    OUT.write_text(md)
+
+    print("Import graph written:", OUT)
+    print("modules:", len(graph))
 
 
 if __name__ == "__main__":

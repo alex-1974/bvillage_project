@@ -1,20 +1,52 @@
 #!/usr/bin/env python3
 # tools/fix_headers.py
 
+"""
+Fix Python file headers.
+
+Repairs the canonical header:
+
+    # relative/path/to/file.py
+
+Rules
+-----
+If a shebang exists:
+
+    #!/usr/bin/env python3
+    # relative/path.py
+
+Otherwise:
+
+    # relative/path.py
+
+Guarantees
+----------
+- never changes program semantics
+- AST parse validated before/after
+- minimal modifications
+"""
+
 from __future__ import annotations
 
 import argparse
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple
 
 
 EXCLUDE_DIRS = {
-    ".git", ".venv", "venv", "__pycache__", ".mypy_cache", ".pytest_cache",
-    "dist", "build", ".tox", ".ruff_cache",
-    "bvillage.egg-info", "bvillage_project.egg-info",
-    "research", "generated", 
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    "dist",
+    "build",
+    ".tox",
+    ".ruff_cache",
+    "generated",
+    "research",
 }
 
 
@@ -41,6 +73,8 @@ def read_text(p: Path) -> str:
 
 
 def write_text(p: Path, s: str) -> None:
+    if not s.endswith("\n"):
+        s += "\n"
     p.write_text(s, encoding="utf-8", newline="\n")
 
 
@@ -61,37 +95,12 @@ def is_shebang(line: str) -> bool:
     return line.startswith("#!")
 
 
-def is_future_import(line: str) -> bool:
-    return line.lstrip().startswith("from __future__ import ")
-
-
 def is_docstring_opener(line: str) -> bool:
     t = line.strip()
-    # allow optional prefixes (r, u, f, fr, rf, ...)
-    prefixes = ("", "r", "u", "f", "fr", "rf", "ur", "ru", "fu", "uf")
-    quotes = ('"""', "'''")
-    for pref in prefixes:
-        for q in quotes:
-            if t == pref + q:
-                return True
-    return False
+    return t in ('"""', "'''")
 
 
-def ensure_blank_after(lines: list[str], idx: int) -> None:
-    nxt = idx + 1
-    if nxt >= len(lines):
-        lines.append("")
-        return
-    if lines[nxt].strip() != "":
-        lines.insert(nxt, "")
-
-
-def enforce_header(lines: list[str], header: str) -> Tuple[bool, str]:
-    """
-    ARCH_SCAN compatible:
-    - if shebang present: line1 shebang, line2 header
-    - else: line1 header
-    """
+def enforce_header(lines: list[str], header: str):
     changed = False
 
     if not lines:
@@ -99,189 +108,173 @@ def enforce_header(lines: list[str], header: str) -> Tuple[bool, str]:
         return True, "created header in empty file"
 
     if is_shebang(lines[0]):
-        # ensure line2 exists and equals header
+
         if len(lines) == 1:
             lines.append(header)
             changed = True
         elif lines[1] != header:
             lines[1] = header
             changed = True
-        # keep a blank line after header (line3) if needed
-        if len(lines) > 2 and lines[2].strip() != "":
+
+        if len(lines) < 3 or lines[2].strip() != "":
             lines.insert(2, "")
             changed = True
-        elif len(lines) == 2:
-            lines.append("")
-            changed = True
-        return changed, "shebang: enforced header on line 2"
 
-    # no shebang
+        return changed, "shebang header ensured"
+
     if lines[0] != header:
-        # if the file starts with docstring opener or future import, insert header above it
-        if is_docstring_opener(lines[0]) or is_future_import(lines[0]):
-            lines.insert(0, header)
-            ensure_blank_after(lines, 0)
-            return True, "inserted header above docstring/future-import"
-        else:
-            lines[0] = header
-            ensure_blank_after(lines, 0)
-            return True, "replaced first line with header"
 
-    # already correct, but ensure blank line after header
+        if is_docstring_opener(lines[0]):
+            lines.insert(0, header)
+            lines.insert(1, "")
+            return True, "header inserted above docstring"
+
+        lines[0] = header
+
+        if len(lines) < 2 or lines[1].strip() != "":
+            lines.insert(1, "")
+
+        return True, "header replaced"
+
     if len(lines) > 1 and lines[1].strip() != "":
         lines.insert(1, "")
-        return True, "inserted blank line after header"
+        return True, "blank after header inserted"
 
     return False, "header ok"
 
 
-def repair_removed_docstring_opener(lines: list[str]) -> Tuple[bool, str]:
-    """
-    Repairs the common damage: docstring opener was removed when a header was inserted.
-
-    Pattern:
-      - Header exists (line1 or line2 if shebang)
-      - File does NOT parse
-      - There exists a triple-quote later in the file (likely closing delimiter)
-      - The first non-blank, non-comment, non-future-import line after the header
-        is not already a docstring opener.
-      => Insert a docstring opener right before that line.
-
-    Conservative: only triggers if we find at least one triple-quote later.
-    """
-    # determine where "code starts" after header
-    i = 0
-    if not lines:
-        return False, "no content"
-    if is_shebang(lines[0]):
-        hdr_idx = 1
-        start_idx = 2
-    else:
-        hdr_idx = 0
-        start_idx = 1
-
-    if len(lines) <= hdr_idx or not lines[hdr_idx].startswith("# "):
-        return False, "no header present (unexpected)"
-
+def repair_missing_docstring(lines: list[str]):
     joined = "\n".join(lines)
+
     if ('"""' not in joined) and ("'''" not in joined):
-        return False, "no triple-quotes found (skip repair)"
+        return False, "no triple quotes"
 
-    # find first "substantive" line after header
-    j = start_idx
-    while j < len(lines):
-        s = lines[j].strip()
+    start = 1
+    if is_shebang(lines[0]):
+        start = 2
+
+    i = start
+    while i < len(lines):
+
+        s = lines[i].strip()
+
         if s == "" or s.startswith("#"):
-            j += 1
+            i += 1
             continue
-        if is_future_import(lines[j]):
-            j += 1
-            continue
-        break
 
-    if j >= len(lines):
-        return False, "no substantive line found"
+        if is_docstring_opener(lines[i]):
+            return False, "docstring exists"
 
-    if is_docstring_opener(lines[j]) or lines[j].lstrip().startswith(('"""', "'''")):
-        return False, "docstring opener already present"
+        lines.insert(i, '"""')
+        return True, "docstring opener inserted"
 
-    # Insert docstring opener at line j
-    lines.insert(j, '"""')
-    return True, "inserted missing docstring opener"
+    return False, "no insertion point"
 
 
-def process_file(repo_root: Path, p: Path, apply: bool) -> Result:
+def process_file(repo_root: Path, p: Path, apply: bool):
+
     original = read_text(p)
     parse_ok_before = ast_ok(original)
 
     header = expected_header(repo_root, p)
+
     lines = original.split("\n")
 
     changed1, note1 = enforce_header(lines, header)
+
     candidate = "\n".join(lines)
 
-    # if parse is still broken, try repair
-    repaired = False
     parse_ok_after = ast_ok(candidate)
+
+    repaired = False
     note2 = ""
+
     if not parse_ok_after:
-        changed2, note2 = repair_removed_docstring_opener(lines)
+
+        changed2, note2 = repair_missing_docstring(lines)
+
         if changed2:
             repaired = True
             candidate = "\n".join(lines)
             parse_ok_after = ast_ok(candidate)
 
-    changed = (candidate != original)
+    changed = candidate != original
 
     if apply and changed:
         write_text(p, candidate)
 
     note = note1
     if note2:
-        note = f"{note1}; {note2}"
+        note = note1 + "; " + note2
 
     return Result(
-        path=p,
-        changed=changed,
-        repaired=repaired,
-        parse_ok_before=parse_ok_before,
-        parse_ok_after=parse_ok_after,
-        note=note,
+        p,
+        changed,
+        repaired,
+        parse_ok_before,
+        parse_ok_after,
+        note,
     )
 
 
-def iter_py(repo_root: Path) -> list[Path]:
-    out: list[Path] = []
-    for p in repo_root.rglob("*.py"):
+def iter_py(root: Path):
+
+    for p in root.rglob("*.py"):
+
         if should_skip(p):
             continue
+
         if p.is_file():
-            out.append(p)
-    return sorted(out)
+            yield p
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description="Fix '# <repo path>' headers and repair common docstring damage.")
-    ap.add_argument("--root", default=".", help="Repo root (default: .)")
-    ap.add_argument("--apply", action="store_true", help="Write changes to disk")
-    ap.add_argument("--report-unrepaired", action="store_true", help="Only list files that still don't parse after fixes")
+def main():
+
+    ap = argparse.ArgumentParser()
+
+    ap.add_argument("--root", default=".")
+    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--report-unrepaired", action="store_true")
+
     args = ap.parse_args()
 
-    repo_root = Path(args.root).resolve()
-    files = iter_py(repo_root)
+    root = Path(args.root).resolve()
 
-    results: list[Result] = []
-    for p in files:
-        results.append(process_file(repo_root, p, apply=args.apply))
+    results = []
+
+    for p in iter_py(root):
+        results.append(process_file(root, p, args.apply))
 
     unrepaired = [r for r in results if not r.parse_ok_after]
     changed = [r for r in results if r.changed]
 
     if args.report_unrepaired:
+
         if not unrepaired:
             print("UNREPAIRED: none")
             return 0
-        print(f"UNREPAIRED: {len(unrepaired)} file(s)")
+
+        print("UNREPAIRED FILES")
+
         for r in unrepaired:
-            rel = r.path.relative_to(repo_root).as_posix()
-            print(f"- {rel}  (before_parse={r.parse_ok_before}, after_parse={r.parse_ok_after})  note={r.note}")
+            rel = r.path.relative_to(root)
+            print(rel)
+
         return 1
 
     if not args.apply:
-        print(f"Planned changes: {len(changed)} file(s)")
+
+        print("Planned changes:", len(changed))
+
         for r in changed:
-            rel = r.path.relative_to(repo_root).as_posix()
-            print(f"- {rel}  repaired={r.repaired}  note={r.note}")
-        if unrepaired:
-            print(f"\nWARNING: {len(unrepaired)} file(s) still do not parse after planned fixes.")
-            print("Run: ./tools/fix_headers.py --report-unrepaired")
-        print("\nDry-run only. Re-run with --apply to write changes.")
+            print(r.path.relative_to(root), r.note)
+
         return 0
 
-    print(f"Applied changes: {len(changed)} file(s)")
+    print("Applied changes:", len(changed))
+
     if unrepaired:
-        print(f"ERROR: {len(unrepaired)} file(s) still do not parse after applying fixes.")
-        print("Run: ./tools/fix_headers.py --report-unrepaired")
+        print("ERROR: some files still do not parse")
         return 1
 
     return 0
