@@ -8,6 +8,7 @@ from bvillage.core.dispatch_registry import (
 )
 from bvillage.core.plugin_bootstrap import ensure_plugins_loaded
 from bvillage.core.policy_resolver import resolve_policy
+from bvillage.core.trace import get_trace
 
 __all__ = ["SiteManager"]
 
@@ -36,15 +37,40 @@ class SiteManager:
         if not ctx.archetype_id:
             raise RuntimeError("Context.archetype_id missing")
 
-        ensure_plugins_loaded()
+        trace = get_trace()
 
-        resolved_policy = resolve_policy(ctx)
+        with trace.stage(
+            "ensure_plugins_loaded",
+            archetype_id=ctx.archetype_id,
+        ):
+            ensure_plugins_loaded()
 
-        binding = resolve_provider_for_archetype(ctx.archetype_id)
-        foreman = resolve_foreman_for_grammar(binding.construction_grammar)
+        with trace.stage(
+            "resolve_policy",
+            archetype_id=ctx.archetype_id,
+        ):
+            resolved_policy = resolve_policy(ctx)
 
-        return foreman.dispatch(
-            ctx=ctx,
-            resolved_policy=resolved_policy,
-            provider=binding.provider,
-        )
+        with trace.stage(
+            "resolve_provider_for_archetype",
+            archetype_id=ctx.archetype_id,
+        ):
+            binding = resolve_provider_for_archetype(ctx.archetype_id)
+
+        with trace.stage(
+            "resolve_foreman_for_grammar",
+            construction_grammar=binding.construction_grammar,
+        ):
+            foreman = resolve_foreman_for_grammar(binding.construction_grammar)
+
+        with trace.stage(
+            "foreman.dispatch",
+            provider_class=binding.provider.__class__.__name__,
+            foreman_class=foreman.__class__.__name__,
+            construction_grammar=binding.construction_grammar,
+        ):
+            return foreman.dispatch(
+                ctx=ctx,
+                resolved_policy=resolved_policy,
+                provider=binding.provider,
+            )
